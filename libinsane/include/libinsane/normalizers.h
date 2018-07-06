@@ -280,6 +280,7 @@ extern enum lis_error lis_api_normalizer_end_of_feed(
  * - All source names will be lower-case
  * - No WIA prefix
  * - All ADF will be called "feeder"
+ * - All flatbeds will be called "flatbed"
  *
  * Exanples when using WIA:
  * - '0000\\Root\\Flatbed' --> 'flatbed'
@@ -288,6 +289,8 @@ extern enum lis_error lis_api_normalizer_end_of_feed(
  * Examples when using Sane:
  * - 'Automatic document Feeder (left aligned)' --> 'feeder (left aligned)'
  * - 'ADF Duplex' --> 'feeder duplex'
+ * - 'Flatbed' --> 'flatbed'
+ * - 'Document Table' --> 'flatbed' (Epson perfection v19)
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] impl Implementation of the API including the workaround.
