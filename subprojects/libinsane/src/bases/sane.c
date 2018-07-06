@@ -433,7 +433,9 @@ static enum lis_error lis_sane_item_get_scan_parameters(
 
 	memset(&p, 0, sizeof(p)); // don't trust sane drivers --> init to 0.
 
+	lis_log_debug("sane_get_parameters() ...");
 	err = sane_status_to_lis_error(sane_get_parameters(private->handle, &p));
+	lis_log_debug("sane_get_parameters(): %d, %s", err, lis_strerror(err));
 	if (LIS_IS_ERROR(err)) {
 		lis_log_error("%s->sane_get_parameters(): 0x%X, %s",
 				self->name, err, lis_strerror(err));

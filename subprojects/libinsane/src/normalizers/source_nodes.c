@@ -1,10 +1,365 @@
+#include <stdio.h>
+#include <string.h>
+
+#include <libinsane/error.h>
+#include <libinsane/log.h>
 #include <libinsane/normalizers.h>
 #include <libinsane/util.h>
 
 
+#define OPT_NAME_SOURCE "source"
+
+
+static void lis_sn_cleanup(struct lis_api *impl);
+static enum lis_error lis_sn_list_devices(
+	struct lis_api *impl, enum lis_device_locations locations,
+	struct lis_device_descriptor ***dev_infos
+);
+static enum lis_error lis_sn_get_device(
+	struct lis_api *impl, const char *dev_id, struct lis_item **item
+);
+
+
+struct lis_sn_api_private
+{
+	struct lis_api parent;
+	struct lis_api *wrapped;
+};
+#define LIS_SN_API_PRIVATE(impl) ((struct lis_sn_api_private *)(impl))
+
+
+struct lis_sn_item_private
+{
+	struct lis_item item;
+	struct lis_sn_device_private *device;
+};
+#define LIS_SN_ITEM_PRIVATE(item) ((struct lis_sn_item_private *)(item))
+
+
+struct lis_sn_device_private
+{
+	struct lis_sn_item_private item;
+	struct lis_sn_api_private *private;
+
+	struct lis_item *wrapped;
+	int nb_sources;
+	struct lis_item **source_ptrs;
+	struct lis_sn_item_private *sources;
+};
+#define LIS_SN_DEVICE_PRIVATE(item) ((struct lis_sn_device_private *)(item))
+
+
+static enum lis_error lis_sn_get_options(
+	struct lis_item *self, struct lis_option_descriptor ***descs
+);
+
+static enum lis_error lis_sn_dev_get_scan_parameters(
+	struct lis_item *self, struct lis_scan_parameters *parameters
+);
+static enum lis_error lis_sn_dev_scan_start(struct lis_item *self, struct lis_scan_session **session);
+static enum lis_error lis_sn_dev_get_children(struct lis_item *self, struct lis_item ***children);
+static void lis_sn_dev_close(struct lis_item *self);
+
+
+static const struct lis_item g_sn_dev_template = {
+	.name = NULL,
+	.type = LIS_ITEM_UNIDENTIFIED,
+	.get_children = lis_sn_dev_get_children,
+	.get_options = lis_sn_get_options,
+	.get_scan_parameters = lis_sn_dev_get_scan_parameters,
+	.scan_start = lis_sn_dev_scan_start,
+	.close = lis_sn_dev_close,
+};
+
+
+static enum lis_error lis_sn_src_get_scan_parameters(
+	struct lis_item *self, struct lis_scan_parameters *parameters
+);
+static enum lis_error lis_sn_src_scan_start(struct lis_item *self, struct lis_scan_session **session);
+static enum lis_error lis_sn_src_get_children(struct lis_item *self, struct lis_item ***children);
+static void lis_sn_src_close(struct lis_item *self);
+
+
+static const struct lis_item g_sn_source_template = {
+	.name = NULL,
+	.type = LIS_ITEM_UNIDENTIFIED,
+	.get_children = lis_sn_src_get_children,
+	.get_options = lis_sn_get_options,
+	.get_scan_parameters = lis_sn_src_get_scan_parameters,
+	.scan_start = lis_sn_src_scan_start,
+	.close = lis_sn_src_close,
+};
+
+
+static const struct lis_api g_sn_api_template = {
+	.cleanup = lis_sn_cleanup,
+	.list_devices = lis_sn_list_devices,
+	.get_device = lis_sn_get_device,
+};
+
+static void lis_sn_cleanup(struct lis_api *impl)
+{
+	struct lis_sn_api_private *private = LIS_SN_API_PRIVATE(impl);
+	private->wrapped->cleanup(private->wrapped);
+	free(private);
+}
+
+static enum lis_error lis_sn_list_devices(
+		struct lis_api *impl, enum lis_device_locations locations,
+		struct lis_device_descriptor ***dev_infos
+	)
+{
+	struct lis_sn_api_private *private = LIS_SN_API_PRIVATE(impl);
+	return private->wrapped->list_devices(private->wrapped, locations, dev_infos);
+}
+
+
+static enum lis_error lis_sn_src_get_children(struct lis_item *self, struct lis_item ***children)
+{
+	static struct lis_item *g_empty_child_list[] = { NULL };
+	LIS_UNUSED(self);
+	*children = g_empty_child_list;
+	return LIS_OK;
+}
+
+
+static enum lis_error lis_sn_dev_get_children(struct lis_item *self, struct lis_item ***children)
+{
+	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
+	struct lis_sn_device_private *device = private->device;
+	struct lis_option_descriptor **opts = NULL;
+	enum lis_error err;
+	enum lis_error get_children_err;
+	int opt_idx;
+	int source_idx;
+
+	if (device->source_ptrs != NULL) {
+		/* already built the sources */
+		*children = device->source_ptrs;
+		return LIS_OK;
+	}
+
+	get_children_err = device->wrapped->get_children(device->wrapped, children);
+	if (LIS_IS_OK(get_children_err) && *children[0] != NULL) {
+		lis_log_info("Wrapped implementation already provides child sources");
+		return get_children_err;
+	}
+
+	err = device->wrapped->get_options(device->wrapped, &opts);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("wrapped->get_options() failed: 0x%X, %s", err, lis_strerror(err));
+		return err;
+	}
+
+	for (opt_idx = 0 ; opts[opt_idx] != NULL ; opt_idx++) {
+		if (strcasecmp(opts[opt_idx]->name, OPT_NAME_SOURCE) == 0) {
+			break;
+		}
+	}
+	if (opts[opt_idx] == NULL) {
+		lis_log_warning(
+			"Failed to get child items from wrapped implementation"
+			" + no option \"source\" found"
+		);
+		return get_children_err;
+	}
+
+	if (opts[opt_idx]->value.type != LIS_TYPE_STRING
+		|| opts[opt_idx]->constraint.type != LIS_CONSTRAINT_LIST
+		|| opts[opt_idx]->constraint.possible.list.nb_values <= 0) {
+		lis_log_warning(
+			"Failed to get child items from wrapped implementation"
+			" + option \"source\" doesn't have expected types (%d:%d:%d)",
+			opts[opt_idx]->value.type, opts[opt_idx]->constraint.type,
+			opts[opt_idx]->constraint.possible.list.nb_values
+		);
+		return get_children_err;
+	}
+
+	device->nb_sources = opts[opt_idx]->constraint.possible.list.nb_values;
+	lis_log_info("Generating %d sources from constraint of option %s",
+		device->nb_sources, OPT_NAME_SOURCE);
+
+	device->sources = calloc(device->nb_sources, sizeof(struct lis_sn_item_private));
+	device->source_ptrs = calloc(device->nb_sources + 1, sizeof(struct lis_item *));
+	if (device->sources == NULL || device->source_ptrs == NULL) {
+		device->nb_sources = 0;
+		FREE(device->sources);
+		FREE(device->source_ptrs);
+		return LIS_ERR_NO_MEM;
+	}
+
+	for (source_idx = 0 ; source_idx < device->nb_sources ; source_idx++) {
+		memcpy(&device->sources[source_idx].item, &g_sn_source_template,
+			sizeof(device->sources[source_idx].item));
+		device->sources[source_idx].item.name = \
+			opts[opt_idx]->constraint.possible.list.values[source_idx].string;
+		device->source_ptrs[source_idx] = &device->sources[source_idx].item;
+		device->sources[source_idx].device = device;
+	}
+
+	*children = device->source_ptrs;
+	return LIS_OK;
+}
+
+
+static enum lis_error lis_sn_get_options(
+		struct lis_item *self, struct lis_option_descriptor ***descs
+		)
+{
+	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
+	return private->device->wrapped->get_options(private->device->wrapped, descs);
+}
+
+
+static enum lis_error set_source(struct lis_sn_item_private *private)
+{
+	struct lis_option_descriptor **opts = NULL;
+	int source_opt_idx;
+	enum lis_error err;
+	union lis_value value;
+	int set_flags;
+
+	lis_log_info("Setting source to '%s'", private->item.name);
+	err = private->device->wrapped->get_options(private->device->wrapped, &opts);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("wrapped->get_options() failed: 0x%X, %s", err, lis_strerror(err));
+		return err;
+	}
+
+	for (source_opt_idx = 0 ; opts[source_opt_idx] != NULL ; source_opt_idx++) {
+		if (strcasecmp(opts[source_opt_idx]->name, OPT_NAME_SOURCE) == 0) {
+			break;
+		}
+	}
+	if (opts[source_opt_idx] == NULL) {
+		lis_log_error("wrapped->get_options() didn't return the option '%s'",
+			OPT_NAME_SOURCE);
+		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+	}
+
+	value.string = private->item.name;
+	err = opts[source_opt_idx]->fn.set_value(opts[source_opt_idx], value, &set_flags);
+	if (LIS_IS_OK(err)) {
+		lis_log_info("Source set to '%s'", private->item.name);
+	} else {
+		lis_log_error("Failed to set source: 0x%X, %s", err, lis_strerror(err));
+	}
+	return err;
+}
+
+
+static enum lis_error lis_sn_src_get_scan_parameters(
+		struct lis_item *self, struct lis_scan_parameters *parameters
+	)
+{
+	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
+	enum lis_error err;
+
+	err = set_source(private);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("setting source has failed --> get_scan_parameters() failed: 0x%X, %s",
+				err, lis_strerror(err));
+		return err;
+	}
+	return private->device->wrapped->get_scan_parameters(private->device->wrapped, parameters);
+}
+
+
+static enum lis_error lis_sn_src_scan_start(struct lis_item *self, struct lis_scan_session **session)
+{
+	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
+	enum lis_error err;
+
+	err = set_source(private);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("setting source has failed --> scan_start() failed: 0x%X, %s",
+				err, lis_strerror(err));
+		return err;
+	}
+	return private->device->wrapped->scan_start(private->device->wrapped, session);
+}
+
+static enum lis_error lis_sn_dev_get_scan_parameters(
+		struct lis_item *self, struct lis_scan_parameters *parameters
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(parameters);
+	/* prevent running get_scan_parameters() on the root device to avoid programming mistake */
+	lis_log_error("Tried to run get_scan_parameters() on root node. Not allowed");
+	return LIS_ERR_INVALID_VALUE;
+}
+
+static enum lis_error lis_sn_dev_scan_start(struct lis_item *self, struct lis_scan_session **session)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(session);
+	/* prevent running scan_start() on the root device to avoid programming mistake */
+	lis_log_error("Tried to run scan_start() on root node. Not allowed");
+	return LIS_ERR_INVALID_VALUE;
+}
+
+
+static void lis_sn_src_close(struct lis_item *self)
+{
+	LIS_UNUSED(self);
+}
+
+
+static void lis_sn_dev_close(struct lis_item *self)
+{
+	struct lis_sn_device_private *private = LIS_SN_DEVICE_PRIVATE(self);
+	FREE(private->source_ptrs);
+	FREE(private->sources);
+	private->wrapped->close(private->wrapped);
+	free(private);
+}
+
+
+static enum lis_error lis_sn_get_device(
+		struct lis_api *impl, const char *dev_id, struct lis_item **out_item
+	)
+{
+	struct lis_sn_api_private *api_private = LIS_SN_API_PRIVATE(impl);
+	struct lis_sn_device_private *dev_private;
+	enum lis_error err;
+
+	dev_private = calloc(1, sizeof(struct lis_sn_device_private));
+	if (dev_private == NULL) {
+		return LIS_ERR_NO_MEM;
+	}
+	dev_private->private = api_private;
+	dev_private->item.device = dev_private;
+
+	err = api_private->wrapped->get_device(api_private->wrapped, dev_id, &dev_private->wrapped);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("wrapped->get_device() failed: 0x%X, %s", err, lis_strerror(err));
+		free(dev_private);
+		return err;
+	}
+
+	memcpy(&dev_private->item.item, &g_sn_dev_template, sizeof(dev_private->item.item));
+	dev_private->item.item.name = dev_private->wrapped->name;
+	dev_private->item.item.type = dev_private->wrapped->type;
+	*out_item = &dev_private->item.item;
+
+	return err;
+}
+
+
 enum lis_error lis_api_normalizer_source_nodes(struct lis_api *to_wrap, struct lis_api **api)
 {
-	LIS_UNUSED(to_wrap);
-	LIS_UNUSED(api);
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	struct lis_sn_api_private *private = calloc(1, sizeof(struct lis_sn_api_private));
+	if (private == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	memcpy(&private->parent, &g_sn_api_template, sizeof(struct lis_api));
+	private->parent.base_name = to_wrap->base_name;
+	private->wrapped = to_wrap;
+
+	*api = &private->parent;
+	return LIS_OK;
 }

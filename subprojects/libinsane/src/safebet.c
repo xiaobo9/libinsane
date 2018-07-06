@@ -46,7 +46,7 @@ enum lis_error lis_safebet(struct lis_api **out_impls)
 	if (lis_getenv("LIBINSANE_SANE", 1)) {
 		err = lis_api_sane(&impls[nb_impls]);
 		if (LIS_IS_ERROR(err)) {
-			goto error;
+			goto err_impls;
 		}
 		nb_impls++;
 	}
@@ -54,20 +54,32 @@ enum lis_error lis_safebet(struct lis_api **out_impls)
 	if (lis_getenv("LIBINSANE_DUMB", nb_impls == 0)) {
 		err = lis_api_dumb(&impls[nb_impls], "dumb");
 		if (LIS_IS_ERROR(err)) {
-			goto error;
+			goto err_impls;
 		}
 		nb_impls++;
 	}
 
 	err = lis_api_multiplexer(impls, nb_impls, &next);
 	if (LIS_IS_ERROR(err)) {
-		goto error;
+		goto err_impls;
 	}
 	*out_impls = next;
+
+	if (lis_getenv("LIBINSANE_NORMALIZER_SOURCE_NODES", 1)) {
+		err = lis_api_normalizer_source_nodes(*out_impls, &next);
+		if (LIS_IS_ERROR(err)) {
+			goto error;
+		}
+		*out_impls = next;
+	}
 
 	return err;
 
 error:
+	(*out_impls)->cleanup(*out_impls);
+	return err;
+
+err_impls:
 	for (nb_impls-- ; nb_impls >= 0 ; nb_impls--) {
 		impls[nb_impls]->cleanup(impls[nb_impls]);
 	}

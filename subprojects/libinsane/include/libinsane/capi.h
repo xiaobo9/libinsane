@@ -160,12 +160,12 @@ struct lis_option_descriptor {
 		 */
 		union {
 			/*!
-			 * If \ref lis_option_descriptor.type == \ref LIS_CONSTRAINT_RANGE.
+			 * If \ref lis_option_descriptor.value.type == \ref LIS_CONSTRAINT_RANGE.
 			 */
 			struct lis_value_range range;
 
 			/*!
-			 * If \ref lis_option_descriptor.type == \ref LIS_CONSTRAINT_LIST.
+			 * If \ref lis_option_descriptor.value.type == \ref LIS_CONSTRAINT_LIST.
 			 */
 			struct lis_value_list list;
 		} possible;

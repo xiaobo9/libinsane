@@ -13,7 +13,7 @@ extern "C" {
 #define LIS_COUNT_OF(x) (sizeof(x) / sizeof((x)[0]))
 
 #define FREE(x) do { \
-		free(x); \
+		free((void*)x); \
 		(x) = NULL; \
 	} while(0);
 

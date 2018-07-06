@@ -116,7 +116,7 @@ def main():
     print("Will use scan source {}".format(source.get_name()))
 
     # set the options
-    set_opt(source, 'source', 'Automatic Document Feeder')
+    # set_opt(source, 'source', 'Automatic Document Feeder')
     set_opt(source, 'mode', 'Color')
     set_opt(source, 'resolution', 300)
     set_opt(source, 'test-picture', 'Color pattern')

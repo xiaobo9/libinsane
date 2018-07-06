@@ -4,6 +4,7 @@ LIBINSANE_TESTS = [
 
 LIBINSANE_VALGRIND_TESTS = [
     'multiplexer',
+    'normalizer_source_nodes',
 ]
 
 CUNIT = dependency('cunit')
