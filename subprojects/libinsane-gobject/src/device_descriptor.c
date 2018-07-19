@@ -1,4 +1,5 @@
 #include <libinsane/log.h>
+#include <libinsane/util.h>
 
 #include <libinsane-gobject/device_descriptor.h>
 #include <libinsane-gobject/device_descriptor_private.h>
@@ -45,6 +46,7 @@ static void libinsane_device_descriptor_class_init(LibinsaneDeviceDescriptorClas
 
 static void libinsane_device_descriptor_init(LibinsaneDeviceDescriptor *self)
 {
+	LIS_UNUSED(self);
 	lis_log_debug("[gobject] Initializing");
 }
 

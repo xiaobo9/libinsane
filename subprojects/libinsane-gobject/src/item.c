@@ -1,5 +1,6 @@
 #include <libinsane/capi.h>
 #include <libinsane/log.h>
+#include <libinsane/util.h>
 
 #include <libinsane-gobject/error.h>
 #include <libinsane-gobject/error_private.h>
@@ -22,6 +23,7 @@ struct _LibinsaneItemPrivate
 
 static void libinsane_item_finalize(GObject *object)
 {
+	LIS_UNUSED(object);
 	lis_log_debug("[gobject] Finalizing");
 }
 
@@ -37,6 +39,7 @@ static void libinsane_item_class_init(LibinsaneItemClass *cls)
 
 static void libinsane_item_init(LibinsaneItem *self)
 {
+	LIS_UNUSED(self);
 	lis_log_debug("[gobject] Initializing");
 }
 
@@ -92,6 +95,7 @@ LibinsaneItemType libinsane_item_get_item_type(LibinsaneItem *self)
 void libinsane_item_close(LibinsaneItem *self, GError **error)
 {
 	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
+	LIS_UNUSED(error);
 	private->item->close(private->item);
 }
 

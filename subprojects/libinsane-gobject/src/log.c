@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include <libinsane/log.h>
+#include <libinsane/util.h>
 #include <libinsane-gobject/log.h>
 
 G_DEFINE_INTERFACE(LibinsaneLogger, libinsane_logger, G_TYPE_OBJECT)
@@ -28,6 +29,7 @@ static void libinsane_logger_default_init(LibinsaneLoggerInterface *iface)
 
 static void libinsane_logger_real_log(LibinsaneLogger *self, LibinsaneLogLevel lvl, const char *msg)
 {
+	LIS_UNUSED(self);
 	fprintf(stderr, "[missing log callback] %d: %s\n", lvl, msg);
 }
 

@@ -4,6 +4,7 @@
 #include <CUnit/Basic.h>
 
 #include <libinsane/log.h>
+#include <libinsane/util.h>
 
 
 int register_tests(void);
@@ -33,6 +34,9 @@ int main(int argc, char **argv)
 {
 	CU_ErrorCode err;
 	int has_failed;
+
+	LIS_UNUSED(argc);
+	LIS_UNUSED(argv);
 
 	lis_set_log_callbacks(&g_log_callbacks);
 

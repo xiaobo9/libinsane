@@ -4,6 +4,7 @@
 
 #include <libinsane/log.h>
 #include <libinsane/safebet.h>
+#include <libinsane/util.h>
 
 #include <libinsane-gobject/device_descriptor.h>
 #include <libinsane-gobject/device_descriptor_private.h>
@@ -79,6 +80,7 @@ static void libinsane_api_class_init(LibinsaneApiClass *cls)
 
 static void libinsane_api_init(LibinsaneApi *self)
 {
+	LIS_UNUSED(self);
 	lis_log_debug("Initializing");
 }
 
@@ -127,8 +129,11 @@ LibinsaneApi *libinsane_api_new_safebet(GError **error)
 LibinsaneApi *libinsane_api_new_from_string(const char *desc, GError **error)
 {
 	LibinsaneApi *impl;
+	LIS_UNUSED(desc);
+	LIS_UNUSED(error);
 	lis_log_debug("enter");
 	impl = g_object_new(LIBINSANE_API_TYPE, NULL);
+	/* TODO */
 	lis_log_debug("leave");
 	return impl;
 }
