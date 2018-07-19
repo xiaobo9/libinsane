@@ -15,30 +15,22 @@ uninstall: uninstall_py uninstall_c
 
 build_py:
 
-build_libinsane:
-	mkdir -p libinsane/build
-	(cd libinsane/build ; cmake .. -DCMAKE_INSTALL_PREFIX=${DESTDIR})
-	$(MAKE) -C libinsane/build VERBOSE=${VERBOSE}
+build/build.ninja:
+	mkdir -p build
+	(cd build && meson ..)
 
-build_libinsane_gobject: build_libinsane
-	mkdir -p libinsane-gobject/build
-	(cd libinsane-gobject/build ; cmake .. -DCMAKE_INSTALL_PREFIX=${DESTDIR})
-	$(MAKE) -C libinsane-gobject/build VERBOSE=${VERBOSE}
-
-build_c: build_libinsane build_libinsane_gobject
+build_c: build/build.ninja
+	(cd build && ninja)
 
 version:
 
-doxygen:
-	mkdir -p doc/build
-	doxygen doc/doxygen.conf
+gtkdoc:
+	# TODO
+	# $(MAKE) -C libinsane-gobject/build doc
+	# mv libinsane-gobject/build/libinsane_gobject/html doc/build/gtkdoc
 
-gtkdoc: build_libinsane_gobject
-	$(MAKE) -C libinsane-gobject/build doc
-	mv libinsane-gobject/build/libinsane_gobject/html doc/build/gtkdoc
-
-doc: doxygen gtkdoc
-	cp doc/index.html doc/build/index.html
+doc: build/build.ninja
+	(cd build && ninja subprojects/libinsane/doc/doc_out)
 
 check: build_c
 	@echo
@@ -48,10 +40,8 @@ check: build_c
 	@echo "### CHECK libinsane-gobject ###"
 	(cd libinsane-gobject/build ; ! /usr/lib/llvm-4.0/share/clang/run-clang-tidy.py | grep warning 2>&1)
 
-test: build_libinsane
-	@echo
-	@echo "### TEST libinsane ###"
-	(cd libinsane/build ; CTEST_OUTPUT_ON_FAILURE=1 $(MAKE) test)
+test: build/build.ninja
+	(cd build && ninja test)
 
 linux_exe:
 
@@ -73,26 +63,19 @@ else
 endif
 
 clean:
-	rm -rf doc/build
-	rm -rf libinsane/build
-	rm -rf libinsane-gobject/build
+	rm -rf build
 	rm -rf libinsane-gobject/generated
 	mkdir -p libinsane-gobject/generated
 	touch libinsane-gobject/generated/.notempty
 
 install_py:
 
-
-install_c: build_c
-	$(MAKE) -C libinsane/build VERBOSE=${VERBOSE} install
-	$(MAKE) -C libinsane-gobject/build VERBOSE=${VERBOSE} install
-
+install_c: build/build.ninja
+	(cd build && ninja install)
 
 uninstall_py:
 
-
 uninstall_c:
-
 
 help:
 	@echo "make build || make build_c || make build_py"
@@ -109,10 +92,7 @@ help:
 	build_c \
 	build_py \
 	check \
-	makefile_libinsane \
 	doc \
-	doxygen \
-	gtkdoc \
 	linux_exe \
 	windows_exe \
 	help \
@@ -123,4 +103,5 @@ help:
 	test \
 	uninstall \
 	uninstall_c \
+	uninstall_py \
 	version
