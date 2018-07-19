@@ -14,3 +14,4 @@ endif
 subdir('include')
 subdir('src')
 subdir('tests')
+subdir('doc')
