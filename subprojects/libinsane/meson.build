@@ -1,3 +1,8 @@
+project('libinsane', 'c',
+    version: '',
+    license: 'LGPLv3+',
+    meson_version: '>=0.38.0')
+
 if host_machine.system() == 'windows'
     message('Target OS: Microsoft Windows (Mingw)')
     add_project_arguments('-DOS_WINDOWS', '-DCOMPILER_GCC', language: 'c')

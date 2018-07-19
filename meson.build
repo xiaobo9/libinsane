@@ -1,7 +1,7 @@
-project('libinsane', 'c',
+project('libinsane-global', 'c',
     version: '',
     license: 'LGPLv3+',
     meson_version: '>=0.38.0')
 
-subdir('libinsane')
-subdir('libinsane-gobject')
+subproject('libinsane')
+subproject('libinsane-gobject')

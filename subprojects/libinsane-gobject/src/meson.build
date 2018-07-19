@@ -10,6 +10,7 @@ INSANE_GOBJECT_SRCS = files(
 )
 
 GOBJECT = dependency('gobject-2.0')
+libinsane_dep = LIBINSANE.get_variable('libinsane_dep')
 
 ## Generate enums.h / enums.c
 
