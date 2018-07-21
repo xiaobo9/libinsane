@@ -2,6 +2,7 @@
 
 #include <libinsane/capi.h>
 #include <libinsane/log.h>
+#include <libinsane/util.h>
 
 #include <libinsane-gobject/scan_parameters.h>
 
@@ -17,6 +18,7 @@ struct _LibinsaneScanParametersPrivate
 
 static void libinsane_scan_parameters_finalize(GObject *object)
 {
+	LIS_UNUSED(object);
 	lis_log_debug("[gobject] Finalizing");
 }
 
@@ -32,6 +34,7 @@ static void libinsane_scan_parameters_class_init(LibinsaneScanParametersClass *c
 
 static void libinsane_scan_parameters_init(LibinsaneScanParameters *self)
 {
+	LIS_UNUSED(self);
 	lis_log_debug("[gobject] Initializing");
 }
 

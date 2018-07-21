@@ -3,6 +3,7 @@
 
 #include <libinsane/capi.h>
 #include <libinsane/log.h>
+#include <libinsane/util.h>
 
 #include <libinsane-gobject/constraint.h>
 #include <libinsane-gobject/error.h>
@@ -27,6 +28,7 @@ struct _LibinsaneOptionDescriptorPrivate
 
 static void libinsane_option_descriptor_finalize(GObject *object)
 {
+	LIS_UNUSED(object);
 	lis_log_debug("[gobject] Finalizing");
 }
 
@@ -42,6 +44,7 @@ static void libinsane_option_descriptor_class_init(LibinsaneOptionDescriptorClas
 
 static void libinsane_option_descriptor_init(LibinsaneOptionDescriptor *self)
 {
+	LIS_UNUSED(self);
 	lis_log_debug("[gobject] Initializing");
 }
 

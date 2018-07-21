@@ -138,6 +138,7 @@ static void auth_callback(
 		SANE_Char password[SANE_MAX_PASSWORD_LEN]
 	)
 {
+	LIS_UNUSED(resource);
 	/* TODO(Jflesch) */
 	lis_log_warning("Authorization required to access scanner. Not supported yet");
 	username[0] = '\0';
@@ -319,6 +320,8 @@ static enum lis_error lis_sane_get_device(struct lis_api *impl, const char *dev_
 {
 	struct lis_sane_item *private;
 	enum lis_error err;
+
+	LIS_UNUSED(impl);
 
 	private = calloc(1, sizeof(struct lis_sane_item));
 	if (private == NULL) {
@@ -585,10 +588,11 @@ static enum lis_unit sane_unit_to_lis_unit(SANE_Unit sane_unit)
 
 static struct lis_value_range sane_range_to_lis_range(enum lis_value_type type, const SANE_Range *sane_range)
 {
-	struct lis_value_range lis_range = {{ 0 }};
+	struct lis_value_range lis_range;
 
 	assert(type == LIS_TYPE_INTEGER || type == LIS_TYPE_DOUBLE);
 
+	memset(&lis_range, 0, sizeof(lis_range));
 	lis_range.min = sane_word_to_lis_value(type, sane_range->min);
 	lis_range.max = sane_word_to_lis_value(type, sane_range->max);
 	lis_range.interval = sane_word_to_lis_value(type, sane_range->quant);
@@ -637,6 +641,8 @@ static struct lis_value_list sane_string_list_to_lis_list(enum lis_value_type ty
 	struct lis_value_list lis_list = { 0 };
 	int nb_values;
 	int i;
+
+	LIS_UNUSED(type);
 
 	for (nb_values = 0 ; sane_list[nb_values] != NULL ; nb_values++) {
 	}

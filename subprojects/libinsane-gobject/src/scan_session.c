@@ -1,4 +1,5 @@
 #include <libinsane/log.h>
+#include <libinsane/util.h>
 
 #include <libinsane-gobject/error.h>
 #include <libinsane-gobject/error_private.h>
@@ -39,6 +40,7 @@ static void libinsane_scan_session_class_init(LibinsaneScanSessionClass *cls)
 
 static void libinsane_scan_session_init(LibinsaneScanSession *self)
 {
+	LIS_UNUSED(self);
 	lis_log_debug("[gobject] Initializing");
 }
 
