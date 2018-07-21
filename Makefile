@@ -30,7 +30,16 @@ gtkdoc:
 	# mv libinsane-gobject/build/libinsane_gobject/html doc/build/gtkdoc
 
 doc: build/build.ninja
+	# Libinsane doc
 	(cd build && ninja subprojects/libinsane/doc/doc_out)
+	# Libinsane-gobject doc
+	(cd build && ninja libinsane-gobject@@libinsane-gobject-doc)
+	rm -rf doc/build
+	mkdir -p doc/build
+	mv build/doc/html doc/build/libinsane
+	mv build/subprojects/libinsane-gobject/doc/html doc/build/libinsane-gobject
+	cp doc/index.html doc/build
+	echo "Documentation is available in doc/build/"
 
 check: build_c
 	@echo
@@ -64,6 +73,7 @@ endif
 
 clean:
 	rm -rf build
+	rm -rf doc/build
 	rm -rf libinsane-gobject/generated
 	mkdir -p libinsane-gobject/generated
 	touch libinsane-gobject/generated/.notempty
