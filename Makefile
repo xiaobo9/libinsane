@@ -74,9 +74,9 @@ endif
 clean:
 	rm -rf build
 	rm -rf doc/build
-	rm -rf libinsane-gobject/generated
-	mkdir -p libinsane-gobject/generated
-	touch libinsane-gobject/generated/.notempty
+	rm -rf subprojects/libinsane-gobject/generated
+	mkdir -p subprojects/libinsane-gobject/generated
+	touch subprojects/libinsane-gobject/generated/.notempty
 
 install_py:
 
