@@ -12,7 +12,7 @@ Makefiles in all [OpenPaper.work](https://openpaper.work) projects present simil
 
 ```
 sudo apt install \
-        cmake \
+        meson \
         gtk-doc-tools doxygen plantuml graphviz \
         build-essential \
         libsane-dev \
