@@ -63,8 +63,13 @@ else
 	@echo "Will release: ${RELEASE}"
 	@echo "Checking release is in ChangeLog ..."
 	grep ${RELEASE} ChangeLog
-	@echo "Checking release is in libinsane-gobject/CMakeLists.txt ..."
-	grep ${RELEASE} libinsane-gobject/CMakeLists.txt
+	@echo "Checking release is in subprojects/libinsane/meson.build ..."
+	grep ${RELEASE} subprojects/libinsane/meson.build
+	@echo "Checking release is in subprojects/libinsane-gobject/meson.build ..."
+	grep ${RELEASE} subprojects/libinsane-gobject/meson.build
+	# GIR files include the version
+	@echo "Checking release is in subprojects/libinsane-gobject/src/meson.build ..."
+	grep ${RELEASE} subprojects/libinsane-gobject/src/meson.build
 	@echo "Releasing ..."
 	git tag -a ${RELEASE} -m ${RELEASE}
 	git push origin ${RELEASE}
