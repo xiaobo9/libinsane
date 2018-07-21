@@ -18,5 +18,5 @@ foreach t: LIBINSANE_VALGRIND_TESTS
     e = executable('tests_@0@'.format(t), 'main.c', 'tests_@0@.c'.format(t),
         dependencies: [libinsane_dep, CUNIT])
     test('tests_@0@'.format(t), vg,
-        args: ['--trace-children=yes', '--leak-check=full', '--error-exitcode=10', e])
+        args: ['--trace-children=yes', '--leak-check=full', '--error-exitcode=10', e.full_path()])
 endforeach
