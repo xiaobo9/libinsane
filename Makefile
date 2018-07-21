@@ -63,6 +63,8 @@ else
 	@echo "Will release: ${RELEASE}"
 	@echo "Checking release is in ChangeLog ..."
 	grep ${RELEASE} ChangeLog
+	@echo "Checking release is in meson.build ..."
+	grep ${RELEASE} meson.build
 	@echo "Checking release is in subprojects/libinsane/meson.build ..."
 	grep ${RELEASE} subprojects/libinsane/meson.build
 	@echo "Checking release is in subprojects/libinsane-gobject/meson.build ..."
