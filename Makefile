@@ -32,8 +32,8 @@ gtkdoc:
 doc: build/build.ninja
 	# Libinsane doc
 	(cd build && ninja subprojects/libinsane/doc/doc_out)
-	# Libinsane-gobject doc
-	(cd build && ninja libinsane-gobject@@libinsane-gobject-doc)
+	# Libinsane-gobject doc (Meson 0.37.1 || Meson 0.47.1)
+	(cd build ; ninja libinsane-gobject-doc || ninja libinsane-gobject@@libinsane-gobject-doc)
 	rm -rf doc/build
 	mkdir -p doc/build
 	mv build/doc/html doc/build/libinsane
