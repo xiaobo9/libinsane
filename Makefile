@@ -24,11 +24,6 @@ build_c: build/build.ninja
 
 version:
 
-gtkdoc:
-	# TODO
-	# $(MAKE) -C libinsane-gobject/build doc
-	# mv libinsane-gobject/build/libinsane_gobject/html doc/build/gtkdoc
-
 doc: build/build.ninja
 	# Libinsane doc
 	(cd build && ninja subprojects/libinsane/doc/doc_out)
