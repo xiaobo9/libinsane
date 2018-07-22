@@ -428,7 +428,10 @@ static enum lis_error lis_sane_item_get_scan_parameters(
 {
 	struct lis_sane_item *private = LIS_SANE_ITEM_PRIVATE(self);
 	enum lis_error err;
-	SANE_Parameters p = { 0 }; // don't trust sane drivers --> init to 0.
+	SANE_Parameters p;
+
+
+	memset(&p, 0, sizeof(p)); // don't trust sane drivers --> init to 0.
 
 	err = sane_status_to_lis_error(sane_get_parameters(private->handle, &p));
 	if (LIS_IS_ERROR(err)) {
@@ -602,8 +605,10 @@ static struct lis_value_range sane_range_to_lis_range(enum lis_value_type type, 
 
 static struct lis_value_list sane_word_list_to_lis_list(enum lis_value_type type, const SANE_Word *sane_list)
 {
-	struct lis_value_list lis_list = { 0 };
+	struct lis_value_list lis_list;
 	int i;
+
+	memset(&lis_list, 0, sizeof(lis_list));
 
 	lis_list.values = calloc(sane_list[0], sizeof(union lis_value));
 	if (lis_list.values == NULL) {
@@ -638,11 +643,13 @@ static struct lis_value_list sane_word_list_to_lis_list(enum lis_value_type type
 static struct lis_value_list sane_string_list_to_lis_list(enum lis_value_type type,
 		const SANE_String_Const *sane_list)
 {
-	struct lis_value_list lis_list = { 0 };
+	struct lis_value_list lis_list;
 	int nb_values;
 	int i;
 
 	LIS_UNUSED(type);
+
+	memset(&lis_list, 0, sizeof(lis_list));
 
 	for (nb_values = 0 ; sane_list[nb_values] != NULL ; nb_values++) {
 	}
