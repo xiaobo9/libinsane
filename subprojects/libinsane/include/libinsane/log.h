@@ -54,4 +54,10 @@ extern void lis_log(enum lis_log_level lvl, const char *file, int line, const ch
 lis_log_callback lis_log_stderr;
 
 
+/*!
+ * \brief default log callback provided for convenience.
+ * Will log to stdout.
+ */
+lis_log_callback lis_log_stdout;
+
 #endif

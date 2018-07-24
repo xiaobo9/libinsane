@@ -29,7 +29,7 @@ void lis_set_log_callbacks(const struct lis_log_callbacks *callbacks)
 }
 
 
-void lis_log_stderr(enum lis_log_level lis_lvl, const char *msg)
+static inline void lis_log_std(FILE* stream, enum lis_log_level lis_lvl, const char *msg)
 {
 	const char *lvl = "UNKNOWN";
 
@@ -49,7 +49,19 @@ void lis_log_stderr(enum lis_log_level lis_lvl, const char *msg)
 			break;
 	}
 
-	fprintf(stderr, "[LibInsane:%s] %s\n", lvl, msg);
+	fprintf(stream, "[LibInsane:%s] %s\n", lvl, msg);
+}
+
+
+void lis_log_stdout(enum lis_log_level lis_lvl, const char *msg)
+{
+	lis_log_std(stdout, lis_lvl, msg);
+}
+
+
+void lis_log_stderr(enum lis_log_level lis_lvl, const char *msg)
+{
+	lis_log_std(stderr, lis_lvl, msg);
 }
 
 
