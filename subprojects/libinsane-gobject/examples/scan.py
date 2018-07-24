@@ -76,7 +76,7 @@ def main():
         )
         sys.exit(1)
 
-    output_file = sys.argv[1] if len(sys.argv) > 1 else "/dev/null"
+    output_file = sys.argv[1] if len(sys.argv) > 1 else None
     dev_id = None
     source = None
     source_name = None
@@ -133,8 +133,11 @@ def main():
         page_nb = 0
         while not session.end_of_feed() and page_nb < 20:
             img = []
-            out = output_file.format(page_nb)
             r = 0
+            if output_file is not None:
+                out = output_file.format(page_nb)
+            else:
+                out = "/dev/null"
             print("Scanning page {} --> {}".format(page_nb, out))
             while True:
                 data = session.read_bytes(32 * 1024)
@@ -146,7 +149,8 @@ def main():
                     break
             img = b"".join(img)
             img = raw_to_img(scan_params, img)
-            img.save(out)
+            if output_file is not None:
+                img.save(out)
             page_nb += 1
     finally:
         session.cancel()
