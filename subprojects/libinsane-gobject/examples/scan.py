@@ -30,17 +30,36 @@ def set_opt(source, opt_name, opt_value):
         print("Setting {} to {}".format(opt_name, opt_value))
         opts = source.get_options()
         opts = {opt.get_name(): opt for opt in opts}
+        if not opt_name in opts:
+            print("Option '{}' not found".format(opt_name))
+            return
         print("- Old {}: {}".format(opt_name, opts[opt_name].get_value()))
         print("- Allowed values: {}".format(opts[opt_name].get_constraint()))
         opts[opt_name].set_value(opt_value)
         opts = source.get_options()
         opts = {opt.get_name(): opt for opt in opts}
         print("- New {}: {}".format(opt_name, opts[opt_name].get_value()))
+        print("")
     except Exception as exc:
         print("Failed to set {} to {}: {}".format(
             opt_name, opt_value, str(exc)
         ))
         traceback.print_exc()
+
+
+def list_opts(source):
+    opts = source.get_options()
+    print("Options:")
+    for opt in opts:
+        try:
+            print("- {}={} ({})".format(
+                opt.get_name(), opt.get_value(), opt.get_constraint()
+            ))
+        except Exception as exc:
+            print("Failed to read option {}: {}".format(
+                opt.get_name(), str(exc)
+            ))
+    print("")
 
 
 def raw_to_img(params, img_bytes):
@@ -119,9 +138,12 @@ def main():
 
     # set the options
     # set_opt(source, 'source', 'Automatic Document Feeder')
+    set_opt(source, 'mode', '24bit Color')  # TO_REMOVE
     set_opt(source, 'mode', 'Color')
     set_opt(source, 'resolution', 300)
     set_opt(source, 'test-picture', 'Color pattern')
+
+    list_opts(source)
 
     scan_params = source.get_scan_parameters()
     print("Expected scan parameters: {} ; {}x{} = {} bytes".format(
