@@ -83,7 +83,7 @@ def main():
     if len(sys.argv) > 2:
         dev_id = sys.argv[2]
     if len(sys.argv) > 3:
-        source = sys.argv[3]
+        source_name = sys.argv[3]
 
     print("Will write the scan result into {}".format(output_file))
 
@@ -103,16 +103,18 @@ def main():
     sources = dev.get_children()
     print("Available scan sources:")
     for src in sources:
-        print("- {}".format(src.to_string()))
+        print("- {}".format(src.get_name()))
         if src.get_name() == source_name:
             source = src
-    if source == "root":
-        source = dev
-    if source_name is None:
-        source = sources[0] if len(sources) > 0 else dev
-    if source is None:
-        print("Failed to find scan source \"{}\"".format(source_name))
-        sys.exit(2)
+            break
+    else:
+        if source_name is None:
+            source = sources[0] if len(sources) > 0 else dev
+        elif source_name == "root":
+            source = dev
+        else:
+            print("Source '{}' not found".format(source_name))
+            sys.exit(2)
     print("Will use scan source {}".format(source.get_name()))
 
     # set the options
@@ -121,14 +123,14 @@ def main():
     set_opt(source, 'resolution', 300)
     set_opt(source, 'test-picture', 'Color pattern')
 
-    scan_params = dev.get_scan_parameters()
+    scan_params = source.get_scan_parameters()
     print("Expected scan parameters: {} ; {}x{} = {} bytes".format(
           scan_params.get_format(),
           scan_params.get_width(), scan_params.get_height(),
           scan_params.get_image_size()))
     total = scan_params.get_image_size()
 
-    session = dev.scan_start()
+    session = source.scan_start()
     try:
         page_nb = 0
         while not session.end_of_feed() and page_nb < 20:
