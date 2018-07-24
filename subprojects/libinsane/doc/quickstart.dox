@@ -139,8 +139,8 @@ By default, `make install` installs everything in `/usr/local`. However gobject-
 looks only in `/usr`. So there are some environment variables to define:
 
 ```
-export GI_TYPELIB_PATH=/usr/local/lib/girepository-1.0
-export LD_LIBRARY_PATH=/usr/local/lib
+export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
+export GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
 ```
 
 ### Example: Python 3
