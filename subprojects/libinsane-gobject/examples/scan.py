@@ -30,7 +30,7 @@ def set_opt(source, opt_name, opt_value):
         print("Setting {} to {}".format(opt_name, opt_value))
         opts = source.get_options()
         opts = {opt.get_name(): opt for opt in opts}
-        if not opt_name in opts:
+        if opt_name not in opts:
             print("Option '{}' not found".format(opt_name))
             return
         print("- Old {}: {}".format(opt_name, opts[opt_name].get_value()))
@@ -145,6 +145,8 @@ def main():
 
     list_opts(source)
 
+    session = source.scan_start()
+
     scan_params = source.get_scan_parameters()
     print("Expected scan parameters: {} ; {}x{} = {} bytes".format(
           scan_params.get_format(),
@@ -152,7 +154,6 @@ def main():
           scan_params.get_image_size()))
     total = scan_params.get_image_size()
 
-    session = source.scan_start()
     try:
         page_nb = 0
         while not session.end_of_feed() and page_nb < 20:
@@ -168,7 +169,9 @@ def main():
                 data = data.get_data()
                 img.append(data)
                 r += len(data)
-                print("Got {}/{} bytes".format(r, total))
+                print("Got {} bytes => {}/{} bytes".format(
+                    len(data), r, total)
+                )
                 if session.end_of_page():
                     break
             img = b"".join(img)

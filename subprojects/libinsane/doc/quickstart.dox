@@ -97,11 +97,13 @@ void lets_scan(void)
     CHECK_ERR(lis_set_option(sources[0], "mode", "Color");
     CHECK_ERR(lis_maximize_scan_area(sources[0], device));
 
+    CHECK_ERR(sources[0]->scan_start(sources[0], &scan_session));
+
+    // scan parameters must obtained *after* the scan session has been started
+    // if we want a reliable image width.
     CHECK_ERR(sources[0]->get_scan_parameters(sources[0], &parameters));
     printf("Scan will be: %dpx x %dpx (%zd bytes)\n",
         parameters.width, parameters.height, parameters.image_size);
-
-    CHECK_ERR(sources[0]->scan_start(sources[0], &scan_session));
 
     do {
         do {

@@ -330,9 +330,17 @@ struct lis_item {
 	/*!
 	 * \brief Returns a description of what will be returned when scanning.
 	 *
-	 * This is only an estimation. While the image format and the width of the
-	 * image are certain, the height may actually vary. Application must handle the
-	 * case where something different will be scanned (longer or shorter image).
+	 * This is only an estimation.
+	 *
+	 * Format is guaranteed to be right.
+	 *
+	 * Beware: Width is only guaranteed once a scan session has been started
+	 * (see \ref lis_iten.scan_start).
+	 *
+	 * Beware: Height is never guaranteed (usually the scan will be shorted,
+	 * but it may also be longer !).
+	 *
+	 * Beware: Image size is never guaranteed.
 	 *
 	 * \param[in] self Item from which the scan will be done.
 	 * \param[out] parameters Estimation of what will be scanned.
