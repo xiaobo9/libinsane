@@ -16,7 +16,7 @@ from gi.repository import Libinsane  # noqa: E402
 class ExampleLogger(GObject.GObject, Libinsane.Logger):
     def do_log(self, lvl, msg):
         if lvl <= Libinsane.LogLevel.DEBUG:
-           return
+            return
         print("{}: {}".format(lvl.value_nick, msg))
 
 
@@ -53,6 +53,7 @@ def main():
                     print("|   |   |-- Value: (unavailable)")
         print("")
         dev.close()
+
 
 if __name__ == "__main__":
     main()

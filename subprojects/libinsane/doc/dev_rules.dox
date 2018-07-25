@@ -29,6 +29,7 @@ You must also enable the Sane test backend in `/etc/sane.d/dll.conf`.
 
 Then just run:
 
+* Build with -Wall -Werror -Wunused: `make`
 * Static analysis: `make check`
 * Unit tests: `make test`
 * Documentation generation: `make doc`
@@ -62,12 +63,12 @@ Buildbot builds everything with:
 - Debian GNU/Linux stable.
 - Linux version: GCC (32 and 64bits builds).
 - Windows version: Mingw64 (64bits build only).
-- `-Wall -Werror`.
+- `-Wall -Werror` (see `make` / `make build`).
 
 Therefore:
 
 1. LibInsane must always be buildable without warning on GNU/Linux (target being Windows
-  or GNU/Linux ; with `-Wall -Werror`. Documentation must be buildable as well.
+  or GNU/Linux ; with `-Wall -Werror`). Documentation must be buildable as well.
 2. All normalizers and workarounds must build on GNU/Linux. Only direct API wrappers
   may not be buildable on GNU/Linux (for instance the wrappers for WIA APIs).
 3. LibInsane tests must always pass on GNU/Linux. All normalizers and workarounds
@@ -87,10 +88,11 @@ If you want to fix style issues, please make dedicated commits.
 
 # Maintain your contributions
 
-Please take care of maintaining your contributions (or find someone else to do the job).
-Contributions unmaintained for too long may be removed.
+Please take care of either maintaining your contributions (or find someone else to do the job),
+or document it well enough so others can maintain it.
+Contributions unmaintained for too long and poorly documented will be removed.
 
 It would be appreciated if you could leave a way to contact you in case bugs are reported.
-The most practical way is simply to put your email address in your Git commits.
+The most straightforward way is simply to put your email address in your Git commits.
 
 */
