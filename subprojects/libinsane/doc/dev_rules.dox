@@ -28,6 +28,7 @@ apt install \
 You must also enable the Sane test backend in `/etc/sane.d/dll.conf`.
 
 Then just run:
+
 * Static analysis: `make check`
 * Unit tests: `make test`
 * Documentation generation: `make doc`
