@@ -87,7 +87,7 @@ def set_opt(item, opt_name, opt_value):
             opt_name, opt_value, str(exc)
         ))
         traceback.print_exc()
-#! [ExamplerSetOption]
+#! [ExampleSetOption]
 
 
 #! [ExampleListOptions]

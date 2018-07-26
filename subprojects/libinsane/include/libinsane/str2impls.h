@@ -27,7 +27,7 @@ extern "C" {
  *   * \ref lis_api_normalizer_min_one_source "min_one_source"
  *   * \ref lis_api_normalizer_raw "raw"
  *   * \ref lis_api_normalizer_raw24 "raw24"
- *   * \ref lis_api_normalizer_resolution_constraint_format "resolution_constraint_format"
+ *   * \ref lis_api_normalizer_resolution_format "resolution_format"
  *   * \ref lis_api_normalizer_scan_area_opts "scan_area_opts"
  *   * \ref lis_api_normalizer_source_nodes "source_nodes"
  *   * \ref lis_api_normalizer_source_types "source_types"
