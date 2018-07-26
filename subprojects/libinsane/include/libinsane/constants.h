@@ -6,5 +6,8 @@
 #define OPT_VALUE_SOURCE_FLATBED "flatbed"
 #define OPT_VALUE_SOURCE_ADF "adf"
 
+#define OPT_NAME_RESOLUTION "resolution"
+
+#define OPT_NAME_MODE "mode"
 
 #endif

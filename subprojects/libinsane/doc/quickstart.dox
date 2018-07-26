@@ -41,6 +41,7 @@ The C-API is described in `subprojects/libinsane/include/libinsane/capi.h`.
 
 ```
 #include <libinsane/capi.h>
+#include <libinsane/constants.h>
 #include <libinsane/error.h>
 #include <libinsane/safebet.h>
 #include <libinsane/util.h>
@@ -94,9 +95,9 @@ void lets_scan(void)
     printf("Will use source %s", sources[0]->name);
 
     // Setting resolution: This one may or may not work, depending on the scanner
-    CHECK_ERR(lis_set_option(sources[0], "resolution", "300");
+    CHECK_ERR(lis_set_option(sources[0], OPT_NAME_RESOLUTION, "300");
     // Normalizers ensure us that the mode option can take the value "Color"
-    CHECK_ERR(lis_set_option(sources[0], "mode", "Color");
+    CHECK_ERR(lis_set_option(sources[0], OPT_NAME_MODE, "Color");
     CHECK_ERR(lis_maximize_scan_area(sources[0], device));
 
     CHECK_ERR(sources[0]->scan_start(sources[0], &scan_session));

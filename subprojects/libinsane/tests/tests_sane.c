@@ -4,6 +4,7 @@
 #include <CUnit/Basic.h>
 
 #include <libinsane/capi.h>
+#include <libinsane/constants.h>
 #include <libinsane/dumb.h>
 #include <libinsane/sane.h>
 #include <libinsane/util.h>
@@ -102,7 +103,7 @@ static void tests_sane_get_resolution(void)
 	LIS_ASSERT_NOT_EQUAL(options, NULL);
 
 	for (i = 0 ; options[i] != NULL ; i++) {
-		if (strcmp(options[i]->name, "resolution") == 0) {
+		if (strcmp(options[i]->name, OPT_NAME_RESOLUTION) == 0) {
 			break;
 		}
 	}
@@ -134,7 +135,7 @@ static void tests_sane_set_resolution(void)
 	LIS_ASSERT_NOT_EQUAL(options, NULL);
 
 	for (i = 0 ; options[i] != NULL ; i++) {
-		if (strcmp(options[i]->name, "resolution") == 0) {
+		if (strcmp(options[i]->name, OPT_NAME_RESOLUTION) == 0) {
 			break;
 		}
 	}
@@ -179,7 +180,7 @@ static void tests_sane_set_resolution_ko(void)
 	LIS_ASSERT_NOT_EQUAL(options, NULL);
 
 	for (i = 0 ; options[i] != NULL ; i++) {
-		if (strcmp(options[i]->name, "resolution") == 0) {
+		if (strcmp(options[i]->name, OPT_NAME_RESOLUTION) == 0) {
 			break;
 		}
 	}
@@ -224,9 +225,9 @@ static void tests_sane_scan_parameters(void)
 	LIS_ASSERT_NOT_EQUAL(options, NULL);
 
 	for (i = 0 ; options[i] != NULL ; i++) {
-		if (strcmp(options[i]->name, "mode") == 0) {
+		if (strcmp(options[i]->name, OPT_NAME_MODE) == 0) {
 			mode_idx = i;
-		} else if (strcmp(options[i]->name, "resolution") == 0) {
+		} else if (strcmp(options[i]->name, OPT_NAME_RESOLUTION) == 0) {
 			resolution_idx = i;
 		}
 	}
@@ -309,9 +310,9 @@ static void tests_sane_scan_single(void)
 	LIS_ASSERT_NOT_EQUAL(options, NULL);
 
 	for (i = 0 ; options[i] != NULL ; i++) {
-		if (strcmp(options[i]->name, "mode") == 0) {
+		if (strcmp(options[i]->name, OPT_NAME_MODE) == 0) {
 			mode_idx = i;
-		} else if (strcmp(options[i]->name, "resolution") == 0) {
+		} else if (strcmp(options[i]->name, OPT_NAME_RESOLUTION) == 0) {
 			resolution_idx = i;
 		}
 	}
@@ -379,11 +380,11 @@ static void tests_sane_scan_multiple(void)
 	LIS_ASSERT_NOT_EQUAL(options, NULL);
 
 	for (i = 0 ; options[i] != NULL ; i++) {
-		if (strcmp(options[i]->name, "mode") == 0) {
+		if (strcmp(options[i]->name, OPT_NAME_MODE) == 0) {
 			mode_idx = i;
-		} else if (strcmp(options[i]->name, "resolution") == 0) {
+		} else if (strcmp(options[i]->name, OPT_NAME_RESOLUTION) == 0) {
 			resolution_idx = i;
-		} else if (strcmp(options[i]->name, "source") == 0) {
+		} else if (strcmp(options[i]->name, OPT_NAME_SOURCE) == 0) {
 			source_idx = i;
 		}
 	}
