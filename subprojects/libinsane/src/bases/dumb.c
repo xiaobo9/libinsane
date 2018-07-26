@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,8 @@
 #include <libinsane/error.h>
 #include <libinsane/log.h>
 #include <libinsane/util.h>
+
+#define MAX_DUMB_OPTS 32
 
 
 static void dumb_cleanup(struct lis_api *impl);
@@ -31,11 +34,6 @@ struct lis_dumb_item {
 	struct lis_item base;
 	struct lis_dumb_private *impl;
 
-	struct {
-		struct lis_dumb_option source;
-		struct lis_option_descriptor *ptrs[2];
-	} opts;
-
 	const char *dev_id;
 };
 #define LIS_DUMB_ITEM(impl) ((struct lis_dumb_item *)(impl))
@@ -49,9 +47,7 @@ struct lis_dumb_private {
 	enum lis_error get_device_ret;
 	struct lis_dumb_item **devices;
 
-	struct {
-		union lis_value *source_constraint;
-	} opts;
+	struct lis_option_descriptor *opts[MAX_DUMB_OPTS + 1];
 };
 #define LIS_DUMB_PRIVATE(impl) ((struct lis_dumb_private *)(impl))
 
@@ -117,6 +113,22 @@ static void dumb_cleanup_devices(struct lis_dumb_item **devs)
 	free(devs);
 }
 
+
+static void dumb_cleanup_opts(struct lis_dumb_private *private)
+{
+	int i;
+	struct lis_dumb_option *opt_private;
+
+	for (i = 0 ; private->opts[i] != NULL ; i++) {
+		opt_private = LIS_DUMB_OPTION(private->opts[i]);
+		if (private->opts[i]->value.type == LIS_TYPE_STRING) {
+			FREE(opt_private->value.string);
+		}
+		FREE(opt_private);
+	}
+}
+
+
 static void dumb_cleanup(struct lis_api *self)
 {
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
@@ -124,7 +136,7 @@ static void dumb_cleanup(struct lis_api *self)
 
 	dumb_cleanup_descs(private->descs);
 	dumb_cleanup_devices(private->devices);
-	FREE(private->opts.source_constraint);
+	dumb_cleanup_opts(private);
 	free(private);
 }
 
@@ -180,12 +192,6 @@ static enum lis_error dumb_get_children(struct lis_item *self, struct lis_item *
 }
 
 
-static void free_opt_values(struct lis_dumb_item *private)
-{
-	FREE(private->opts.source.value.string); /* drop const */
-}
-
-
 static enum lis_error dumb_opt_get_value(struct lis_option_descriptor *self, union lis_value *out_value)
 {
 	struct lis_dumb_option *private = LIS_DUMB_OPTION(self);
@@ -227,42 +233,7 @@ static enum lis_error dumb_get_options(
 	)
 {
 	struct lis_dumb_item *private = LIS_DUMB_ITEM(self);
-	static struct lis_dumb_option opt_source_template = {
-		.parent = {
-			.name = "source",
-			.title = "source title",
-			.desc = "source desc",
-			.capabilities = LIS_CAP_SW_SELECT,
-			.value = {
-				.type = LIS_TYPE_STRING,
-				.unit = LIS_UNIT_NONE,
-			},
-			.constraint = {
-				.type = LIS_CONSTRAINT_LIST,
-				// .possible.list =
-			},
-			.fn = {
-				.get_value = dumb_opt_get_value,
-				.set_value = dumb_opt_set_value,
-			},
-		},
-		.default_value.string = "flatbed",
-		.value.string = NULL,
-	};
-
-	int nb;
-
-	free_opt_values(private);
-
-	memcpy(&private->opts.source, &opt_source_template, sizeof(private->opts.source));
-	private->opts.ptrs[0] = &private->opts.source.parent;
-
-	for (nb = 0 ; private->impl->opts.source_constraint[nb].string != NULL ; nb++) {
-	}
-	private->opts.source.parent.constraint.possible.list.nb_values = nb;
-	private->opts.source.parent.constraint.possible.list.values = private->impl->opts.source_constraint;
-
-	*out_descs = private->opts.ptrs;
+	*out_descs = private->impl->opts;
 	return LIS_OK;
 }
 
@@ -295,8 +266,7 @@ static enum lis_error dumb_scan_start(struct lis_item *self, struct lis_scan_ses
 
 static void dumb_close(struct lis_item *self)
 {
-	struct lis_dumb_item *private = LIS_DUMB_ITEM(self);
-	free_opt_values(private);
+	LIS_UNUSED(self);
 }
 
 
@@ -358,18 +328,30 @@ void lis_dumb_set_get_device_return(struct lis_api *self, enum lis_error ret)
 }
 
 
-void lis_dumb_set_opt_source_constraint(struct lis_api *self, const char **constraint)
+void lis_dumb_add_option(struct lis_api *self, const struct lis_option_descriptor *opt,
+	const union lis_value *default_value)
 {
+
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
-	int nb;
+	struct lis_dumb_option *opt_private;
+	int i;
 
-	for (nb = 0 ; constraint[nb] != NULL ; nb++) {
+	opt_private = calloc(1, sizeof(struct lis_dumb_option));
+	memcpy(&opt_private->parent, opt, sizeof(opt_private->parent));
+	if (opt_private->parent.fn.get_value == NULL) {
+		opt_private->parent.fn.get_value = dumb_opt_get_value;
 	}
-
-	FREE(private->opts.source_constraint);
-	private->opts.source_constraint = calloc(nb + 1, sizeof(union lis_value));
-
-	for (nb = 0 ; constraint[nb] != NULL ; nb++) {
-		private->opts.source_constraint[nb].string = constraint[nb];
+	if (opt_private->parent.fn.set_value == NULL) {
+		opt_private->parent.fn.set_value = dumb_opt_set_value;
 	}
+	memcpy(&opt_private->default_value, default_value, sizeof(opt_private->default_value));
+
+	for (i = 0 ; i < MAX_DUMB_OPTS ; i++) {
+		if (private->opts[i] == NULL || strcmp(private->opts[i]->name, opt->name) == 0) {
+			break;
+		}
+	}
+	assert(i < MAX_DUMB_OPTS);
+
+	private->opts[i] = &opt_private->parent;
 }

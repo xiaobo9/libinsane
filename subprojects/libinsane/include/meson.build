@@ -1,5 +1,6 @@
 LIBINSANE_HEADERS = files(
     'libinsane/capi.h',
+    'libinsane/constants.h',
     'libinsane/dumb.h',
     'libinsane/error.h',
     'libinsane/log.h',
