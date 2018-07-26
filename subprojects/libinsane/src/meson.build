@@ -1,5 +1,6 @@
 LIBINSANE_SRCS = files(
     'bases/dumb.c',
+    'basewrapper.c',
     'error.c',
     'log.c',
     'multiplexer.c',
