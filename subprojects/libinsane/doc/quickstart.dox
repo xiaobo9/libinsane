@@ -4,9 +4,9 @@
 To simplify [continous integration](https://origami.openpaper.work),
 Makefiles in all [OpenPaper.work](https://openpaper.work) projects present similar targets.
 
-* make / make build : build the libinsane + libinsane-gobject
-* make install : install libinsane + libinsane-gobject
-* make doc : generate the documentation (doxygen for libinsane, and gtk-doc for libinsane-gobject)
+- make / make build : build the libinsane + libinsane-gobject
+- make install : install libinsane + libinsane-gobject
+- make doc : generate the documentation (doxygen for libinsane, and gtk-doc for libinsane-gobject)
 
 # Compilation
 
