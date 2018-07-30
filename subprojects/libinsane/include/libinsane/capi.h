@@ -249,14 +249,15 @@ struct lis_scan_parameters {
 
 struct lis_scan_session {
 	/*!
-	 * \brief Indicates if we have reached the end of the feed
+	 * \brief Indicates if we have reached the end of the feed.
+	 * Should be called at least each time \ref end_of_page returns 1.
 	 */
 	int (*end_of_feed)(struct lis_scan_session *session);
 
 	/*!
-	 * \brief Indicates if we have reached the end of the page being currently scanned
-	 * If an error must occur, it will occur on \ref scan_read(), including a possible
-	 * LIS_ER_
+	 * \brief Indicates if we have reached the end of the page being currently scanned.
+	 * Should be called before each call to \ref scan_read().
+	 * If an error must occur, it will occur on \ref scan_read().
 	 */
 	int (*end_of_page)(struct lis_scan_session *session);
 
