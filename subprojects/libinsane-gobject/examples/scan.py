@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-# make
-# sudo make install
-# export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
-# export GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
+# source ./activate_test_env.sh
 # subprojects/libinsane-gobject/examples/scan.py
 
 import PIL.Image
@@ -168,6 +165,8 @@ def scan(source, output_file):
             if out is not None:
                 img.save(out)
             page_nb += 1
+        if page_nb == 0:
+            print("No page in feeder ?")
     finally:
         session.cancel()
 #! [ExampleScan]

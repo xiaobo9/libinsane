@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-# make
-# sudo make install
-# export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
-# export GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
+# source ./activate_test_env.sh
 # subprojects/libinsane-gobject/examples/list_devices.py
 
 import gi
