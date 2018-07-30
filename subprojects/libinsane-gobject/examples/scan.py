@@ -81,12 +81,13 @@ def set_opt(item, opt_name, opt_value):
         opts = item.get_options()
         opts = {opt.get_name(): opt for opt in opts}
         print("- New {}: {}".format(opt_name, opts[opt_name].get_value()))
-        print("")
     except Exception as exc:
         print("Failed to set {} to {}: {}".format(
             opt_name, opt_value, str(exc)
         ))
         traceback.print_exc()
+    finally:
+        print("")
 #! [ExampleSetOption]
 
 
@@ -101,7 +102,7 @@ def list_opts(item):
             ))
         except Exception as exc:
             print("Failed to read option {}: {}".format(
-           List     sopt.get_name(), str(exc)
+                opt.get_name(), str(exc)
             ))
     print("")
 #! [ExampleListOptions]
@@ -214,7 +215,9 @@ def main():
 
     list_opts(source)
 
+    print("Scanning ...")
     scan(source, output_file)
+    print("Scan done")
 
 
 if __name__ == "__main__":
