@@ -45,8 +45,33 @@ struct lis_sn_device_private
 	int nb_sources;
 	struct lis_item **source_ptrs;
 	struct lis_sn_item_private *sources;
+	int scan_running;
 };
 #define LIS_SN_DEVICE_PRIVATE(item) ((struct lis_sn_device_private *)(item))
+
+
+struct lis_sn_scan_session_private
+{
+	struct lis_scan_session parent;
+	struct lis_scan_session *wrapped;
+	struct lis_sn_device_private *device;
+};
+#define LIS_SN_SCAN_SESSION_PRIVATE(session) ((struct lis_sn_scan_session_private *)(session))
+
+
+static int lis_sn_end_of_feed(struct lis_scan_session *session);
+static int lis_sn_end_of_page(struct lis_scan_session *session);
+static enum lis_error lis_sn_scan_read(
+	struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
+);
+static void lis_sn_cancel(struct lis_scan_session *session);
+
+struct lis_scan_session g_sn_scan_session_template = {
+	.end_of_feed = lis_sn_end_of_feed,
+	.end_of_page = lis_sn_end_of_page,
+	.scan_read = lis_sn_scan_read,
+	.cancel = lis_sn_cancel,
+};
 
 
 static enum lis_error lis_sn_get_options(
@@ -256,11 +281,16 @@ static enum lis_error lis_sn_src_get_scan_parameters(
 	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
 	enum lis_error err;
 
-	err = set_source(private);
-	if (LIS_IS_ERROR(err)) {
-		lis_log_error("setting source has failed --> get_scan_parameters() failed: 0x%X, %s",
-				err, lis_strerror(err));
-		return err;
+	/* Don't try to set an option if the scan is already running. Will probably return error "Busy".
+	 * Also, scan_start() has already set this option.
+	 */
+	if (!private->device->scan_running) {
+		err = set_source(private);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_error("setting source has failed --> get_scan_parameters() failed: 0x%X, %s",
+					err, lis_strerror(err));
+			return err;
+		}
 	}
 	return private->device->wrapped->get_scan_parameters(private->device->wrapped, parameters);
 }
@@ -273,11 +303,17 @@ static enum lis_error lis_sn_src_scan_start(struct lis_item *self, struct lis_sc
 
 	err = set_source(private);
 	if (LIS_IS_ERROR(err)) {
-		lis_log_error("setting source has failed --> scan_start() failed: 0x%X, %s",
+		lis_log_error("Setting source has failed --> scan_start() failed: 0x%X, %s",
 				err, lis_strerror(err));
 		return err;
 	}
-	return private->device->wrapped->scan_start(private->device->wrapped, session);
+	err = private->device->wrapped->scan_start(private->device->wrapped, session);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("Failed to set source: 0x%X, %s", err, lis_strerror(err));
+		return err;
+	}
+	private->device->scan_running = 1;
+	return err;
 }
 
 static enum lis_error lis_sn_dev_get_scan_parameters(
@@ -362,4 +398,44 @@ enum lis_error lis_api_normalizer_source_nodes(struct lis_api *to_wrap, struct l
 
 	*api = &private->parent;
 	return LIS_OK;
+}
+
+
+static int lis_sn_end_of_feed(struct lis_scan_session *session)
+{
+	struct lis_sn_scan_session_private *private = LIS_SN_SCAN_SESSION_PRIVATE(session);
+	int r;
+	r = private->wrapped->end_of_feed(private->wrapped);
+	if (r) {
+		private->device->scan_running = 0;
+	}
+	return r;
+}
+
+
+static int lis_sn_end_of_page(struct lis_scan_session *session)
+{
+	struct lis_sn_scan_session_private *private = LIS_SN_SCAN_SESSION_PRIVATE(session);
+	return private->wrapped->end_of_page(private->wrapped);
+}
+
+
+static enum lis_error lis_sn_scan_read(
+		struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
+	)
+{
+	struct lis_sn_scan_session_private *private = LIS_SN_SCAN_SESSION_PRIVATE(session);
+	enum lis_error err = private->wrapped->scan_read(private->wrapped, out_buffer, buffer_size);
+	if (LIS_IS_ERROR(err)) {
+		private->device->scan_running = 0;
+	}
+	return err;
+}
+
+
+static void lis_sn_cancel(struct lis_scan_session *session)
+{
+	struct lis_sn_scan_session_private *private = LIS_SN_SCAN_SESSION_PRIVATE(session);
+	private->device->scan_running = 0;
+	private->wrapped->cancel(private->wrapped);
 }

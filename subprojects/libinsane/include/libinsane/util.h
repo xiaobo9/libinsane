@@ -12,10 +12,19 @@ extern "C" {
 #define LIS_UNUSED(x) (void)(x)
 #define LIS_COUNT_OF(x) (sizeof(x) / sizeof((x)[0]))
 
+#ifndef FREE
 #define FREE(x) do { \
-		free((void*)x); \
+		free(((void*)(x))); \
 		(x) = NULL; \
 	} while(0);
+#endif
+
+#ifndef MIN
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#endif
+#ifndef MAX
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 /*!
  * \brief Copy a value.

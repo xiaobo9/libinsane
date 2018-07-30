@@ -13,16 +13,9 @@
 #define MAX_DUMB_OPTS 32
 
 
-static void dumb_cleanup(struct lis_api *impl);
-static enum lis_error dumb_list_devices(
-	struct lis_api *impl, enum lis_device_locations, struct lis_device_descriptor ***dev_infos
-);
-static enum lis_error dumb_get_device(
-	struct lis_api *impl, const char *dev_id, struct lis_item **item
-);
-
 struct lis_dumb_option {
 	struct lis_option_descriptor parent;
+	struct lis_dumb_private *impl;
 
 	int has_value;
 	union lis_value default_value;
@@ -36,7 +29,16 @@ struct lis_dumb_item {
 
 	const char *dev_id;
 };
-#define LIS_DUMB_ITEM(impl) ((struct lis_dumb_item *)(impl))
+#define LIS_DUMB_ITEM(item) ((struct lis_dumb_item *)(item))
+
+
+struct lis_dumb_scan_session {
+	struct lis_scan_session parent;
+	struct lis_dumb_private *impl;
+	int read_idx;
+};
+#define LIS_DUMB_SCAN_SESSION(scan_session) ((struct lis_dumb_scan_session *)(scan_session));
+
 
 struct lis_dumb_private {
 	struct lis_api base;
@@ -48,8 +50,31 @@ struct lis_dumb_private {
 	struct lis_dumb_item **devices;
 
 	struct lis_option_descriptor *opts[MAX_DUMB_OPTS + 1];
+
+	struct {
+		const struct lis_dumb_read *read_contents;
+		int nb_reads;
+		int is_scanning;
+		struct lis_dumb_scan_session *session;
+	} scan;
 };
 #define LIS_DUMB_PRIVATE(impl) ((struct lis_dumb_private *)(impl))
+
+
+static int dumb_end_of_feed(struct lis_scan_session *session);
+static int dumb_end_of_page(struct lis_scan_session *session);
+static enum lis_error dumb_scan_read(
+	struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
+);
+static void dumb_cancel(struct lis_scan_session *session);
+
+
+static struct lis_scan_session g_dumb_scan_session_template = {
+	.end_of_feed = dumb_end_of_feed,
+	.end_of_page = dumb_end_of_page,
+	.scan_read = dumb_scan_read,
+	.cancel = dumb_cancel,
+};
 
 
 static enum lis_error dumb_get_children(struct lis_item *self, struct lis_item ***children);
@@ -72,6 +97,16 @@ static struct lis_item g_dumb_item_template = {
 	.scan_start = dumb_scan_start,
 	.close = dumb_close,
 };
+
+
+static void dumb_cleanup(struct lis_api *impl);
+static enum lis_error dumb_list_devices(
+	struct lis_api *impl, enum lis_device_locations, struct lis_device_descriptor ***dev_infos
+);
+static enum lis_error dumb_get_device(
+	struct lis_api *impl, const char *dev_id, struct lis_item **item
+);
+
 
 static struct lis_api g_dumb_api_template = {
 	.base_name = NULL,
@@ -195,6 +230,7 @@ static enum lis_error dumb_get_children(struct lis_item *self, struct lis_item *
 static enum lis_error dumb_opt_get_value(struct lis_option_descriptor *self, union lis_value *out_value)
 {
 	struct lis_dumb_option *private = LIS_DUMB_OPTION(self);
+
 	if (private->has_value) {
 		memcpy(out_value, &private->value, sizeof(*out_value));
 	} else {
@@ -208,6 +244,10 @@ static enum lis_error dumb_opt_set_value(struct lis_option_descriptor *self,
 		union lis_value value, int *set_flags)
 {
 	struct lis_dumb_option *private = LIS_DUMB_OPTION(self);
+
+	if (private->impl->scan.is_scanning) {
+		return LIS_ERR_DEVICE_BUSY;
+	}
 
 	switch(self->value.type) {
 		case LIS_TYPE_BOOL:
@@ -256,17 +296,32 @@ static enum lis_error dumb_get_scan_parameters(
 }
 
 
-static enum lis_error dumb_scan_start(struct lis_item *self, struct lis_scan_session **session)
+static enum lis_error dumb_scan_start(struct lis_item *self, struct lis_scan_session **out_session)
 {
-	LIS_UNUSED(self);
-	LIS_UNUSED(session);
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	struct lis_dumb_item *private = LIS_DUMB_ITEM(self);
+	struct lis_dumb_scan_session *session;
+
+	if (private->impl->scan.nb_reads <= 0) {
+		lis_log_error("DUMB: Requested a scan, but tests haven't defined scan test output: %d",
+				private->impl->scan.nb_reads);
+		return LIS_ERR_JAMMED;
+	}
+
+	session = calloc(1, sizeof(struct lis_dumb_scan_session));
+	memcpy(&session->parent, &g_dumb_scan_session_template, sizeof(session->parent));
+	session->impl = private->impl;
+	private->impl->scan.session = session;
+
+	private->impl->scan.is_scanning = 1;
+	*out_session = &session->parent;
+	return LIS_OK;
 }
 
 
 static void dumb_close(struct lis_item *self)
 {
-	LIS_UNUSED(self);
+	struct lis_dumb_item *private = LIS_DUMB_ITEM(self);
+	FREE(private->impl->scan.session);
 }
 
 
@@ -297,7 +352,7 @@ void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices)
 	for (i = 0 ; i < nb_devices ; i++) {
 		private->descs[i] = calloc(1, sizeof(struct lis_device_descriptor));
 		private->descs[i]->impl = &private->base;
-		asprintf(&private->descs[i]->dev_id, "dumb dev%d", i);
+		asprintf(&private->descs[i]->dev_id, LIS_DUMB_DEV_ID_FORMAT, i);
 		private->descs[i]->vendor = "Microsoft";
 		private->descs[i]->model = "Bugware";
 		private->descs[i]->type = NULL;
@@ -337,6 +392,7 @@ void lis_dumb_add_option(struct lis_api *self, const struct lis_option_descripto
 	int i;
 
 	opt_private = calloc(1, sizeof(struct lis_dumb_option));
+	opt_private->impl = private;
 	memcpy(&opt_private->parent, opt, sizeof(opt_private->parent));
 	if (opt_private->parent.fn.get_value == NULL) {
 		opt_private->parent.fn.get_value = dumb_opt_get_value;
@@ -354,4 +410,59 @@ void lis_dumb_add_option(struct lis_api *self, const struct lis_option_descripto
 	assert(i < MAX_DUMB_OPTS);
 
 	private->opts[i] = &opt_private->parent;
+}
+
+
+void lis_dumb_set_scan_result(struct lis_api *self, const struct lis_dumb_read *read_contents, int nb_reads)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	private->scan.read_contents = read_contents;
+	private->scan.nb_reads = nb_reads;
+}
+
+
+static int dumb_end_of_feed(struct lis_scan_session *session)
+{
+	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
+	int r = (private->read_idx >= private->impl->scan.nb_reads);
+	if (r) {
+		private->impl->scan.is_scanning = 0;
+	}
+	return r;
+}
+
+
+static int dumb_end_of_page(struct lis_scan_session *session)
+{
+	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
+	return private->impl->scan.read_contents[private->read_idx].nb_bytes <= 0;
+}
+
+
+static enum lis_error dumb_scan_read(
+		struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
+	)
+{
+	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
+	*buffer_size = MIN(private->impl->scan.read_contents[private->read_idx].nb_bytes, *buffer_size);
+	if (*buffer_size != private->impl->scan.read_contents[private->read_idx].nb_bytes) {
+		/* not supported because I'm too lazy */
+		lis_log_error("TESTS: DUMB IMPLEMENTATION: TRUNCATED READ: %zd instead of %zd",
+				*buffer_size, private->impl->scan.read_contents[private->read_idx].nb_bytes);
+	}
+	if (*buffer_size > 0) {
+		memcpy(out_buffer, private->impl->scan.read_contents[private->read_idx].content, *buffer_size);
+	}
+	private->read_idx++;
+	return LIS_OK;
+}
+
+
+static void dumb_cancel(struct lis_scan_session *session)
+{
+	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
+	struct lis_dumb_private *impl = private->impl;
+	private->read_idx = 0xFFFFFFFF;
+	FREE(impl->scan.session);
+	impl->scan.is_scanning = 0;
 }
