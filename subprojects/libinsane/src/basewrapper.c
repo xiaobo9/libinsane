@@ -435,63 +435,10 @@ static void lis_bw_item_child_close(struct lis_item *self)
 }
 
 
-static struct lis_option_descriptor *find_opt_in_item(
-		struct lis_bw_item *item, const struct lis_option_descriptor *modified
-	)
-{
-	int opt_idx;
-
-	if (item->options == NULL) {
-		return NULL;
-	}
-
-	for (opt_idx = 0 ; item->options[opt_idx] != NULL ; opt_idx++) {
-		if (&item->options[opt_idx]->parent == modified) {
-			lis_log_debug("Option %s (%p) found back in item %s",
-					modified->name, (void *)modified,
-					item->parent.name);
-			return item->options[opt_idx]->wrapped;
-		}
-	}
-
-	return NULL;
-}
-
-
 struct lis_option_descriptor *lis_bw_get_original_opt(const struct lis_option_descriptor *modified)
 {
-	struct lis_bw_impl_private *impl;
-	struct lis_bw_item *item;
-	int child_idx;
-	struct lis_option_descriptor *opt;
-
-	lis_log_debug("Looking for option %s (%p) ...", modified->name, (void*)modified);
-	opt = NULL;
-	for (impl = g_impls ; impl != NULL ; impl = impl->next) {
-		for (item = impl->roots ; item != NULL ; item = item->next) {
-			opt = find_opt_in_item(item, modified);
-			if (opt != NULL) {
-				break;
-			}
-			if (item->children == NULL) {
-				continue;
-			}
-			for (child_idx = 0 ; item->children[child_idx] != NULL ; child_idx++) {
-				opt = find_opt_in_item(item->children[child_idx], modified);
-				if (opt != NULL) {
-					break;
-				}
-			}
-		}
-		if (opt != NULL) {
-			break;
-		}
-	}
-
-	if (opt == NULL) {
-		lis_log_warning("Failed to find option %s (%p) back !", modified->name, (void *)modified);
-	}
-	return opt;
+	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(modified);
+	return private->wrapped;
 }
 
 
