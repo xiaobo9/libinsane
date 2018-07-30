@@ -16,7 +16,7 @@ extern "C" {
  * - Seen on: Lexmark MFP
  *
  * The option 'resolution' is mistakenly named 'scan-resolution'.
- * This workaround creates a mirror option 'resolution'.
+ * This workaround replaces it by an option 'resolution'.
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] api Implementation of the API including the workaround.
@@ -34,7 +34,7 @@ extern enum lis_error lis_api_workaround_opt_scan_resolution(
  * - Seen on: [Samsung CLX-3300](https://openpaper.work/scanner_db/report/31/)
  *
  * The option 'resolution' is mistakenly named 'scan-resolution'.
- * This workaround creates a mirror option 'resolution'.
+ * This workaround replaces it by an option option 'resolution'.
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] api Implementation of the API including the workaround.

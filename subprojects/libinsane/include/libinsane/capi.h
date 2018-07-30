@@ -295,6 +295,12 @@ struct lis_scan_session {
 };
 
 
+/**
+ * Represents either a device (a scanner, a scanner-printer, etc) or a sub-device (Flatbed of a
+ * scanner, Automatic document feeder of a printer, etc).
+ *
+ * Similar to a WIAItem in WIA API.
+ */
 struct lis_item {
 	const char *name; /*!< Item name */
 
@@ -312,6 +318,9 @@ struct lis_item {
 	 * - Sane: will return an empty list.
 	 * - WIA: will return device sources (Flatbed, Automatic Document Feeder, etc).
 	 *
+	 * Warning: When calling this method, previous child items obtained from
+	 * the same item with this method may be invalidated/freed.
+	 *
 	 * \param[in] self Usually a scanner (see \ref lis_api.get_device()).
 	 * \param[out] children Usually scanner sources. List will be NULL terminated.
 	 * \retval LIS_OK children has been set to a valid array of items. See \ref LIS_IS_OK.
@@ -320,6 +329,10 @@ struct lis_item {
 
 	/*!
 	 * \brief Get item's options.
+	 *
+	 * Warning: When calling this method, previous option descriptors obtained
+	 * from the same item with this method may be invalidated/freed !
+	 *
 	 * \param[in] self Item from which we want the option list.
 	 * \param[out] descs Option list. NULL terminated.
 	 * \retval LIS_OK descs has been set.
@@ -362,7 +375,11 @@ struct lis_item {
 
 	/*!
 	 * \brief Close the access to a scanner.
-	 * Will also be done automatically if you call \ref lis_api.cleanup().
+	 *
+	 * Will free all the child items of this root item and all the option descriptors.
+	 * No need to call this method on child items (will do nothing).
+	 *
+	 * Will also be done automatically if you call \ref lis_api.cleanup(). (TODO(Jflesch): nornalizer)
 	 */
 	void (*close)(struct lis_item *self);
 };

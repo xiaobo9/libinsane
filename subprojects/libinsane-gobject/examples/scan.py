@@ -205,7 +205,6 @@ def main():
 
     # set the options
     # set_opt(source, 'source', 'Automatic Document Feeder')
-    set_opt(source, 'mode', '24bit Color')  # TO_REMOVE
 #! [ExampleOptsToSet]
     set_opt(source, 'mode', 'Color')
     set_opt(source, 'resolution', 300)
