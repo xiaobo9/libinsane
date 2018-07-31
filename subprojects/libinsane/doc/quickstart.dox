@@ -26,7 +26,7 @@ make
 ## For use in a C project
 
 ```
-sudo make install
+make install
 ```
 
 Will install the headers in /usr/local/include/libinsane.
@@ -37,7 +37,8 @@ Will install dynamic (libinsane.so) and static library (libinsane.a) in /usr/loc
 
 ## In a C project
 
-The C-API is described in `subprojects/libinsane/include/libinsane/capi.h`.
+The C-API is described in `subprojects/libinsane/include/libinsane/capi.h`
+(specifically \ref lis_api "struct lis_api").
 
 ```
 #include <libinsane/capi.h>
@@ -73,7 +74,7 @@ void lets_scan(void)
     size_t bufsize;
 
     CHECK_ERR(lis_safebet(&impl));
-    CHECK_ERR(impl->get_devices(impl, &dev_infos));
+    CHECK_ERR(impl->list_devices(impl, LIS_DEVICE_LOCATIONS_ANY, &dev_infos));
 
     if (dev_infos[0] == NULL) {
         fprintf(stderr, "No scan device found\n");
@@ -97,19 +98,20 @@ void lets_scan(void)
     // Setting resolution: This one may or may not work, depending on the scanner
     CHECK_ERR(lis_set_option(sources[0], OPT_NAME_RESOLUTION, "300");
     // Normalizers ensure us that the mode option can take the value "Color"
+    // (and that's it's the default value)
     CHECK_ERR(lis_set_option(sources[0], OPT_NAME_MODE, "Color");
-    CHECK_ERR(lis_maximize_scan_area(sources[0], device));
+    // Normalizers ensure us that by default, the maximum scan area will be used
 
     CHECK_ERR(sources[0]->scan_start(sources[0], &scan_session));
 
-    // scan parameters must obtained *after* the scan session has been started
-    // if we want a reliable image width.
+    // scan parameters must be obtained *after* the scan session has been started
+    // if we want a reliable image width (this is a limitation of some drivers).
     CHECK_ERR(sources[0]->get_scan_parameters(sources[0], &parameters));
     printf("Scan will be: %dpx x %dpx (%zd bytes)\n",
         parameters.width, parameters.height, parameters.image_size);
 
-    do {
-        do {
+    while (!scan_session->end_of_feed(scan_session)) {
+        while (!scan_session->end_of_page(scan_session)) {
             bufsize = sizeof(img_buffer);
             err = scan_session->scan_read(scan_session, img_buffer, &bufsize);
             CHECK_ERR(err);
@@ -119,14 +121,15 @@ void lets_scan(void)
                 assert(bufsize == 0);
                 sleep(1);
             }
-        } while (!scan_session->end_of_page(scan_session));
-
-        // do something with the chunk of the image/page that has just been read
-    } while (!scan_session->end_of_feed(scan_session));
+            // do something with the chunk of the image/page that has just been scanned
+        }
+        // do something with the whole image/page that has just been scanned
+    }
+    // do something with all the images/pages that have just been scanned
 
 end:
     if (device != NULL) {
-        device->dev_close(device);
+        device->close(device);
     }
     if (impl != NULL) {
         impl->cleanup(impl);
@@ -140,13 +143,17 @@ end:
 
 ### Environment variables
 
-By default, `make install` installs everything in `/usr/local`. However gobject-introspection
-looks only in `/usr`. So there are some environment variables to define:
+By default, `make install` installs everything in `/usr/local`. However
+by default, gobject-introspection looks only in `/usr`. So there are some
+environment variables to define:
 
 ```
-# Will set some variables. For instance:
+# Set some variables. For instance:
 # export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
 # export GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
+
+# or use this script: it will compile libinsane in the current work directory
+# and use this freshly compiled version.
 source ./activate_test_env.sh
 ```
 
@@ -159,22 +166,27 @@ source ./activate_test_env.sh
 #### Selecting the device and the scan source
 
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleListGetDevice
+
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleListGetScanSource
 
 #### Managing scan options
 
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleListOptions
+
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleSetOption
+
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleOptsToSet
 
 #### Scanning
 
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleScan
+
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleRawToImg
 
 #### Log management
 
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleLogger
+
 \snippet subprojects/libinsane-gobject/examples/scan.py ExampleSetLogger
 
 
