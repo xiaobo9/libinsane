@@ -18,7 +18,7 @@ struct opt_value_mapping {
 };
 
 const struct opt_value_mapping g_opt_value_mapping[] = {
-	// Brother MFC-7360N:
+	// Sane + Brother MFC-7360N:
 	// 'Black & White', 'Gray[Error Diffusion]', 'True Gray', '24bit Color', '24bit Color[Fast]'
 	{ .original = "Black & White", .replacement = OPT_VALUE_MODE_BW },
 	{ .original = "True Gray", .replacement = OPT_VALUE_MODE_GRAYSCALE },
@@ -131,6 +131,11 @@ static enum lis_error opt_desc_filter(
 			continue;
 		}
 		/* switch pointers */
+		lis_log_debug(
+			"Replacing mode value '%s' -> '%s'",
+			desc->constraint.possible.list.values[constraint_idx].string,
+			mapping->replacement
+		);
 		desc->constraint.possible.list.values[constraint_idx].string = mapping->replacement;
 		/* set custom callbacks */
 		desc->fn.get_value = opt_mode_get_value;

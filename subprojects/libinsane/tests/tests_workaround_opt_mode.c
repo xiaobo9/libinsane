@@ -19,7 +19,7 @@ static struct lis_api *g_opt = NULL;
 
 static int tests_opt_init(void)
 {
-	static const union lis_value opt_source_constraint[] = {
+	static const union lis_value opt_mode_constraint[] = {
 		{ .string = "Black & White", },
 		{ .string = "Gray[Error Diffusion]", },
 		{ .string = "True Gray", },
@@ -38,8 +38,8 @@ static int tests_opt_init(void)
 		.constraint = {
 			.type = LIS_CONSTRAINT_LIST,
 			.possible.list = {
-				.nb_values = LIS_COUNT_OF(opt_source_constraint),
-				.values = (union lis_value*)&opt_source_constraint,
+				.nb_values = LIS_COUNT_OF(opt_mode_constraint),
+				.values = (union lis_value*)&opt_mode_constraint,
 			},
 		},
 	};
