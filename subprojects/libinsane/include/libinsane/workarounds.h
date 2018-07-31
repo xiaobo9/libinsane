@@ -9,7 +9,9 @@ extern "C" {
 #endif
 
 /*!
- * \brief Option 'scan-resolution' --> 'resolution'
+ * \brief Fix options names
+ *
+ * ## Option 'scan-resolution' --> 'resolution'
  *
  * - API: Sane
  * - Culprit: Lexmark
@@ -18,28 +20,19 @@ extern "C" {
  * The option 'resolution' is mistakenly named 'scan-resolution'.
  * This workaround replaces it by an option 'resolution'.
  *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
- */
-extern enum lis_error lis_api_workaround_opt_scan_resolution(
-	struct lis_api *to_wrap, struct lis_api **api
-);
-
-
-/*!
- * \brief Option 'mode': Unusual mode values
+ * ## Option 'doc-source' --> 'source'
  *
  * - API: Sane
  * - Culprit: Samsung
  * - Seen on: [Samsung CLX-3300](https://openpaper.work/scanner_db/report/31/)
  *
- * The option 'resolution' is mistakenly named 'scan-resolution'.
- * This workaround replaces it by an option option 'resolution'.
+ * The option 'source' is mistakenly named 'doc-source'.
+ * This workaround replaces it by an option option 'source'.
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] api Implementation of the API including the workaround.
  */
-extern enum lis_error lis_api_workaround_opt_doc_source(
+extern enum lis_error lis_api_workaround_opt_names(
 	struct lis_api *to_wrap, struct lis_api **api
 );
 

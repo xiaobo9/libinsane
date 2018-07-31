@@ -24,9 +24,8 @@ LIBINSANE_SRCS = files(
     'workarounds/dedicated_thread.c',
     'workarounds/no_read_on_inactive_opt.c',
     'workarounds/no_write_on_readonly_opt.c',
-    'workarounds/opt_doc_source.c',
     'workarounds/opt_mode.c',
-    'workarounds/opt_scan_resolution.c',
+    'workarounds/opt_names.c',
     'workarounds/opts_page_size.c',
     'workarounds/strip_translations.c',
 )
