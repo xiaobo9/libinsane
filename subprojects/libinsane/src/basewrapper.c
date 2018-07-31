@@ -127,7 +127,7 @@ static enum lis_error lis_bw_list_devices(
 	)
 {
 	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
-	return private->wrapped->list_devices(impl, locations, dev_infos);
+	return private->wrapped->list_devices(private->wrapped, locations, dev_infos);
 }
 
 
