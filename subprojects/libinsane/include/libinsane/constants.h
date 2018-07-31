@@ -13,4 +13,9 @@
 #define OPT_VALUE_MODE_BW "LineArt"
 #define OPT_VALUE_MODE_GRAYSCALE "Gray"
 
+#define OPT_NAME_TL_X "tl-x"
+#define OPT_NAME_TL_Y "tl-y"
+#define OPT_NAME_BR_X "br-x"
+#define OPT_NAME_BR_Y "br-y"
+
 #endif

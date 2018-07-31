@@ -18,6 +18,11 @@ struct lis_bw_impl_private {
 		void *user_data;
 	} opt_desc_filter;
 
+	struct {
+		lis_bw_item_filter cb;
+		void *user_data;
+	} item_filter;
+
 	struct lis_bw_item *roots;
 
 	struct lis_bw_impl_private *next;
@@ -191,10 +196,24 @@ static enum lis_error lis_bw_get_device(struct lis_api *impl, const char *dev_id
 	out->parent.type = out->wrapped->type;
 	out->impl = private;
 
+	if (private->item_filter.cb == NULL) {
+		lis_log_info("%s: No item filter defined. Returning root item as is.",
+			private->wrapper_name);
+	} else {
+		err = private->item_filter.cb(
+			&out->parent, 1 /* root */, private->item_filter.user_data
+		);
+		if (LIS_IS_ERROR(err)) {
+			out->wrapped->close(out->wrapped);
+			FREE(out);
+			return err;
+		}
+	}
+
 	add_root(private, out);
 
 	*item = &out->parent;
-	return err;
+	return LIS_OK;
 }
 
 
@@ -333,6 +352,20 @@ static enum lis_error lis_bw_item_get_children(struct lis_item *self, struct lis
 			private->children[i]->parent.name = to_wrap[i]->name;
 			private->children[i]->parent.type = to_wrap[i]->type;
 			private->children[i]->impl = private->impl;
+
+			if (private->impl->item_filter.cb == NULL) {
+				lis_log_info("%s: No item filter defined. Returning child item as is.",
+						private->impl->wrapper_name);
+			} else {
+				err = private->impl->item_filter.cb(
+					&private->children[i]->parent, 0 /* !root */,
+					private->impl->item_filter.user_data
+				);
+				if (LIS_IS_ERROR(err)) {
+					FREE(items);
+					return err;
+				}
+			}
 		}
 	}
 
@@ -455,4 +488,12 @@ static enum lis_error lis_bw_set_value(
 {
 	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(self);
 	return private->wrapped->fn.set_value(private->wrapped, value, set_flags);
+}
+
+
+void lis_bw_set_item_filter(struct lis_api *impl, lis_bw_item_filter filter, void *user_data)
+{
+	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
+	private->item_filter.cb = filter;
+	private->item_filter.user_data = user_data;
 }

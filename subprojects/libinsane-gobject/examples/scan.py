@@ -204,12 +204,9 @@ def main():
     source = get_source(dev, source_name)
 
     # set the options
-    # set_opt(source, 'source', 'Automatic Document Feeder')
 #! [ExampleOptsToSet]
-    set_opt(source, 'mode', 'Color')
     set_opt(source, 'resolution', 300)
 #! [ExampleOptsToSet]
-    set_opt(source, 'test-picture', 'Color pattern')
 
     list_opts(source)
 

@@ -30,4 +30,14 @@ void lis_bw_set_opt_desc_filter(struct lis_api *impl, lis_bw_opt_desc_filter fil
 struct lis_option_descriptor *lis_bw_get_original_opt(const struct lis_option_descriptor *modified);
 
 
+/**
+ * \brief Filter can change item on-the-fly.
+ * They can also change callbacks
+ * \param[in,out] item item
+ * \param[in] root 1 if it is a root item, 0 if it is a children item.
+ */
+typedef enum lis_error (*lis_bw_item_filter)(struct lis_item *item, int root, void *user_data);
+void lis_bw_set_item_filter(struct lis_api *impl, lis_bw_item_filter filter, void *user_data);
+
+
 #endif
