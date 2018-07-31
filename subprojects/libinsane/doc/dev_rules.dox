@@ -29,10 +29,10 @@ You must also enable the Sane test backend in `/etc/sane.d/dll.conf`.
 
 Then just run:
 
-* Build with -Wall -Werror -Wunused: `make`
-* Static analysis: `make check`
-* Unit tests: `make test`
-* Documentation generation: `make doc`
+- Build with -Wall -Werror -Wunused: `make`
+- Static analysis: `make check`
+- Unit tests: `make test`
+- Documentation generation: `make doc`
 
 
 ## Microsoft Windows
