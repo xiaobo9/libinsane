@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <libinsane/constants.h>
 #include <libinsane/error.h>
 #include <libinsane/log.h>
 #include <libinsane/normalizers.h>
 #include <libinsane/util.h>
-
-
-#define OPT_NAME_SOURCE "source"
 
 
 static void lis_sn_cleanup(struct lis_api *impl);
