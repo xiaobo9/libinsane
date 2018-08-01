@@ -73,8 +73,8 @@ enum lis_error lis_safebet(struct lis_api **out_impls)
 		*out_impls = next;
 	}
 
-	if (lis_getenv("LIBINSANE_WORKAROUND_OPT_MODE", 1)) {
-		err = lis_api_workaround_opt_mode(*out_impls, &next);
+	if (lis_getenv("LIBINSANE_WORKAROUND_OPT_VALUES", 1)) {
+		err = lis_api_workaround_opt_values(*out_impls, &next);
 		if (LIS_IS_ERROR(err)) {
 			goto error;
 		}

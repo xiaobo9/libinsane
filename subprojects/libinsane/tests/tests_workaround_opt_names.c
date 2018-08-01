@@ -110,7 +110,7 @@ int register_tests(void)
 {
 	CU_pSuite suite = NULL;
 
-	suite = CU_add_suite("opt_mode", NULL, NULL);
+	suite = CU_add_suite("opt_names", NULL, NULL);
 	if (suite == NULL) {
 		fprintf(stderr, "CU_add_suite() failed\n");
 		return 0;

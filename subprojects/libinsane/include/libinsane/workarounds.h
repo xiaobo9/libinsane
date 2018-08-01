@@ -38,7 +38,9 @@ extern enum lis_error lis_api_workaround_opt_names(
 
 
 /*!
- * \brief Option 'mode': Unusual mode values
+ * \brief Replace unusual option values by usual ones
+ *
+ * ## Option 'mode': Unusual mode values
  *
  * - API: Sane
  * - Culprits: Brother, Samsung
@@ -57,10 +59,18 @@ extern enum lis_error lis_api_workaround_opt_names(
  *   - 'Grayscale - 256 Levels' --> 'Gray'
  *   - 'Color - 16 Million Colors' --> 'Color'
  *
+ * ## Strip option translations
+ *
+ * - API: Sane
+ * - Culprits: Sane project, OKI
+ * - Seen on: [OKI MC363](https://openpaper.work/scanner_db/report/56/)
+ *
+ * This workaround wraps a bunch of options, and try to revert the translations back to English.
+ *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] api Implementation of the API including the workaround.
  */
-extern enum lis_error lis_api_workaround_opt_mode(
+extern enum lis_error lis_api_workaround_opt_values(
 	struct lis_api *to_wrap, struct lis_api **api
 );
 
@@ -81,23 +91,6 @@ extern enum lis_error lis_api_workaround_opt_mode(
  * \param[out] api Implementation of the API including the workaround.
  */
 extern enum lis_error lis_api_workaround_opts_page_size(
-	struct lis_api *to_wrap, struct lis_api **api
-);
-
-
-/*!
- * \brief Strip option translations
- *
- * - API: Sane
- * - Culprits: Sane project, OKI
- * - Seen on: [OKI MC363](https://openpaper.work/scanner_db/report/56/)
- *
- * This workaround wraps a bunch of options, and try to revert the translations back to English.
- *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
- */
-extern enum lis_error lis_api_workaround_strip_translations(
 	struct lis_api *to_wrap, struct lis_api **api
 );
 

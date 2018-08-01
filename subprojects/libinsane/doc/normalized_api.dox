@@ -87,10 +87,10 @@ struct lis_api *lets_stack(void)
 
     CHECK_ERR(lis_api_sane(&impl));
     CHECK_ERR(lis_api_workaround_opt_scan_resolution(impl, &impl));
-    CHECK_ERR(lis_api_workaround_opt_doc_source(impl, &impl));
-    CHECK_ERR(lis_api_workaround_opt_mode_values(impl, &impl));
+    CHECK_ERR(lis_api_workaround_opt_names(impl, &impl));
+    CHECK_ERR(lis_api_workaround_opt_values(impl, &impl));
     CHECK_ERR(lis_api_normalizer_source_nodes(impl, &impl));
-    CHECK_ERR(lis_api_normalizer_has_source(impl, &impl));
+    CHECK_ERR(lis_api_normalizer_min_one_source(impl, &impl));
     CHECK_ERR(lis_api_normalizer_all_opts_on_all_sources(impl, &impl));
 
     // impl is ready to roll

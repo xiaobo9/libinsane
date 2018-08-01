@@ -238,7 +238,7 @@ extern enum lis_error lis_api_normalizer_flatbed_and_feeder_behavior(
  * By default, some drivers don't have the mode set to color.
  * This workaround just make sure the default mode is 24bits color.
  *
- * Requires: \ref lis_api_workaround_opt_mode
+ * Requires: \ref lis_api_workaround_opt_values
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] impl Implementation of the API including the workaround.

@@ -24,9 +24,8 @@ Work In Progress
   - [ ] [source_names](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a84a13e5fb92110ea221550e1f8962920) (Sane, WIA)
 * Workarounds
   - [X] [opt_names](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a2b87714fe5739e8e479aa955a5b0bb93) (Sane)
-  - [X] [opt_mode](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a55c68347aa1558078c57f54c8d629f39) (Sane)
+  - [X] opt values
   - [ ] [opts_page_size](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a55b143737a3c964e9ed3b217beddd6fd) (WIA)
-  - [ ] [strip_translations](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a71fbdd18a0f401effd8a2afefe04767d) (Sane)
   - [ ] [clean_dev_model_from_manufacturer](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a637421aad3092cc436cd63896dcac0fd) (Sane, WIA)
   - [ ] [clean_dev_model_char](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a81bf1b6689cf782300ab6338ae2269f6) (Sane)
   - [ ] [no_read_on_inactive_opt](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a27807718d306c89fd326637d5ef34b03) (Sane, WIA)

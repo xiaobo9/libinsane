@@ -69,7 +69,7 @@ static int tests_opt_clean(void)
 }
 
 
-static void tests_opt_mode_constraint(void)
+static void tests_opt_values_constraint(void)
 {
 	enum lis_error err;
 	struct lis_item *opt_item = NULL;
@@ -77,7 +77,7 @@ static void tests_opt_mode_constraint(void)
 
 	tests_opt_init();
 
-	err = lis_api_workaround_opt_mode(g_dumb, &g_opt);
+	err = lis_api_workaround_opt_values(g_dumb, &g_opt);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	err = g_opt->get_device(g_opt, LIS_DUMB_DEV_ID_FIRST, &opt_item);
@@ -117,7 +117,7 @@ static void tests_opt_mode_constraint(void)
 }
 
 
-static void tests_opt_mode_getset(void)
+static void tests_opt_values_getset(void)
 {
 	enum lis_error err;
 	struct lis_item *opt_item = NULL, *dumb_item = NULL;
@@ -127,7 +127,7 @@ static void tests_opt_mode_getset(void)
 
 	tests_opt_init();
 
-	err = lis_api_workaround_opt_mode(g_dumb, &g_opt);
+	err = lis_api_workaround_opt_values(g_dumb, &g_opt);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	err = g_opt->get_device(g_opt, LIS_DUMB_DEV_ID_FIRST, &opt_item);
@@ -172,14 +172,14 @@ int register_tests(void)
 {
 	CU_pSuite suite = NULL;
 
-	suite = CU_add_suite("opt_mode", NULL, NULL);
+	suite = CU_add_suite("opt_values", NULL, NULL);
 	if (suite == NULL) {
 		fprintf(stderr, "CU_add_suite() failed\n");
 		return 0;
 	}
 
-	if (CU_add_test(suite, "test_opt_mode_constraint()", tests_opt_mode_constraint) == NULL
-			|| CU_add_test(suite, "tests_opt_mode_getset()", tests_opt_mode_getset) == NULL) {
+	if (CU_add_test(suite, "test_opt_values_constraint()", tests_opt_values_constraint) == NULL
+			|| CU_add_test(suite, "tests_opt_values_getset()", tests_opt_values_getset) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}
