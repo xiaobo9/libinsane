@@ -249,25 +249,6 @@ extern enum lis_error lis_api_normalizer_safe_defaults(
 
 
 /*!
- * \brief Ensure end of feed errors occurs only on \ref lis_scan_session.scan_read
- *	and never on \ref lis_item.scan_start .
- *
- * Depending on the driver, LIS_END_OF_FEED may happen either on
- * \ref lis_item.scan_start or on the first \ref lis_scan_session.scan_read.
- * This workaround makes sure that is always happen only on
- * \ref lis_scan_session.scan_read`.
- *
- * Example: https://openpaper.work/en-us/scanner_db/report/124/
- *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
- */
-extern enum lis_error lis_api_normalizer_end_of_feed(
-	struct lis_api *to_wrap, struct lis_api **impl
-);
-
-
-/*!
  * \brief Makes sure the source names all look the same accross OSes
  *
  * - All source names will be lower-case
@@ -291,29 +272,6 @@ extern enum lis_error lis_api_normalizer_end_of_feed(
 extern enum lis_error lis_api_normalizer_source_names(
 	struct lis_api *to_wrap, struct lis_api **impl
 );
-
-
-/*!
- * \brief Make sure the source order is always the same.
- *
- * Order:
- * - "flatbed"
- * - "feeder duplex"
- * - "feeder"
- * - "feeder (left aligned)"
- * - "feeder front"
- * - "feeder back"
- * - "feeder (centrally aligned)"
- *
- * Dependency: \ref lis_api_normalizer_source_names
- *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
- */
-extern enum lis_error lis_api_normalizer_sources_order(
-	struct lis_api *to_wrap, struct lis_api **impl
-);
-
 
 #ifdef __cplusplus
 }
