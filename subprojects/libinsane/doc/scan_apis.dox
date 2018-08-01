@@ -143,7 +143,7 @@ There are actually 2 implementations for the WIA API:
   object to get the image, and therefore is able to get the image as the
   scan goes.
 - The second one uses the WIA automation layer. It can only store the
-  scan directly in a file. Therefore displayed the scan as it goes is
+  scan directly in a file. Therefore displaying the scan as it goes is
   actually a hack reading the file as it is being written.
   This implementation is only used as a fallback.
 
