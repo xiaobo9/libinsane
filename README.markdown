@@ -11,7 +11,7 @@ Work In Progress
   - [ ] TWAIN
 * Normalizers
   - [X] [source_nodes](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a00631383dd47b29767cd0bc4cb2486f4) (Sane)
-  - [ ] [min_one_source](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#aeaab4354a3d7cac9d671772638c39645) (Sane, WIA)
+  - [X] [min_one_source](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#aeaab4354a3d7cac9d671772638c39645) (Sane, WIA)
   - [ ] [all_opts_on_all_sources](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#af74c3b5b0f598b4da581b9005bddf888) (Sane, WIA)
   - [ ] [scan_area_opts](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a083c0198fa60e7432ed767bc7eec1ff6) (WIA)
   - [ ] [resolution_format](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#aa8813ed50acb85ea7088150cc39bf6e0) (Sane, WIA)
