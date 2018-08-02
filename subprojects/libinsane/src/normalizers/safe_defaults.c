@@ -127,4 +127,3 @@ enum lis_error lis_api_normalizer_safe_defaults(struct lis_api *to_wrap, struct 
 	}
 	return err;
 }
-

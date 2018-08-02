@@ -39,6 +39,8 @@ struct lis_bw_item {
 	struct lis_bw_option_descriptor **options;
 
 	struct lis_bw_item *next;
+
+	void *user;
 };
 #define LIS_BW_ITEM(item) ((struct lis_bw_item *)(item))
 
@@ -46,6 +48,8 @@ struct lis_bw_item {
 struct lis_bw_option_descriptor {
 	struct lis_option_descriptor parent;
 	struct lis_option_descriptor *wrapped;
+
+	void *user;
 };
 #define LIS_BW_OPT_DESC(opt) ((struct lis_bw_option_descriptor *)(opt))
 
@@ -468,7 +472,14 @@ static void lis_bw_item_child_close(struct lis_item *self)
 }
 
 
-struct lis_option_descriptor *lis_bw_get_original_opt(const struct lis_option_descriptor *modified)
+struct lis_item *lis_bw_get_original_item(struct lis_item *modified)
+{
+	struct lis_bw_item *item = LIS_BW_ITEM(modified);
+	return item->wrapped;
+}
+
+
+struct lis_option_descriptor *lis_bw_get_original_opt(struct lis_option_descriptor *modified)
 {
 	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(modified);
 	return private->wrapped;
@@ -496,4 +507,33 @@ void lis_bw_set_item_filter(struct lis_api *impl, lis_bw_item_filter filter, voi
 	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
 	private->item_filter.cb = filter;
 	private->item_filter.user_data = user_data;
+}
+
+
+void lis_bw_item_set_user_ptr(struct lis_item *self, void *user_ptr)
+{
+	struct lis_bw_item *item = LIS_BW_ITEM(self);
+	item->user = user_ptr;
+}
+
+
+void *lis_bw_item_get_user_ptr(struct lis_item *self)
+{
+	struct lis_bw_item *item = LIS_BW_ITEM(self);
+	return item->user;
+}
+
+
+void lis_bw_opt_set_user_ptr(struct lis_option_descriptor *opt, void *user_ptr)
+{
+	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(opt);
+	private->user = user_ptr;
+}
+
+
+void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt)
+{
+	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(opt);
+	return private->user;
+
 }
