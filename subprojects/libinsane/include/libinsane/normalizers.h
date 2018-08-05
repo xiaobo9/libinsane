@@ -192,7 +192,7 @@ extern enum lis_error lis_api_normalizer_raw24(
  *
  * - Culprits: Sane project, Microsoft
  *
- * On both Sane and WIA:
+ * Seen with some drivers with both Sane and WIA:
  *
  * - When scanning from feeder: at the end of a scan, we get an error code
  *   (or a function call) telling us when the whole page has been scanned.
@@ -201,8 +201,8 @@ extern enum lis_error lis_api_normalizer_raw24(
  *   us we have reached the end.
  * - When scanning from flatbed: at the end of a scan, we get an error code
  *   (or a function call) telling us when the whole page has been scanned.
- *   Requesting another scan, it will scan again the very same page. It will
- *   never tell us that there is no paper left to scan
+ *   Requesting another scan, it will sometimes scan again the very same page.
+ *   It will never tell us that there is no paper left to scan
  *
  * Problem: Behavior should be independent of the actual source. Having 2 behaviors
  * is just bug-prone.
