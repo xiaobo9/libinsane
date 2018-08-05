@@ -305,10 +305,10 @@ struct lis_item {
 	const char *name; /*!< Item name */
 
 	enum {
-		LIS_ITEM_DEVICE,
-		LIS_ITEM_FLATBED,
-		LIS_ITEM_ADF,
-		LIS_ITEM_UNIDENTIFIED = -1,
+		LIS_ITEM_DEVICE, /*!< root node */
+		LIS_ITEM_FLATBED, /*!< will scan only one image at each session */
+		LIS_ITEM_ADF, /*!< will scan many images in one session */
+		LIS_ITEM_UNIDENTIFIED = -1, /*!< don't know ; should be treated as an ADF by default */
 	} type;
 
 	/*!
