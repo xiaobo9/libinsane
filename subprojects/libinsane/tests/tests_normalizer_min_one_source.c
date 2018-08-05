@@ -74,7 +74,7 @@ static void tests_src_default_source(void)
 	union lis_value value;
 	int set_flags;
 
-	tests_src_init();
+	LIS_ASSERT_EQUAL(tests_src_init(), 0);
 
 	err = lis_api_normalizer_min_one_source(g_dumb, &g_src);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -101,7 +101,7 @@ static void tests_src_default_source(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	root->close(root);
-	tests_src_clean();
+	LIS_ASSERT_EQUAL(tests_src_clean(), 0);
 }
 
 

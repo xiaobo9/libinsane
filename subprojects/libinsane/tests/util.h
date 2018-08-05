@@ -7,23 +7,27 @@
  */
 
 #define LIS_ASSERT_TRUE(x) do { \
-		CU_ASSERT_TRUE(x); \
-		if (!(x)) return; \
+		int _r = (x); \
+		CU_ASSERT_TRUE(_r); \
+		if (!(_r)) return; \
 	} while (0)
 
 #define LIS_ASSERT_FALSE(x) do { \
-		CU_ASSERT_FALSE(x); \
-		if (x) return; \
+		int _r = (x); \
+		CU_ASSERT_FALSE(_r); \
+		if (_r) return; \
 	} while (0)
 
 #define LIS_ASSERT_EQUAL(x, y) do { \
-		CU_ASSERT_EQUAL(x, y); \
-		if ((x) != (y)) return; \
+		int _r = ((x) == (y)); \
+		CU_ASSERT_TRUE(_r); \
+		if (!_r) return; \
 	} while (0)
 
 #define LIS_ASSERT_NOT_EQUAL(x, y) do { \
-		CU_ASSERT_NOT_EQUAL(x, y); \
-		if ((x) == (y)) return; \
+		int _r = ((x) == (y)); \
+		CU_ASSERT_FALSE(_r); \
+		if (_r) return; \
 	} while (0)
 
 #endif

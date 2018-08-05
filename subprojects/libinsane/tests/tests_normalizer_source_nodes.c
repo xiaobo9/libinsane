@@ -83,7 +83,7 @@ static void tests_source_nodes(void)
 	struct lis_item **children = NULL;
 	int dev_idx;
 
-	tests_sn_init();
+	LIS_ASSERT_EQUAL(tests_sn_init(), 0);
 
 	err = lis_api_normalizer_source_nodes(g_dumb, &g_sn);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -109,7 +109,7 @@ static void tests_source_nodes(void)
 		item->close(item);
 	}
 
-	tests_sn_clean();
+	LIS_ASSERT_EQUAL(tests_sn_clean(), 0);
 }
 
 
@@ -124,7 +124,7 @@ static void tests_get_scan_parameters(void)
 	union lis_value value;
 	struct lis_scan_parameters scan_params;
 
-	tests_sn_init();
+	LIS_ASSERT_EQUAL(tests_sn_init(), 0);
 
 	err = lis_api_normalizer_source_nodes(g_dumb, &g_sn);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -170,7 +170,7 @@ static void tests_get_scan_parameters(void)
 
 	item->close(item);
 
-	tests_sn_clean();
+	LIS_ASSERT_EQUAL(tests_sn_clean(), 0);
 }
 
 
@@ -185,7 +185,7 @@ static void tests_scan_start(void)
 	struct lis_scan_parameters scan_params;
 	struct lis_scan_session *session;
 
-	tests_sn_init();
+	LIS_ASSERT_EQUAL(tests_sn_init(), 0);
 
 	err = lis_api_normalizer_source_nodes(g_dumb, &g_sn);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -231,7 +231,7 @@ static void tests_scan_start(void)
 	session->cancel(session);
 	item->close(item);
 
-	tests_sn_clean();
+	LIS_ASSERT_EQUAL(tests_sn_clean(), 0);
 }
 
 

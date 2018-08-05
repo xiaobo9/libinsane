@@ -88,7 +88,7 @@ static void tests_opt_names(void)
 	struct lis_item *opt_item = NULL;
 	struct lis_option_descriptor **opt_opts = NULL;
 
-	tests_opt_init();
+	LIS_ASSERT_EQUAL(tests_opt_init(), 0);
 
 	err = lis_api_workaround_opt_names(g_dumb, &g_opt);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -102,7 +102,7 @@ static void tests_opt_names(void)
 	LIS_ASSERT_EQUAL(opt_opts[2], NULL);
 
 	opt_item->close(opt_item);
-	tests_opt_clean();
+	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
 }
 
 

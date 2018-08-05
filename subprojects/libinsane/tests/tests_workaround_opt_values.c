@@ -75,7 +75,7 @@ static void tests_opt_values_constraint(void)
 	struct lis_item *opt_item = NULL;
 	struct lis_option_descriptor **opts = NULL;
 
-	tests_opt_init();
+	LIS_ASSERT_EQUAL(tests_opt_init(), 0);
 
 	err = lis_api_workaround_opt_values(g_dumb, &g_opt);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -113,7 +113,7 @@ static void tests_opt_values_constraint(void)
 
 	opt_item->close(opt_item);
 
-	tests_opt_clean();
+	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
 }
 
 
@@ -125,7 +125,7 @@ static void tests_opt_values_getset(void)
 	union lis_value opt_value;
 	int set_flags;
 
-	tests_opt_init();
+	LIS_ASSERT_EQUAL(tests_opt_init(), 0);
 
 	err = lis_api_workaround_opt_values(g_dumb, &g_opt);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -164,7 +164,7 @@ static void tests_opt_values_getset(void)
 	LIS_ASSERT_EQUAL(strcasecmp(opt_value.string, "24bit Color"), 0);
 
 	opt_item->close(opt_item);
-	tests_opt_clean();
+	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
 }
 
 

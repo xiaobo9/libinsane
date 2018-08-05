@@ -96,7 +96,7 @@ static void tests_opt_defaults(void)
 	struct lis_option_descriptor **opt_opts = NULL;
 	union lis_value value;
 
-	tests_opt_init();
+	LIS_ASSERT_EQUAL(tests_opt_init(), 0);
 
 	err = lis_api_normalizer_safe_defaults(g_dumb, &g_opt);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -119,7 +119,7 @@ static void tests_opt_defaults(void)
 
 
 	opt_item->close(opt_item);
-	tests_opt_clean();
+	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
 }
 
 
