@@ -1086,7 +1086,7 @@ static enum lis_error lis_sane_scan_read(
 
 			err = sane_status_to_lis_error(sane_err);
 			if (LIS_IS_ERROR(err)) {
-				// Epson XP-425:
+				// WORKAROUND(Jflesch): Epson XP-425:
 				// Only has a Flatbed. First call to sane_start() + sane_read()
 				// work fine. Second call sane_start() return .. I/O error.
 				// Unfortunately, this can hardly be managed in a dedicated

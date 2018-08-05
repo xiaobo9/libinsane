@@ -24,18 +24,20 @@ struct safe_setter {
 };
 
 
-static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data);
+static enum lis_error set_to_limit_fail_allowed(struct lis_option_descriptor *opt, void *cb_data);
 static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data);
+static enum lis_error set_str_fail_allowed(struct lis_option_descriptor *opt, void *cb_data);
 
 static int g_numbers[] = { -1, 1};
 
 struct safe_setter g_safe_setters[] = {
 	{ .opt_name = OPT_NAME_MODE, .cb = set_str, .cb_data = OPT_VALUE_MODE_COLOR },
-	{ .opt_name = OPT_NAME_TL_X, .cb = set_to_limit, .cb_data = &g_numbers[0] },
-	{ .opt_name = OPT_NAME_TL_Y, .cb = set_to_limit, .cb_data = &g_numbers[0] },
-	{ .opt_name = OPT_NAME_BR_X, .cb = set_to_limit, .cb_data = &g_numbers[1] },
-	{ .opt_name = OPT_NAME_BR_Y, .cb = set_to_limit, .cb_data = &g_numbers[1] },
-	{ .opt_name = "test-picture", .cb = set_str, .cb_data = "Color pattern" }, // sane test backend
+	// sane test backend: capabilties=SW_SELECT, but setting the values will still fail
+	{ .opt_name = OPT_NAME_TL_X, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[0] },
+	{ .opt_name = OPT_NAME_TL_Y, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[0] },
+	{ .opt_name = OPT_NAME_BR_X, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[1] },
+	{ .opt_name = OPT_NAME_BR_Y, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[1] },
+	{ .opt_name = "test-picture", .cb = set_str_fail_allowed, .cb_data = "Color pattern" },
 	{ .opt_name = NULL },
 };
 
@@ -53,11 +55,15 @@ const struct safe_setter *get_setter(const char *opt_name)
 }
 
 
-static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data)
+static enum lis_error set_to_limit_fail_allowed(struct lis_option_descriptor *opt, void *cb_data)
 {
 	int minmax = *((int *)cb_data);
 	int set_flags;
 	union lis_value value;
+	enum lis_error err;
+	const char *minmax_str = minmax > 0 ? "max" : "min";
+
+	value = minmax > 0 ? opt->constraint.possible.range.max : opt->constraint.possible.range.min;
 
 	if (opt->constraint.type != LIS_CONSTRAINT_RANGE) {
 		lis_log_error("Unexpected constraint type for option '%s': %d instead of %d",
@@ -65,9 +71,38 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 		return LIS_ERR_INVALID_VALUE;
 	}
 
-	value = minmax > 0 ? opt->constraint.possible.range.max : opt->constraint.possible.range.min;
-	lis_log_info(NAME ": Setting option '%s' to %s", opt->name, minmax > 0 ? "max" : "min");
-	return opt->fn.set_value(opt, value, &set_flags);;
+	lis_log_info(NAME ": Setting option '%s' to %s", opt->name, minmax_str);
+	err = opt->fn.set_value(opt, value, &set_flags);
+	if (LIS_IS_OK(err)) {
+		lis_log_info(NAME ": '%s'=%s: 0x%X, %s",
+			opt->name, minmax_str, err, lis_strerror(err));
+	} else {
+		lis_log_warning(NAME ": '%s'=%s: 0x%X, %s",
+			opt->name, minmax_str, err, lis_strerror(err));
+	}
+	/* WORKAROUND(Jflesch): Sane test backend:
+	 * Sane test backend doesn't let us change the scan area ...
+	 */
+	return LIS_OK;
+}
+
+
+static enum lis_error set_str_fail_allowed(struct lis_option_descriptor *opt, void *cb_data)
+{
+	int set_flags;
+	union lis_value value;
+	enum lis_error err;
+	value.string = cb_data;
+	lis_log_info(NAME ": Setting option '%s' to '%s'", opt->name, value.string);
+	err = opt->fn.set_value(opt, value, &set_flags);
+	if (LIS_IS_OK(err)) {
+		lis_log_info(NAME ": '%s'='%s': 0x%X, %s",
+			opt->name, value.string, err, lis_strerror(err));
+	} else {
+		lis_log_warning(NAME ": '%s'='%s': %d, %s",
+			opt->name, value.string, err, lis_strerror(err));
+	}
+	return LIS_OK;
 }
 
 
@@ -75,9 +110,18 @@ static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data)
 {
 	int set_flags;
 	union lis_value value;
+	enum lis_error err;
 	value.string = cb_data;
 	lis_log_info(NAME ": Setting option '%s' to '%s'", opt->name, value.string);
-	return opt->fn.set_value(opt, value, &set_flags);
+	err = opt->fn.set_value(opt, value, &set_flags);
+	if (LIS_IS_OK(err)) {
+		lis_log_info(NAME ": '%s'='%s': 0x%X, %s",
+			opt->name, value.string, err, lis_strerror(err));
+	} else {
+		lis_log_error(NAME ": '%s'='%s': %d, %s",
+			opt->name, value.string, err, lis_strerror(err));
+	}
+	return err;
 }
 
 

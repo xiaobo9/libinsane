@@ -17,6 +17,12 @@ static struct lis_api *g_dumb = NULL;
 static struct lis_api *g_opt = NULL;
 
 
+static enum lis_error nogo()
+{
+	return LIS_ERR_IO_ERROR;
+}
+
+
 static int tests_opt_init(void)
 {
 	static const union lis_value opt_mode_constraint[] = {
@@ -123,6 +129,58 @@ static void tests_opt_defaults(void)
 }
 
 
+static void tests_opt_scan_area_failed(void)
+{
+	enum lis_error err;
+	struct lis_item *opt_item = NULL;
+	struct lis_option_descriptor **opt_opts = NULL;
+	union lis_value value;
+	int opt_idx;
+
+	LIS_ASSERT_EQUAL(tests_opt_init(), 0);
+
+	/* change the callback for tl_x->set_value */
+	err = g_dumb->get_device(g_dumb, LIS_DUMB_DEV_ID_FIRST, &opt_item);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	err = opt_item->get_options(opt_item, &opt_opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	for (opt_idx = 0 ; opt_opts[opt_idx] != NULL ; opt_idx++) {
+		if (strcasecmp(opt_opts[opt_idx]->name, OPT_NAME_TL_X) == 0) {
+			opt_opts[opt_idx]->fn.set_value = nogo;
+			opt_opts[opt_idx]->capabilities = 0;
+			break;
+		}
+	}
+	LIS_ASSERT_NOT_EQUAL(opt_opts[opt_idx], NULL);
+
+	/* test that things still work */
+	err = lis_api_normalizer_safe_defaults(g_dumb, &g_opt);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = g_opt->get_device(g_opt, LIS_DUMB_DEV_ID_FIRST, &opt_item);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	err = opt_item->get_options(opt_item, &opt_opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[0]->name, OPT_NAME_MODE), 0);
+	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[1]->name, OPT_NAME_TL_X), 0);
+	LIS_ASSERT_EQUAL(opt_opts[2], NULL);
+
+	err = opt_opts[0]->fn.get_value(opt_opts[0], &value);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(strcasecmp(value.string, OPT_VALUE_MODE_COLOR), 0);
+
+	/* tl_x value should be unchanged */
+	err = opt_opts[1]->fn.get_value(opt_opts[1], &value);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(value.integer, 300);
+
+
+	opt_item->close(opt_item);
+	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
+}
+
+
 int register_tests(void)
 {
 	CU_pSuite suite = NULL;
@@ -133,7 +191,8 @@ int register_tests(void)
 		return 0;
 	}
 
-	if (CU_add_test(suite, "tests_opt_defaults()", tests_opt_defaults) == NULL) {
+	if (CU_add_test(suite, "tests_opt_defaults()", tests_opt_defaults) == NULL
+			|| CU_add_test(suite, "test_opt_scan_area_failed", tests_opt_scan_area_failed) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}
