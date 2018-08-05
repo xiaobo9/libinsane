@@ -23,6 +23,7 @@ static int tests_st_init(void)
 	static const union lis_value opt_source_constraint[] = {
 		{ .string = OPT_VALUE_SOURCE_FLATBED, },
 		{ .string = OPT_VALUE_SOURCE_ADF, },
+		{ .string = "Automatic Document Feeder(left aligned)", } // Brother MFC-7360N
 	};
 	static const struct lis_option_descriptor opt_source_template = {
 		.name = OPT_NAME_SOURCE,
@@ -36,7 +37,7 @@ static int tests_st_init(void)
 		.constraint = {
 			.type = LIS_CONSTRAINT_LIST,
 			.possible.list = {
-				.nb_values = 2,
+				.nb_values = LIS_COUNT_OF(opt_source_constraint),
 				.values = (union lis_value*)&opt_source_constraint,
 			},
 		},
@@ -101,7 +102,8 @@ static void tests_source_types(void)
 
 		LIS_ASSERT_EQUAL(children[0]->type, LIS_ITEM_FLATBED);
 		LIS_ASSERT_EQUAL(children[1]->type, LIS_ITEM_ADF);
-		LIS_ASSERT_EQUAL(children[2], NULL);
+		LIS_ASSERT_EQUAL(children[2]->type, LIS_ITEM_ADF);
+		LIS_ASSERT_EQUAL(children[3], NULL);
 
 		item->close(item);
 	}
