@@ -18,7 +18,7 @@ from gi.repository import Libinsane  # noqa: E402
 #! [ExampleLogger]
 class ExampleLogger(GObject.GObject, Libinsane.Logger):
     def do_log(self, lvl, msg):
-        if lvl < Libinsane.LogLevel.ERROR:
+        if lvl < Libinsane.LogLevel.WARNING:
             return
         print("{}: {}".format(lvl.value_nick, msg))
 #! [ExampleLogger]
@@ -163,8 +163,10 @@ def scan(source, output_file):
             img = b"".join(img)
             img = raw_to_img(scan_params, img)
             if out is not None:
+                print("Saving page as {} ...".format(out))
                 img.save(out)
             page_nb += 1
+            print("Page {} scanned".format(page_nb))
         if page_nb == 0:
             print("No page in feeder ?")
     finally:
@@ -203,12 +205,12 @@ def main():
     dev = get_device(api, dev_id)
     source = get_source(dev, source_name)
 
+    list_opts(source)
+
     # set the options
 #! [ExampleOptsToSet]
     set_opt(source, 'resolution', 300)
 #! [ExampleOptsToSet]
-
-    list_opts(source)
 
     print("Scanning ...")
     scan(source, output_file)
