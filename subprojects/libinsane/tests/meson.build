@@ -7,6 +7,7 @@ LIBINSANE_VALGRIND_TESTS = [
     'normalizer_min_one_source',
     'normalizer_safe_defaults',
     'normalizer_source_nodes',
+    'normalizer_source_types',
     'workaround_opt_values',
     'workaround_opt_names',
 ]

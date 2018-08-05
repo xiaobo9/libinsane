@@ -63,4 +63,11 @@ void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt);
 struct lis_option_descriptor *lis_bw_get_original_opt(struct lis_option_descriptor *modified);
 
 
+/**
+ * \brief called when an API instance is being cleanup/stopped.
+ * Note that there maybe many concurrent instances of a same API.
+ */
+typedef void (*lis_bw_clean_impl)(struct lis_api *impl, void *user_data);
+void lis_bw_set_clean_impl(struct lis_api *impl, lis_bw_clean_impl cb, void *user_data);
+
 #endif

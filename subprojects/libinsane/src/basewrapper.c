@@ -23,6 +23,11 @@ struct lis_bw_impl_private {
 		void *user_data;
 	} item_filter;
 
+	struct {
+		lis_bw_clean_impl cb;
+		void *user_data;
+	} impl_clean;
+
 	struct lis_bw_item *roots;
 
 	struct lis_bw_impl_private *next;
@@ -109,6 +114,10 @@ static void lis_bw_cleanup(struct lis_api *in_impl)
 {
 	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(in_impl);
 	struct lis_bw_impl_private *impl, *pimpl;
+
+	if (private->impl_clean.cb != NULL) {
+		private->impl_clean.cb(&private->parent, private->impl_clean.user_data);
+	}
 
 	/* remove itself from the global linked list */
 	for (impl = g_impls, pimpl = NULL ;
@@ -535,5 +544,12 @@ void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt)
 {
 	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(opt);
 	return private->user;
+}
 
+
+void lis_bw_set_clean_impl(struct lis_api *impl, lis_bw_clean_impl cb, void *user_data)
+{
+	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
+	private->impl_clean.cb = cb;
+	private->impl_clean.user_data = user_data;
 }

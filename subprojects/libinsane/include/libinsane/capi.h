@@ -295,6 +295,14 @@ struct lis_scan_session {
 };
 
 
+enum lis_item_type {
+	LIS_ITEM_DEVICE, /*!< root node ; shouldn't be used for scanning */
+	LIS_ITEM_FLATBED, /*!< will scan only one image at each session */
+	LIS_ITEM_ADF, /*!< will scan many images in one session */
+	LIS_ITEM_UNIDENTIFIED = -1, /*!< don't know ; should be treated as an ADF by default */
+};
+
+
 /**
  * Represents either a device (a scanner, a scanner-printer, etc) or a sub-device (Flatbed of a
  * scanner, Automatic document feeder of a printer, etc).
@@ -303,13 +311,7 @@ struct lis_scan_session {
  */
 struct lis_item {
 	const char *name; /*!< Item name */
-
-	enum {
-		LIS_ITEM_DEVICE, /*!< root node */
-		LIS_ITEM_FLATBED, /*!< will scan only one image at each session */
-		LIS_ITEM_ADF, /*!< will scan many images in one session */
-		LIS_ITEM_UNIDENTIFIED = -1, /*!< don't know ; should be treated as an ADF by default */
-	} type;
+	enum lis_item_type type;
 
 	/*!
 	 * \brief Get item's children (usually scan sources).
