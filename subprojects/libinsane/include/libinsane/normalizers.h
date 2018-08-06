@@ -103,7 +103,7 @@ extern enum lis_error lis_api_normalizer_scan_area_opts(
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] impl Implementation of the API including the workaround.
  */
-extern enum lis_error lis_api_normalizer_resolution_format(
+extern enum lis_error lis_api_normalizer_resolution(
 	struct lis_api *to_wrap, struct lis_api **impl
 );
 

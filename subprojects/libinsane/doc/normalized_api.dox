@@ -33,7 +33,7 @@ Expected order of calling when most of the normalizers are enabled:
       - \ref lis_option_descriptor.get_value "options[x]->fn.get_value()".
       - \ref lis_option_descriptor.set_value "options[x]->fn.set_value()".<br>
         Options that should always be set by the application:
-        - \ref lis_api_normalizer_resolution_format "scan resolution (option \"resolution\")"
+        - \ref lis_api_normalizer_resolution "scan resolution (option \"resolution\")"
         - \ref lis_maximize_scan_area "scan area"
       - \ref lis_option_descriptor.get_value "options[y]->fn.get_value()".
       - \ref lis_option_descriptor.set_value "options[y]->fn.set_value()".

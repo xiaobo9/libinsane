@@ -5,6 +5,7 @@ LIBINSANE_TESTS = [
 LIBINSANE_VALGRIND_TESTS = [
     'multiplexer',
     'normalizer_min_one_source',
+    'normalizer_resolution',
     'normalizer_safe_defaults',
     'normalizer_source_nodes',
     'normalizer_source_types',

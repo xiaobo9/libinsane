@@ -43,7 +43,7 @@ struct lis_item *lis_bw_get_original_item(struct lis_item *modified);
  * \param[in,out] desc option descriptor to filter.
  */
 typedef enum lis_error (*lis_bw_opt_desc_filter)(
-	const struct lis_item *item, struct lis_option_descriptor *desc, void *user_data
+	struct lis_item *item, struct lis_option_descriptor *desc, void *user_data
 );
 void lis_bw_set_opt_desc_filter(struct lis_api *impl, lis_bw_opt_desc_filter filter, void *user_data);
 
@@ -61,6 +61,13 @@ void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt);
  * \return the original descriptor without the modifications (do not modify !). NULL if not found.
  */
 struct lis_option_descriptor *lis_bw_get_original_opt(struct lis_option_descriptor *modified);
+
+
+/**
+ * \brief called when item are closed. Will be called for all items: root and sources.
+ */
+typedef void (*lis_bw_on_close_item)(struct lis_item *item, void *user_data);
+void lis_bw_set_on_close_item(struct lis_api *impl, lis_bw_on_close_item cb, void *user_data);
 
 
 /**

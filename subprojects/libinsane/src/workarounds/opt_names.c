@@ -37,7 +37,7 @@ static const struct opt_name_mapping *get_mapping(const char *original_opt_name)
 
 
 static enum lis_error opt_desc_filter(
-		const struct lis_item *item, struct lis_option_descriptor *desc, void *user_data
+		struct lis_item *item, struct lis_option_descriptor *desc, void *user_data
 	)
 {
 	const struct opt_name_mapping *mapping;

@@ -191,7 +191,7 @@ enum lis_error set_value(struct lis_option_descriptor *modified,
 
 
 static enum lis_error opt_desc_filter(
-		const struct lis_item *item, struct lis_option_descriptor *desc, void *user_data
+		struct lis_item *item, struct lis_option_descriptor *desc, void *user_data
 	)
 {
 	int constraint_idx;

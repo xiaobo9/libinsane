@@ -77,7 +77,7 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 			} else if (strcmp(tok, "raw24") == 0) {
 				err = lis_api_normalizer_raw24(*impls, &next);
 			} else if (strcmp(tok, "resolution") == 0) {
-				err = lis_api_normalizer_resolution_format(*impls, &next);
+				err = lis_api_normalizer_resolution(*impls, &next);
 			} else if (strcmp(tok, "scan_area_opts") == 0) {
 				err = lis_api_normalizer_scan_area_opts(*impls, &next);
 			} else if (strcmp(tok, "source_nodes") == 0) {

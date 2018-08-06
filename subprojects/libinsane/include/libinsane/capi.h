@@ -27,6 +27,7 @@ struct lis_device_descriptor {
 	char *type; /*!< ex: "flatbed scanner", "sheetfed scanner" */
 };
 
+
 /*!
  * \brief Variable type.
  */
@@ -37,6 +38,7 @@ enum lis_value_type {
 	LIS_TYPE_STRING, /*!< (char *) */
 	LIS_TYPE_IMAGE_FORMAT /*!< Image format. See \ref lis_img_format . */
 };
+
 
 /*!
  * \brief Image format.
@@ -74,6 +76,7 @@ enum lis_unit {
 	LIS_UNIT_PERCENT,
 	LIS_UNIT_MICROSECOND,
 };
+
 
 /*!
  * \brief Variable.

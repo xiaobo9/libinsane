@@ -28,6 +28,11 @@ struct lis_bw_impl_private {
 		void *user_data;
 	} impl_clean;
 
+	struct {
+		lis_bw_on_close_item cb;
+		void *user_data;
+	} on_close_item;
+
 	struct lis_bw_item *roots;
 
 	struct lis_bw_impl_private *next;
@@ -51,8 +56,10 @@ struct lis_bw_item {
 
 
 struct lis_bw_option_descriptor {
-	struct lis_option_descriptor parent;
-	struct lis_option_descriptor *wrapped;
+	struct lis_option_descriptor parent; /*!< basewrapper modified by filter (if any) */
+	struct lis_option_descriptor basewrapper; /*!< basewrapper original */
+	struct lis_option_descriptor *wrapped; /*!< wrapped implementation */
+	struct lis_bw_item *item;
 
 	void *user;
 };
@@ -306,7 +313,7 @@ static void free_options(struct lis_bw_item *item)
 	}
 	if (item->options != NULL) {
 		for (i = 0 ; item->options[i] != NULL ; i++) {
-			free_opt_constraint(&item->options[i]->parent);
+			free_opt_constraint(&item->options[i]->basewrapper);
 		}
 		FREE(item->options[0]);
 	}
@@ -335,6 +342,11 @@ static enum lis_error lis_bw_item_get_children(struct lis_item *self, struct lis
 	int nb_items, i;
 	enum lis_error err;
 
+	if (private->children != NULL) {
+		*out_children = ((struct lis_item **)private->children);
+		return LIS_OK;
+	}
+
 	err = private->wrapped->get_children(private->wrapped, &to_wrap);
 	if (LIS_IS_ERROR(err)) {
 		lis_log_error("%s: get_children() failed: %d, %s",
@@ -343,7 +355,6 @@ static enum lis_error lis_bw_item_get_children(struct lis_item *self, struct lis
 	}
 	for (nb_items = 0 ; to_wrap[nb_items] != NULL ; nb_items++) { }
 
-	free_children(private);
 	private->children = calloc(nb_items + 1, sizeof(struct lis_bw_item *));
 	if (private->children == NULL) {
 		lis_log_error("Out of memory");
@@ -409,6 +420,14 @@ static enum lis_error lis_bw_item_get_options(
 		return err;
 	}
 
+	/* free any previous options */
+	if (private->options != NULL) {
+		for (i = 0 ; private->options[i] != NULL ; i++) {
+			free_opt_constraint(&private->options[i]->basewrapper);
+		}
+		FREE(private->options[0]);
+	}
+
 	for (nb_opts = 0 ; opts[nb_opts] != NULL ; nb_opts++) { }
 	private->options = calloc(nb_opts + 1, sizeof(struct lis_bw_option_descriptor *));
 	if (nb_opts > 0) {
@@ -419,6 +438,7 @@ static enum lis_error lis_bw_item_get_options(
 			memcpy(&private->options[i]->parent, opts[i], sizeof(private->options[i]->parent));
 			private->options[i]->parent.fn.get_value = lis_bw_get_value;
 			private->options[i]->parent.fn.set_value = lis_bw_set_value;
+			private->options[i]->item = private;
 			private->options[i]->wrapped = opts[i];
 			err = dup_opt_constraint(&private->options[i]->parent);
 			if (LIS_IS_ERROR(err)) {
@@ -426,6 +446,11 @@ static enum lis_error lis_bw_item_get_options(
 				FREE(private->options);
 				return err;
 			}
+			memcpy(
+				&private->options[i]->basewrapper,
+				&private->options[i]->parent,
+				sizeof(private->options[i]->basewrapper)
+			);
 		}
 		/* and filter */
 		for (i = 0 ; i < nb_opts ; i++) {
@@ -466,6 +491,20 @@ static enum lis_error lis_bw_item_scan_start(struct lis_item *self, struct lis_s
 static void lis_bw_item_root_close(struct lis_item *self)
 {
 	struct lis_bw_item *item = LIS_BW_ITEM(self);
+	int i;
+
+	if (item->impl->on_close_item.cb != NULL) {
+		if (item->children != NULL) {
+			for (i = 0 ; item->children[i] != NULL ; i++) {
+				item->impl->on_close_item.cb(
+					&item->children[i]->parent,
+					item->impl->on_close_item.user_data
+				);
+			}
+		}
+		item->impl->on_close_item.cb(self, item->impl->on_close_item.user_data);
+	}
+
 	remove_root(item->impl, item);
 	item->wrapped->close(item->wrapped);
 	free_options(item);
@@ -545,6 +584,15 @@ void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt)
 	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(opt);
 	return private->user;
 }
+
+
+void lis_bw_set_on_close_item(struct lis_api *impl, lis_bw_on_close_item cb, void *user_data)
+{
+	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
+	private->on_close_item.cb = cb;
+	private->on_close_item.user_data = user_data;
+}
+
 
 
 void lis_bw_set_clean_impl(struct lis_api *impl, lis_bw_clean_impl cb, void *user_data)

@@ -83,7 +83,7 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 	if (opt->constraint.type != LIS_CONSTRAINT_RANGE) {
 		lis_log_error("Unexpected constraint type for option '%s': %d instead of %d",
 			opt->name, opt->constraint.type, LIS_CONSTRAINT_RANGE);
-		return LIS_ERR_INVALID_VALUE;
+		return LIS_ERR_UNSUPPORTED;
 	}
 
 	lis_log_info(NAME ": Setting option '%s' to %s", opt->name, minmax_str);

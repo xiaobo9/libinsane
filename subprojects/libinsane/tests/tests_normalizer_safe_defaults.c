@@ -175,7 +175,6 @@ static void tests_opt_scan_area_failed(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(value.integer, 300);
 
-
 	opt_item->close(opt_item);
 	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
 }

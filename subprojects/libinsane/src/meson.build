@@ -10,7 +10,7 @@ LIBINSANE_SRCS = files(
     'normalizers/min_one_source.c',
     'normalizers/raw.c',
     'normalizers/raw24.c',
-    'normalizers/resolution_format.c',
+    'normalizers/resolution.c',
     'normalizers/safe_defaults.c',
     'normalizers/scan_area_opts.c',
     'normalizers/source_names.c',
