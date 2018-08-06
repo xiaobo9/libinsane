@@ -273,6 +273,51 @@ extern enum lis_error lis_api_normalizer_source_names(
 	struct lis_api *to_wrap, struct lis_api **impl
 );
 
+
+/*!
+ * \brief Device model name may contain manufacturer name
+ *
+ * - API: Sane, WIA
+ * - Culprits: too many. Especially HP.
+ *
+ * If the model name contains also the manufacturer name, this workaround strips it.
+ *
+ * Random example:
+ *
+ * - Manufacturer: Brother
+ * - Model: Brother MFC-7360N
+ *
+ * Will become:
+ *
+ * - Manufacturer: Brother
+ * - Model: MFC-7360N
+ *
+ * Special case: HP. Manufacturer is "hewlett-packard", but
+ * [model names contain the prefix "hp"](https://openpaper.work/scanner_db/vendor/7/).
+ *
+ * \param[in] to_wrap Base implementation to wrap.
+ * \param[out] api Implementation of the API including the workaround.
+ */
+extern enum lis_error lis_api_normalizer_clean_dev_model_from_manufacturer(
+	struct lis_api *to_wrap, struct lis_api **api
+);
+
+
+/*!
+ * \brief Device model name may contain '_' instead of spaces
+ *
+ * - API: Sane
+ * - Culprit: HP
+ * - Seen on: [all HP devices](https://openpaper.work/scanner_db/vendor/7/)
+ *
+ * \param[in] to_wrap Base implementation to wrap.
+ * \param[out] api Implementation of the API including the workaround.
+ */
+extern enum lis_error lis_api_normalizer_clean_dev_model_char(
+	struct lis_api *to_wrap, struct lis_api **api
+);
+
+
 #ifdef __cplusplus
 }
 #endif

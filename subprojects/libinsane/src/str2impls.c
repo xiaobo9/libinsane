@@ -93,9 +93,9 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 			}
 			// -> workarounds
 			else if (strcmp(tok, "clean_dev_model_char") == 0) {
-				err = lis_api_workaround_clean_dev_model_char(*impls, &next);
+				err = lis_api_normalizer_clean_dev_model_char(*impls, &next);
 			} else if (strcmp(tok, "clean_dev_model_from_manufacturer") == 0) {
-				err = lis_api_workaround_clean_dev_model_from_manufacturer(*impls, &next);
+				err = lis_api_normalizer_clean_dev_model_from_manufacturer(*impls, &next);
 			} else if (strcmp(tok, "dedicated_thread") == 0) {
 				err = lis_api_workaround_dedicated_thread(*impls, &next);
 			} else if (strcmp(tok, "no_read_on_inactive_opt") == 0) {
