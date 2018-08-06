@@ -70,8 +70,6 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 			// -> normalizers
 			if (strcmp(tok, "all_opts_on_all_sources") == 0) {
 				err = lis_api_normalizer_all_opts_on_all_sources(*impls, &next);
-			} else if (strcmp(tok, "flatbed_and_feeder_behavior") == 0) {
-				err = lis_api_normalizer_flatbed_and_feeder_behavior(*impls, &next);
 			} else if (strcmp(tok, "min_one_source") == 0) {
 				err = lis_api_normalizer_min_one_source(*impls, &next);
 			} else if (strcmp(tok, "raw") == 0) {

@@ -7,7 +7,6 @@ LIBINSANE_SRCS = files(
     'normalizers/all_opts_on_all_sources.c',
     'normalizers/clean_dev_model_char.c',
     'normalizers/clean_dev_model_from_manufacturer.c',
-    'normalizers/flatbed_and_feeder_behavior.c',
     'normalizers/min_one_source.c',
     'normalizers/raw.c',
     'normalizers/raw24.c',

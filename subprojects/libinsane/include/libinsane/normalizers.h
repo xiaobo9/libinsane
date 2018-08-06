@@ -188,41 +188,6 @@ extern enum lis_error lis_api_normalizer_raw24(
 
 
 /*!
- * \brief Ensure the behavior is always the same whenever we scan from a flatbed or a feeder.
- *
- * - Culprits: Sane project, Microsoft
- *
- * Seen with some drivers with both Sane and WIA:
- *
- * - When scanning from feeder: at the end of a scan, we get an error code
- *   (or a function call) telling us when the whole page has been scanned.
- *   When requesting another scan, it will scan the next page. It no next
- *   page is available, another error code (or function call) will tell
- *   us we have reached the end.
- * - When scanning from flatbed: at the end of a scan, we get an error code
- *   (or a function call) telling us when the whole page has been scanned.
- *   Requesting another scan, it will sometimes scan again the very same page.
- *   It will never tell us that there is no paper left to scan
- *
- * Problem: Behavior should be independent of the actual source. Having 2 behaviors
- * is just bug-prone.
- *
- * Wanted behavior:
- *
- * - When scanning from feeder: unchanged
- * - When scanning from flatbed: the first scan is unchanged. When requesting
- *   a second scan, it must return an error code indicating that there is
- *   no paper left to scan.
- *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
- */
-extern enum lis_error lis_api_normalizer_flatbed_and_feeder_behavior(
-	struct lis_api *to_wrap, struct lis_api **impl
-);
-
-
-/*!
  * \brief Set safest default values
  *
  * ## Ensure the scan area is set to the maximum by default.
