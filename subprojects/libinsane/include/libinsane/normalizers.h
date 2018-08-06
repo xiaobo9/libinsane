@@ -190,6 +190,10 @@ extern enum lis_error lis_api_normalizer_raw24(
 /*!
  * \brief Set safest default values
  *
+ * ## Ensure default mode is Color
+ *
+ * Not all scanner have mode=Color by default
+ *
  * ## Ensure the scan area is set to the maximum by default.
  *
  * By default, some drivers don't have the scan area set to the maximum.
@@ -204,6 +208,18 @@ extern enum lis_error lis_api_normalizer_raw24(
  * This workaround just make sure the default mode is 24bits color.
  *
  * Requires: \ref lis_api_workaround_opt_values
+ *
+ * ## Fujistu: Extra options 'page-height' and 'page-width'
+ *
+ * - API: Sane
+ * - Culprit: Fujitsu
+ * - Seen on: [Fujitsu ScanSnap S1500](https://github.com/openpaperwork/paperwork/issues/230#issuecomment-22792362)
+ *   and [Fujistu ScanSnap iX500](https://openpaper.work/en/scanner_db/report/122/)
+ *
+ * Fujistu provides 2 extra settings, 'page-height' and 'page-width'. 'page-height' use case is unknown,
+ * but 'page-width' is used for automatic centering of the page.
+ * The default values are bad and this feature is specific to Fujistu ==> set them to the max
+ * by default to disable automatic centering.
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] impl Implementation of the API including the workaround.

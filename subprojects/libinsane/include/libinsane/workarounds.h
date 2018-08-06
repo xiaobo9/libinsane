@@ -76,26 +76,6 @@ extern enum lis_error lis_api_workaround_opt_values(
 
 
 /*!
- * \brief Extra options 'page-height' and 'page-width'
- *
- * - API: Sane
- * - Culprit: Fujitsu
- * - Seen on: [Fujitsu ScanSnap S1500](https://github.com/openpaperwork/paperwork/issues/230#issuecomment-22792362)
- *
- * This workaround wraps the option `br_x`, `tl_x`, `br_y` and `tl_y` in order to
- * set `page-height` and `page-width` accordingly.
- *
- * \todo Need to figure out how to set them exactly. Currently: set proportionally to (br_x - tl_x,
- *		br_y - tl_y).
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
- */
-extern enum lis_error lis_api_workaround_opts_page_size(
-	struct lis_api *to_wrap, struct lis_api **api
-);
-
-
-/*!
  * \brief Do not let application access value of inactive options
  *
  * - API: Sane

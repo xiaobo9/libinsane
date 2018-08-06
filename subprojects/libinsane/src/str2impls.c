@@ -88,13 +88,13 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 				err = lis_api_normalizer_strip_non_scanners(*impls, &next);
 			} else if (strcmp(tok, "safe_defaults") == 0) {
 				err = lis_api_normalizer_safe_defaults(*impls, &next);
-			}
-			// -> workarounds
-			else if (strcmp(tok, "clean_dev_model_char") == 0) {
+			} else if (strcmp(tok, "clean_dev_model_char") == 0) {
 				err = lis_api_normalizer_clean_dev_model_char(*impls, &next);
 			} else if (strcmp(tok, "clean_dev_model_from_manufacturer") == 0) {
 				err = lis_api_normalizer_clean_dev_model_from_manufacturer(*impls, &next);
-			} else if (strcmp(tok, "dedicated_thread") == 0) {
+			}
+			// -> workarounds
+			else if (strcmp(tok, "dedicated_thread") == 0) {
 				err = lis_api_workaround_dedicated_thread(*impls, &next);
 			} else if (strcmp(tok, "no_read_on_inactive_opt") == 0) {
 				err = lis_api_workaround_no_read_on_inactive_opt(*impls, &next);
@@ -104,8 +104,6 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 				err = lis_api_workaround_opt_names(*impls, &next);
 			} else if (strcmp(tok, "opt_values") == 0) {
 				err = lis_api_workaround_opt_values(*impls, &next);
-			} else if (strcmp(tok, "opts_page_size") == 0) {
-				err = lis_api_workaround_opts_page_size(*impls, &next);
 			} else {
 				lis_log_error("Unknown API wrapper: %s", tok);
 				err = LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
