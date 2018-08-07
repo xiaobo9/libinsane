@@ -21,10 +21,10 @@ extern "C" {
  * simulated.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_source_nodes(
-		struct lis_api *to_wrap, struct lis_api **impl
+		struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -40,10 +40,10 @@ extern enum lis_error lis_api_normalizer_source_nodes(
  * If there is no source at all, this normalization will create a fake one.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_min_one_source(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -62,10 +62,10 @@ extern enum lis_error lis_api_normalizer_min_one_source(
  * sources. Scanner options must be mapped on all its sources.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_all_opts_on_all_sources(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -79,10 +79,10 @@ extern enum lis_error lis_api_normalizer_all_opts_on_all_sources(
  * options, and any change to these options is applied back to the WIA2 options.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_scan_area_opts(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -101,10 +101,10 @@ extern enum lis_error lis_api_normalizer_scan_area_opts(
  * C API)
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_resolution(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -120,10 +120,10 @@ extern enum lis_error lis_api_normalizer_resolution(
  * See \ref lis_item.type.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_source_types(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -137,10 +137,10 @@ extern enum lis_error lis_api_normalizer_source_types(
  * WIA: Video devices are directly stripped by the WIA support module of LibInsane.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_strip_non_scanners(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -162,10 +162,10 @@ extern enum lis_error lis_api_normalizer_strip_non_scanners(
  * [must support the BMP format](https://msdn.microsoft.com/en-us/ie/ff546016(v=vs.94)).
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_raw(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -180,10 +180,10 @@ extern enum lis_error lis_api_normalizer_raw(
  * This normalization ensures the output image is always in RAW24 (RGB).
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_raw24(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -222,10 +222,10 @@ extern enum lis_error lis_api_normalizer_raw24(
  * by default to disable automatic centering.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_safe_defaults(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -248,10 +248,10 @@ extern enum lis_error lis_api_normalizer_safe_defaults(
  * - 'Document Table' --> 'flatbed' (Epson perfection v19)
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] impl Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_source_names(
-	struct lis_api *to_wrap, struct lis_api **impl
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -277,10 +277,10 @@ extern enum lis_error lis_api_normalizer_source_names(
  * [model names contain the prefix "hp"](https://openpaper.work/scanner_db/vendor/7/).
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_clean_dev_model_from_manufacturer(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -292,10 +292,10 @@ extern enum lis_error lis_api_normalizer_clean_dev_model_from_manufacturer(
  * - Seen on: [all HP devices](https://openpaper.work/scanner_db/vendor/7/)
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_normalizer_clean_dev_model_char(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 

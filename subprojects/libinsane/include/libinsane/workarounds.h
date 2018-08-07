@@ -30,10 +30,10 @@ extern "C" {
  * This workaround replaces it by an option option 'source'.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_workaround_opt_names(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -68,10 +68,10 @@ extern enum lis_error lis_api_workaround_opt_names(
  * This workaround wraps a bunch of options, and try to revert the translations back to English.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_workaround_opt_values(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -85,10 +85,10 @@ extern enum lis_error lis_api_workaround_opt_values(
  * Some may even crash if the user application tries to set a value on an inactive option.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_workaround_no_read_on_inactive_opt(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -102,10 +102,10 @@ extern enum lis_error lis_api_workaround_no_read_on_inactive_opt(
  * This workaround makes it defined: it always returns an error.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_workaround_no_write_on_readonly_opt(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -122,7 +122,7 @@ extern enum lis_error lis_api_workaround_no_write_on_readonly_opt(
  * and doesn't even set it.
  */
 extern enum lis_error lis_api_workaround_no_write_on_single_value_opt(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 
@@ -138,10 +138,10 @@ extern enum lis_error lis_api_workaround_no_write_on_single_value_opt(
  * the job and making all the request go through this thread.
  *
  * \param[in] to_wrap Base implementation to wrap.
- * \param[out] api Implementation of the API including the workaround.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_workaround_dedicated_thread(
-	struct lis_api *to_wrap, struct lis_api **api
+	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
 #ifdef __cplusplus
