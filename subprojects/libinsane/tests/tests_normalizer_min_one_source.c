@@ -87,7 +87,7 @@ static void tests_src_default_source(void)
 	LIS_ASSERT_NOT_EQUAL(children[0], NULL);
 	LIS_ASSERT_EQUAL(children[1], NULL);
 
-	LIS_ASSERT_EQUAL(strcmp(children[0]->name, OPT_VALUE_SOURCE_ADF), 0);
+	LIS_ASSERT_EQUAL(strcmp(children[0]->name, OPT_VALUE_SOURCE_FLATBED), 0);
 
 	err = children[0]->get_options(children[0], &opts);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
