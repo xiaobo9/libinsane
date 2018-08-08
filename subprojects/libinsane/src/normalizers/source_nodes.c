@@ -76,10 +76,10 @@ static enum lis_error lis_sn_get_options(
 	struct lis_item *self, struct lis_option_descriptor ***descs
 );
 
-static enum lis_error lis_sn_dev_get_scan_parameters(
+static enum lis_error lis_sn_get_scan_parameters(
 	struct lis_item *self, struct lis_scan_parameters *parameters
 );
-static enum lis_error lis_sn_dev_scan_start(struct lis_item *self, struct lis_scan_session **session);
+static enum lis_error lis_sn_scan_start(struct lis_item *self, struct lis_scan_session **session);
 static enum lis_error lis_sn_dev_get_children(struct lis_item *self, struct lis_item ***children);
 static void lis_sn_dev_close(struct lis_item *self);
 
@@ -89,16 +89,15 @@ static const struct lis_item g_sn_dev_template = {
 	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = lis_sn_dev_get_children,
 	.get_options = lis_sn_get_options,
-	.get_scan_parameters = lis_sn_dev_get_scan_parameters,
-	.scan_start = lis_sn_dev_scan_start,
+	/* we have to let get_scan_parameters() and scan_start() work on the root node
+	 * as well, otherwise the normalizer 'min_one_source' can't work
+	 */
+	.get_scan_parameters = lis_sn_get_scan_parameters,
+	.scan_start = lis_sn_scan_start,
 	.close = lis_sn_dev_close,
 };
 
 
-static enum lis_error lis_sn_src_get_scan_parameters(
-	struct lis_item *self, struct lis_scan_parameters *parameters
-);
-static enum lis_error lis_sn_src_scan_start(struct lis_item *self, struct lis_scan_session **session);
 static enum lis_error lis_sn_src_get_children(struct lis_item *self, struct lis_item ***children);
 static void lis_sn_src_close(struct lis_item *self);
 
@@ -108,8 +107,8 @@ static const struct lis_item g_sn_source_template = {
 	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = lis_sn_src_get_children,
 	.get_options = lis_sn_get_options,
-	.get_scan_parameters = lis_sn_src_get_scan_parameters,
-	.scan_start = lis_sn_src_scan_start,
+	.get_scan_parameters = lis_sn_get_scan_parameters,
+	.scan_start = lis_sn_scan_start,
 	.close = lis_sn_src_close,
 };
 
@@ -243,6 +242,11 @@ static enum lis_error set_source(struct lis_sn_item_private *private)
 	union lis_value value;
 	int set_flags;
 
+	if (private == &private->device->item) {
+		lis_log_info("Scanning on the root node --> cannot set source");
+		return LIS_OK;
+	}
+
 	lis_log_info("Setting source to '%s'", private->item.name);
 	err = private->device->wrapped->get_options(private->device->wrapped, &opts);
 	if (LIS_IS_ERROR(err)) {
@@ -272,7 +276,7 @@ static enum lis_error set_source(struct lis_sn_item_private *private)
 }
 
 
-static enum lis_error lis_sn_src_get_scan_parameters(
+static enum lis_error lis_sn_get_scan_parameters(
 		struct lis_item *self, struct lis_scan_parameters *parameters
 	)
 {
@@ -294,7 +298,7 @@ static enum lis_error lis_sn_src_get_scan_parameters(
 }
 
 
-static enum lis_error lis_sn_src_scan_start(struct lis_item *self, struct lis_scan_session **session)
+static enum lis_error lis_sn_scan_start(struct lis_item *self, struct lis_scan_session **session)
 {
 	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
 	enum lis_error err;
@@ -312,26 +316,6 @@ static enum lis_error lis_sn_src_scan_start(struct lis_item *self, struct lis_sc
 	}
 	private->device->scan_running = 1;
 	return err;
-}
-
-static enum lis_error lis_sn_dev_get_scan_parameters(
-		struct lis_item *self, struct lis_scan_parameters *parameters
-	)
-{
-	LIS_UNUSED(self);
-	LIS_UNUSED(parameters);
-	/* prevent running get_scan_parameters() on the root device to avoid programming mistake */
-	lis_log_error("Tried to run get_scan_parameters() on root node. Not allowed");
-	return LIS_ERR_INVALID_VALUE;
-}
-
-static enum lis_error lis_sn_dev_scan_start(struct lis_item *self, struct lis_scan_session **session)
-{
-	LIS_UNUSED(self);
-	LIS_UNUSED(session);
-	/* prevent running scan_start() on the root device to avoid programming mistake */
-	lis_log_error("Tried to run scan_start() on root node. Not allowed");
-	return LIS_ERR_INVALID_VALUE;
 }
 
 
