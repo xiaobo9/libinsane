@@ -42,6 +42,10 @@ check: build_c
 test: build/build.ninja
 	(cd build && ninja test)
 
+test_hw:
+	rm -rf test_hw_out
+	. ./activate_test_env.sh && subprojects/libinsane-gobject/tests/test_hw.py test_hw_out
+
 linux_exe:
 
 windows_exe:

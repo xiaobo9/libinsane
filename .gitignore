@@ -7,6 +7,7 @@ generated/
 venv/
 *.gir
 *.typelib
+test_hw_out/
 
 GPATH
 GRTAGS
