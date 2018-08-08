@@ -17,7 +17,8 @@ sudo apt install \
         build-essential \
         libsane-dev \
         libgirepository1.0-dev gobject-introspection \
-        libcunit1-ncurses-dev
+        libcunit1-ncurses-dev \
+        valgrind
 make
 ```
 
