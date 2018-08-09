@@ -65,6 +65,14 @@ enum lis_error lis_safebet(struct lis_api **out_impls)
 	}
 	*out_impls = next;
 
+	if (lis_getenv("LIBINSANE_WORKAROUND_CHECK_CAPABILTIES", 1)) {
+		err = lis_api_workaround_check_capabilities(*out_impls, &next);
+		if (LIS_IS_ERROR(err)) {
+			goto error;
+		}
+		*out_impls = next;
+	}
+
 	if (lis_getenv("LIBINSANE_NORMALIZER_SOURCE_NODES", 1)) {
 		err = lis_api_normalizer_source_nodes(*out_impls, &next);
 		if (LIS_IS_ERROR(err)) {

@@ -76,7 +76,9 @@ extern enum lis_error lis_api_workaround_opt_values(
 
 
 /*!
- * \brief Do not let application access value of inactive options
+ * \brief Prevent operations on options that are not allowed by capilities
+ *
+ * ## Do not let application access value of inactive options
  *
  * - API: Sane
  * - Culprit: Can't remember
@@ -84,16 +86,7 @@ extern enum lis_error lis_api_workaround_opt_values(
  * Some drivers allows access to inactive options (even just for reading).
  * Some may even crash if the user application tries to set a value on an inactive option.
  *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] out_impl Implementation of the out_impl including the workaround.
- */
-extern enum lis_error lis_api_workaround_no_read_on_inactive_opt(
-	struct lis_api *to_wrap, struct lis_api **out_impl
-);
-
-
-/*!
- * \brief Do not let application set value on read-only options
+ * ## Do not let application set value on read-only options
  *
  * - API: Sane
  * - Culprit: Can't remember
@@ -101,16 +94,7 @@ extern enum lis_error lis_api_workaround_no_read_on_inactive_opt(
  * Behavior is undefined when trying to set read-only values.
  * This workaround makes it defined: it always returns an error.
  *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] out_impl Implementation of the out_impl including the workaround.
- */
-extern enum lis_error lis_api_workaround_no_write_on_readonly_opt(
-	struct lis_api *to_wrap, struct lis_api **out_impl
-);
-
-
-/*!
- * \brief Do not let application set value on option that can have only one value
+ * ##  Do not let application set value on option that can have only one value
  *
  * - API: Sane
  * - Culprit: Epson
@@ -120,8 +104,11 @@ extern enum lis_error lis_api_workaround_no_write_on_readonly_opt(
  * (ex: source=ADF), Sane driver may return SANE_STATUS_INVAL instead of success.
  * This workaround makes sure the value provided matches the only one possible
  * and doesn't even set it.
+ *
+ * \param[in] to_wrap Base implementation to wrap.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
-extern enum lis_error lis_api_workaround_no_write_on_single_value_opt(
+extern enum lis_error lis_api_workaround_check_capabilities(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 

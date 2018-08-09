@@ -11,6 +11,7 @@ LIBINSANE_VALGRIND_TESTS = [
     'normalizer_source_types',
     'workaround_opt_values',
     'workaround_opt_names',
+    'workaround_check_capabilities',
 ]
 
 CUNIT = dependency('cunit')

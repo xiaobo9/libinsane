@@ -8,22 +8,24 @@
 #include <libinsane/dumb.h>
 #include <libinsane/log.h>
 #include <libinsane/normalizers.h>
+#include <libinsane/workarounds.h>
 #include <libinsane/util.h>
 
 #include "util.h"
 
 
 static struct lis_api *g_dumb = NULL;
-static struct lis_api *g_res = NULL;
+static struct lis_api *g_src = NULL;
+static struct lis_api *g_check = NULL;
 
 
-static void tests_resolution_integer_range(void)
+static int tests_init(void)
 {
-	static const struct lis_option_descriptor opt_resolution = {
-		.name = OPT_NAME_RESOLUTION,
-		.title = "resolution title",
-		.desc = "resolution desc",
-		.capabilities = LIS_CAP_SW_SELECT,
+	static const struct lis_option_descriptor opt_resolution_inactive = {
+		.name = OPT_NAME_RESOLUTION"_inactive",
+		.title = "resolution inactive title",
+		.desc = "resolution inactive desc",
+		.capabilities = LIS_CAP_INACTIVE | LIS_CAP_SW_SELECT,
 		.value = {
 			.type = LIS_TYPE_INTEGER,
 			.unit = LIS_UNIT_DPI,
@@ -37,256 +39,205 @@ static void tests_resolution_integer_range(void)
 			},
 		},
 	};
-	static const union lis_value opt_resolution_default = {
+	static const union lis_value opt_resolution_inactive_default = {
 		.integer = 120,
 	};
-	struct lis_item *item = NULL;
-	struct lis_option_descriptor **opts = NULL;
-	enum lis_error err;
-
-	g_res = NULL;
-	err = lis_api_dumb(&g_dumb, "dummy0");
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
-
-	err = lis_api_normalizer_resolution(g_dumb, &g_res);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = g_res->get_device(g_res, LIS_DUMB_DEV_ID_FIRST, &item);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = item->get_options(item, &opts);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	LIS_ASSERT_EQUAL(strcmp(opts[0]->name, OPT_NAME_RESOLUTION), 0);
-	LIS_ASSERT_EQUAL(opts[1], NULL);
-
-	LIS_ASSERT_EQUAL(opts[0]->value.type, LIS_TYPE_INTEGER);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.type, LIS_CONSTRAINT_LIST);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.nb_values, 5);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[0].integer, 50);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[1].integer, 100);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[2].integer, 150);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[3].integer, 200);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[4].integer, 250);
-
-	item->close(item);
-	g_res->cleanup(g_res);
-}
-
-
-static void tests_resolution_double_list(void)
-{
-	static union lis_value resolutions[] = {
-		{ .dbl = 50.0 },
-		{ .dbl = 100.0 },
-		{ .dbl = 150.0 },
-		{ .dbl = 200.0 },
-		{ .dbl = 250.0 },
+	static const struct lis_option_descriptor opt_resolution_readonly = {
+		.name = OPT_NAME_RESOLUTION"_readonly",
+		.title = "resolution read-only title",
+		.desc = "resolution read-only desc",
+		.capabilities = 0, /* read-only */
+		.value = {
+			.type = LIS_TYPE_INTEGER,
+			.unit = LIS_UNIT_DPI,
+		},
+		.constraint = {
+			.type = LIS_CONSTRAINT_RANGE,
+			.possible.range = {
+				.min.integer = 50,
+				.max.integer = 250,
+				.interval.integer = 50,
+			},
+		},
 	};
-	static const struct lis_option_descriptor opt_resolution = {
-		.name = OPT_NAME_RESOLUTION,
-		.title = "resolution title",
-		.desc = "resolution desc",
+	static const union lis_value opt_resolution_readonly_default = {
+		.integer = 160,
+	};
+	static const union lis_value opt_source_constraint[] = {
+		{ .string = OPT_VALUE_SOURCE_FLATBED },
+	};
+	static const struct lis_option_descriptor opt_source = {
+		.name = OPT_NAME_SOURCE,
+		.title = "source title",
+		.desc = "source desc",
 		.capabilities = LIS_CAP_SW_SELECT,
 		.value = {
-			.type = LIS_TYPE_DOUBLE,
+			.type = LIS_TYPE_INTEGER,
 			.unit = LIS_UNIT_DPI,
 		},
 		.constraint = {
 			.type = LIS_CONSTRAINT_LIST,
 			.possible.list = {
-				.values = resolutions,
-				.nb_values = LIS_COUNT_OF(resolutions),
+				.nb_values = LIS_COUNT_OF(opt_source_constraint),
+				.values = (union lis_value *)&opt_source_constraint,
 			},
 		},
 	};
-	static const union lis_value opt_resolution_default = {
-		.integer = 120,
+	static const union lis_value opt_source_default = {
+		.string = OPT_VALUE_SOURCE_FLATBED,
 	};
-	struct lis_item *item = NULL;
-	struct lis_option_descriptor **opts = NULL;
 	enum lis_error err;
 
-	g_res = NULL;
+	g_check = NULL;
+	g_dumb = NULL;
+	g_src = NULL;
+
 	err = lis_api_dumb(&g_dumb, "dummy0");
-	LIS_ASSERT_EQUAL(err, LIS_OK);
+	if (LIS_IS_ERROR(err)) {
+		return -1;
+	}
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
+	lis_dumb_add_option(g_dumb, &opt_resolution_inactive, &opt_resolution_inactive_default);
+	lis_dumb_add_option(g_dumb, &opt_resolution_readonly, &opt_resolution_readonly_default);
+	lis_dumb_add_option(g_dumb, &opt_source, &opt_source_default);
 
-	err = lis_api_normalizer_resolution(g_dumb, &g_res);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = g_res->get_device(g_res, LIS_DUMB_DEV_ID_FIRST, &item);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = item->get_options(item, &opts);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	LIS_ASSERT_EQUAL(strcmp(opts[0]->name, OPT_NAME_RESOLUTION), 0);
-	LIS_ASSERT_EQUAL(opts[1], NULL);
-
-	LIS_ASSERT_EQUAL(opts[0]->value.type, LIS_TYPE_INTEGER);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.type, LIS_CONSTRAINT_LIST);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.nb_values, 5);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[0].integer, 50);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[1].integer, 100);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[2].integer, 150);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[3].integer, 200);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[4].integer, 250);
-
-	item->close(item);
-	g_res->cleanup(g_res);
+	err = lis_api_normalizer_min_one_source(g_dumb, &g_src);
+	if (LIS_IS_ERROR(err)) {
+		return -1;
+	}
+	return 0;
 }
 
 
-static void tests_resolution_double_range(void)
+static int tests_cleanup(void)
 {
-	static const struct lis_option_descriptor opt_resolution = {
-		.name = OPT_NAME_RESOLUTION,
-		.title = "resolution title",
-		.desc = "resolution desc",
-		.capabilities = LIS_CAP_SW_SELECT,
-		.value = {
-			.type = LIS_TYPE_DOUBLE,
-			.unit = LIS_UNIT_DPI,
-		},
-		.constraint = {
-			.type = LIS_CONSTRAINT_RANGE,
-			.possible.range = {
-				.min.dbl = 50.0,
-				.max.dbl = 250.0,
-				.interval.dbl = 50.0,
-			},
-		},
-	};
-	static const union lis_value opt_resolution_default = {
-		.dbl = 120.0,
-	};
-	struct lis_item *item = NULL;
-	struct lis_option_descriptor **opts = NULL;
-	enum lis_error err;
-
-	g_res = NULL;
-	err = lis_api_dumb(&g_dumb, "dummy0");
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
-
-	err = lis_api_normalizer_resolution(g_dumb, &g_res);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = g_res->get_device(g_res, LIS_DUMB_DEV_ID_FIRST, &item);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = item->get_options(item, &opts);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	LIS_ASSERT_EQUAL(strcmp(opts[0]->name, OPT_NAME_RESOLUTION), 0);
-	LIS_ASSERT_EQUAL(opts[1], NULL);
-
-	LIS_ASSERT_EQUAL(opts[0]->value.type, LIS_TYPE_INTEGER);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.type, LIS_CONSTRAINT_LIST);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.nb_values, 5);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[0].integer, 50);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[1].integer, 100);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[2].integer, 150);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[3].integer, 200);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[4].integer, 250);
-
-	item->close(item);
-	g_res->cleanup(g_res);
+	struct lis_api *api = (g_check ? g_check : (g_src ? g_src : g_dumb));
+	api->cleanup(api);
+	return 0;
 }
 
 
-static void tests_resolution_double_range_getset(void)
+static void tests_inactive(void)
 {
-	static const struct lis_option_descriptor opt_resolution = {
-		.name = OPT_NAME_RESOLUTION,
-		.title = "resolution title",
-		.desc = "resolution desc",
-		.capabilities = LIS_CAP_SW_SELECT,
-		.value = {
-			.type = LIS_TYPE_DOUBLE,
-			.unit = LIS_UNIT_DPI,
-		},
-		.constraint = {
-			.type = LIS_CONSTRAINT_RANGE,
-			.possible.range = {
-				.min.dbl = 50.0,
-				.max.dbl = 250.0,
-				.interval.dbl = 50.0,
-			},
-		},
-	};
-	static const union lis_value opt_resolution_default = {
-		.dbl = 120.0,
-	};
-	struct lis_item *item = NULL;
-	struct lis_option_descriptor **opts = NULL;
+	enum lis_error err;
+	struct lis_item *item;
+	struct lis_item **children;
+	struct lis_option_descriptor **opts;
 	union lis_value value;
-	enum lis_error err;
 	int set_flags;
 
-	g_res = NULL;
-	err = lis_api_dumb(&g_dumb, "dummy0");
+	LIS_ASSERT_EQUAL(tests_init(), 0);
+
+	err = lis_api_workaround_check_capabilities(g_src, &g_check);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
-	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
-
-	err = lis_api_normalizer_resolution(g_dumb, &g_res);
+	err = g_check->get_device(g_check, LIS_DUMB_DEV_ID_FIRST, &item);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
-	err = g_res->get_device(g_res, LIS_DUMB_DEV_ID_FIRST, &item);
+	err = item->get_children(item, &children);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	LIS_ASSERT_NOT_EQUAL(children[0], NULL);
+	LIS_ASSERT_EQUAL(children[1], NULL);
+
+	err = children[0]->get_options(children[0], &opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	LIS_ASSERT_EQUAL(strcmp(opts[0]->name, OPT_NAME_RESOLUTION"_inactive"), 0);
+	err = opts[0]->fn.get_value(opts[0], &value);
+	LIS_ASSERT_EQUAL(err, LIS_ERR_ACCESS_DENIED);
+	value.integer = 200;
+	err = opts[0]->fn.set_value(opts[0], value, &set_flags);
+	LIS_ASSERT_EQUAL(err, LIS_ERR_ACCESS_DENIED);
+
+	item->close(item);
+	LIS_ASSERT_EQUAL(tests_cleanup(), 0);
+}
+
+
+static void tests_read_only(void)
+{
+	enum lis_error err;
+
+	struct lis_item *item;
+	struct lis_option_descriptor **opts;
+	union lis_value value;
+	int set_flags;
+
+	LIS_ASSERT_EQUAL(tests_init(), 0);
+
+	err = lis_api_workaround_check_capabilities(g_src, &g_check);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = g_check->get_device(g_check, LIS_DUMB_DEV_ID_FIRST, &item);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	err = item->get_options(item, &opts);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
-	LIS_ASSERT_EQUAL(strcmp(opts[0]->name, OPT_NAME_RESOLUTION), 0);
-	LIS_ASSERT_EQUAL(opts[1], NULL);
-
-	LIS_ASSERT_EQUAL(opts[0]->value.type, LIS_TYPE_INTEGER);
-	LIS_ASSERT_EQUAL(opts[0]->constraint.type, LIS_CONSTRAINT_LIST);
-
-	err = opts[0]->fn.get_value(opts[0], &value);
+	LIS_ASSERT_EQUAL(strcmp(opts[1]->name, OPT_NAME_RESOLUTION"_readonly"), 0);
+	err = opts[1]->fn.get_value(opts[1], &value);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
-	LIS_ASSERT_EQUAL(value.integer, 120);
-
+	LIS_ASSERT_EQUAL(value.integer, 160);
 	value.integer = 200;
-	err = opts[0]->fn.set_value(opts[0], value, &set_flags);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = opts[0]->fn.get_value(opts[0], &value);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-	LIS_ASSERT_EQUAL(value.integer, 200);
+	err = opts[1]->fn.set_value(opts[1], value, &set_flags);
+	LIS_ASSERT_EQUAL(err, LIS_ERR_ACCESS_DENIED);
 
 	item->close(item);
-	g_res->cleanup(g_res);
+	LIS_ASSERT_EQUAL(tests_cleanup(), 0);
 }
+
+
+static void tests_single_value(void)
+{
+	enum lis_error err;
+	struct lis_item *item;
+	struct lis_option_descriptor **opts;
+	union lis_value value;
+	int set_flags;
+
+	LIS_ASSERT_EQUAL(tests_init(), 0);
+
+	err = lis_api_workaround_check_capabilities(g_src, &g_check);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = g_check->get_device(g_check, LIS_DUMB_DEV_ID_FIRST, &item);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = item->get_options(item, &opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	LIS_ASSERT_EQUAL(strcmp(opts[2]->name, OPT_NAME_SOURCE), 0);
+	err = opts[2]->fn.get_value(opts[2], &value);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_FLATBED), 0);
+
+	value.string = OPT_VALUE_SOURCE_FLATBED;
+	err = opts[2]->fn.set_value(opts[2], value, &set_flags);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	value.string = OPT_VALUE_SOURCE_ADF;
+	err = opts[2]->fn.set_value(opts[2], value, &set_flags);
+	LIS_ASSERT_EQUAL(err, LIS_ERR_INVALID_VALUE);
+
+	item->close(item);
+	LIS_ASSERT_EQUAL(tests_cleanup(), 0);
+}
+
 
 int register_tests(void)
 {
 	CU_pSuite suite = NULL;
 
-	suite = CU_add_suite("opt_mode", NULL, NULL);
+	suite = CU_add_suite("check_capabilities", NULL, NULL);
 	if (suite == NULL) {
 		fprintf(stderr, "CU_add_suite() failed\n");
 		return 0;
 	}
 
-	if (CU_add_test(suite, "tests_resolution_integer_range()", tests_resolution_integer_range) == NULL
-			|| CU_add_test(suite, "tests_resolution_double_list()",
-				tests_resolution_double_list) == NULL
-			|| CU_add_test(suite, "tests_resolution_double_range()",
-				tests_resolution_double_range) == NULL
-			|| CU_add_test(suite, "tests_resolution_double_range_getset()",
-				tests_resolution_double_range_getset) == NULL) {
+	if (CU_add_test(suite, "inactive", tests_inactive) == NULL
+			|| CU_add_test(suite, "read_only", tests_read_only) == NULL
+			|| CU_add_test(suite, "single_value", tests_single_value) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}

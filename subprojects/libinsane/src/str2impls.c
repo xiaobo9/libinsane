@@ -96,10 +96,8 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 			// -> workarounds
 			else if (strcmp(tok, "dedicated_thread") == 0) {
 				err = lis_api_workaround_dedicated_thread(*impls, &next);
-			} else if (strcmp(tok, "no_read_on_inactive_opt") == 0) {
-				err = lis_api_workaround_no_read_on_inactive_opt(*impls, &next);
-			} else if (strcmp(tok, "no_write_on_readonly_opt") == 0) {
-				err = lis_api_workaround_no_write_on_readonly_opt(*impls, &next);
+			} else if (strcmp(tok, "check_capabilities") == 0) {
+				err = lis_api_workaround_check_capabilities(*impls, &next);
 			} else if (strcmp(tok, "opt_names") == 0) {
 				err = lis_api_workaround_opt_names(*impls, &next);
 			} else if (strcmp(tok, "opt_values") == 0) {
