@@ -100,7 +100,7 @@ static void tests_source_names(void)
 	LIS_ASSERT_EQUAL(strcmp(sources[2]->name, OPT_VALUE_SOURCE_FLATBED " TRUCK"), 0);
 	LIS_ASSERT_EQUAL(strcmp(sources[3]->name, OPT_VALUE_SOURCE_ADF " camion"), 0);
 	LIS_ASSERT_EQUAL(strcmp(sources[4]->name, OPT_VALUE_SOURCE_ADF " TULIPE"), 0);
-	LIS_ASSERT_EQUAL(strcmp(sources[5]->name, OPT_VALUE_SOURCE_FLATBED " MEH"), 0);
+	LIS_ASSERT_EQUAL(strcmp(sources[5]->name, OPT_VALUE_SOURCE_FLATBED " meh"), 0);
 	LIS_ASSERT_EQUAL(strcmp(sources[6]->name, OPT_VALUE_SOURCE_FLATBED " YOP"), 0);
 	LIS_ASSERT_EQUAL(sources[7], NULL);
 

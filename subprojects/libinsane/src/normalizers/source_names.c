@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -25,42 +26,42 @@ static struct {
 } g_source_name_mappings[] = {
 	{
 		// unchanged
-		.regex = OPT_VALUE_SOURCE_FLATBED "\\(.*\\)",
+		.regex = "^" OPT_VALUE_SOURCE_FLATBED "(.*)",
 		.replacement = OPT_VALUE_SOURCE_FLATBED REPLACE_STR,
 		.lowercase = 0,
 		.compiled = 0,
 	},
 	{
 		// unchanged
-		.regex = OPT_VALUE_SOURCE_ADF "\\(.*\\)",
+		.regex = "^" OPT_VALUE_SOURCE_ADF "(.*)",
 		.replacement = OPT_VALUE_SOURCE_ADF REPLACE_STR,
 		.lowercase = 0,
 		.compiled = 0,
 	},
 	{
 		// Sane
-		.regex = "adf\\(.*\\)",
+		.regex = "^adf(.*)",
 		.replacement = OPT_VALUE_SOURCE_ADF REPLACE_STR,
 		.lowercase = 0,
 		.compiled = 0,
 	},
 	{
 		// Sane
-		.regex = "automatic document feeder\\(.*\\)",
+		.regex = "^automatic document feeder(.*)",
 		.replacement = OPT_VALUE_SOURCE_ADF REPLACE_STR,
 		.lowercase = 0,
 		.compiled = 0,
 	},
 	{
 		// Sane + Epson Perfection v19
-		.regex = "document table\\(.*\\)",
+		.regex = "^document table(.*)",
 		.replacement = OPT_VALUE_SOURCE_FLATBED REPLACE_STR,
 		.lowercase = 0,
 		.compiled = 0,
 	},
 	{
 		// WIA
-		.regex = "[\\d]+\\\\Root\\\\\\(.*\\)",
+		.regex = "^[0-9]+\\\\Root\\\\(.*)",
 		.replacement = REPLACE_STR,
 		.lowercase = 1,
 		.compiled = 0,
@@ -75,12 +76,15 @@ static int g_refcount = 0;
 
 static char *replace_str(
 		const char *original, const char *to_replace,
-		const char *replacement, size_t replacement_len
+		const char *replacement, size_t replacement_len,
+		int lowercase
 	)
 {
 	const char *rptr;
 	size_t new_size;
 	char *out;
+	size_t i;
+	int c_idx;
 
 	rptr = strstr(original, to_replace);
 	if (to_replace == NULL) {
@@ -100,6 +104,13 @@ static char *replace_str(
 		(int)(replacement_len), replacement,
 		rptr + strlen(REPLACE_STR));
 
+	if (lowercase) {
+		for (i = 0 ; i < replacement_len ; i++) {
+			c_idx = i + ((int)(rptr - original));
+			out[c_idx] = (char)tolower(out[c_idx]);
+		}
+	}
+
 	out[new_size] = '\0';
 	return out;
 }
@@ -114,7 +125,7 @@ static enum lis_error compile_regexes(void)
 		r = regcomp(
 			&g_source_name_mappings[i].preg,
 			g_source_name_mappings[i].regex,
-			REG_ICASE
+			REG_ICASE | REG_EXTENDED
 		);
 		if (r != 0) {
 			char buf[256];
@@ -177,7 +188,8 @@ static enum lis_error item_filter(struct lis_item *item, int root, void *user_da
 		modified = replace_str(
 			g_source_name_mappings[i].replacement, REPLACE_STR,
 			item->name + matches[1].rm_so,
-			matches[1].rm_eo - matches[1].rm_so
+			matches[1].rm_eo - matches[1].rm_so,
+			g_source_name_mappings[i].lowercase
 		);
 		lis_log_info("%s -> %s -> %.*s (%d-%d) -> %s",
 			item->name, g_source_name_mappings[i].regex,
