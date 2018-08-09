@@ -11,6 +11,12 @@ enum lis_error lis_api_base_wrapper(struct lis_api *to_wrap, struct lis_api **wr
 
 
 /**
+ * \brief callback used to free data
+ */
+typedef void (*lis_bw_free_fn)(void *ptr);
+
+
+/**
  * \brief Filter can change item on-the-fly.
  * They can also change callbacks
  * \param[in,out] item item
@@ -23,6 +29,7 @@ void lis_bw_set_item_filter(struct lis_api *impl, lis_bw_item_filter filter, voi
 /**
  * \brief attach a pointer to the specified item.
  * Item must come from \ref lis_bw_set_item_filter().
+ * If required, you can use \ref lis_bw_set_on_close_item() to free the value when the item is closed.
  */
 void lis_bw_item_set_user_ptr(struct lis_item *item, void *user_ptr);
 void *lis_bw_item_get_user_ptr(struct lis_item *item);
@@ -49,9 +56,10 @@ void lis_bw_set_opt_desc_filter(struct lis_api *impl, lis_bw_opt_desc_filter fil
 
 /**
  * \brief attach a pointer to the specified option descriptor.
+ * \param[in] free_fn. Callback to free the data before options are reloaded. NULL allowed.
  * Item must come from \ref lis_bw_set_opt_desc_filter().
  */
-void lis_bw_opt_set_user_ptr(struct lis_option_descriptor *opt, void *user_ptr);
+void lis_bw_opt_set_user_ptr(struct lis_option_descriptor *opt, void *user_ptr, lis_bw_free_fn free_fn);
 void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt);
 
 

@@ -62,6 +62,7 @@ struct lis_bw_option_descriptor {
 	struct lis_bw_item *item;
 
 	void *user;
+	lis_bw_free_fn free_cb;
 };
 #define LIS_BW_OPT_DESC(opt) ((struct lis_bw_option_descriptor *)(opt))
 
@@ -303,6 +304,14 @@ static void free_opt_constraint(struct lis_option_descriptor *desc)
 	lis_log_error("Unknown constraint type: %s : %d", desc->name, desc->constraint.type);
 }
 
+static void free_opt_user(struct lis_bw_option_descriptor *opt)
+{
+	if (opt->user != NULL && opt->free_cb != NULL) {
+		opt->free_cb(opt->user);
+		opt->user = NULL;
+	}
+}
+
 static void free_options(struct lis_bw_item *item)
 {
 	int i;
@@ -314,6 +323,7 @@ static void free_options(struct lis_bw_item *item)
 	if (item->options != NULL) {
 		for (i = 0 ; item->options[i] != NULL ; i++) {
 			free_opt_constraint(&item->options[i]->basewrapper);
+			free_opt_user(item->options[i]);
 		}
 		FREE(item->options[0]);
 	}
@@ -424,6 +434,7 @@ static enum lis_error lis_bw_item_get_options(
 	if (private->options != NULL) {
 		for (i = 0 ; private->options[i] != NULL ; i++) {
 			free_opt_constraint(&private->options[i]->basewrapper);
+			free_opt_user(private->options[i]);
 		}
 		FREE(private->options[0]);
 	}
@@ -572,10 +583,11 @@ void *lis_bw_item_get_user_ptr(struct lis_item *self)
 }
 
 
-void lis_bw_opt_set_user_ptr(struct lis_option_descriptor *opt, void *user_ptr)
+void lis_bw_opt_set_user_ptr(struct lis_option_descriptor *opt, void *user_ptr, lis_bw_free_fn free_cb)
 {
 	struct lis_bw_option_descriptor *private = LIS_BW_OPT_DESC(opt);
 	private->user = user_ptr;
+	private->free_cb = free_cb;
 }
 
 
