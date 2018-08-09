@@ -35,7 +35,7 @@ static int tests_sn_init(void)
 		.constraint = {
 			.type = LIS_CONSTRAINT_LIST,
 			.possible.list = {
-				.nb_values = 2,
+				.nb_values = LIS_COUNT_OF(opt_source_constraint),
 				.values = (union lis_value*)&opt_source_constraint,
 			},
 		},

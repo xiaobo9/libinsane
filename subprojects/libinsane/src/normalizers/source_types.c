@@ -12,7 +12,7 @@
 #define NAME "normalizer_source_types"
 
 
-struct {
+static struct {
 	const char *regex;
 	enum lis_item_type type;
 	int compiled;

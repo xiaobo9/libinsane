@@ -508,12 +508,15 @@ static void lis_bw_item_root_close(struct lis_item *self)
 		if (item->children != NULL) {
 			for (i = 0 ; item->children[i] != NULL ; i++) {
 				item->impl->on_close_item.cb(
-					&item->children[i]->parent,
+					&item->children[i]->parent, 1 /* children */,
 					item->impl->on_close_item.user_data
 				);
 			}
 		}
-		item->impl->on_close_item.cb(self, item->impl->on_close_item.user_data);
+		item->impl->on_close_item.cb(
+			self, 0 /* root */,
+			item->impl->on_close_item.user_data
+		);
 	}
 
 	remove_root(item->impl, item);
