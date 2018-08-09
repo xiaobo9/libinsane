@@ -142,6 +142,7 @@ enum lis_error lis_safebet(struct lis_api **out_impls)
 						g_implementations[i].name);
 				goto error;
 			}
+			*out_impls = next;
 			nb_impls++;
 		}
 	}
