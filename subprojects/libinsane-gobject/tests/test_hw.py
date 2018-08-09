@@ -23,17 +23,16 @@ class Logger(GObject.GObject, Libinsane.Logger):
 
 def get_devices(api):
     print("Looking for scan devices ...")
-    devs = api.list_devices(Libinsane.DeviceLocations.ANY)
-    print("Found {} devices".format(len(devs)))
-    for dev in devs:
+    dev_descs = api.list_devices(Libinsane.DeviceLocations.ANY)
+    print("Found {} devices".format(len(dev_descs)))
+    for dev in dev_descs:
         print("[{}] : [{}]".format(dev.get_dev_id(), dev.to_string()))
-    for dev in devs:
+    devs = []
+    for dev in dev_descs:
         print("")
         dev_id = dev.get_dev_id()
-        print("Will use device {}".format(dev_id))
-        dev = api.get_device(dev_id)
-        print("Using device {}".format(dev.get_name()))
-        yield dev
+        devs.append(dev_id)
+    return devs
 
 
 def get_source(dev, source_name):
@@ -151,19 +150,25 @@ def main():
 
     print("Looking for devices ...")
 
-    for dev in get_devices(api):
-        output_file = os.path.join(output_dir, dev.get_name() + ".jpeg")
+    for dev_id in get_devices(api):
+        print("Will use device {}".format(dev_id))
+        dev = api.get_device(dev_id)
+        try:
+            print("Using device {}".format(dev.get_name()))
+            output_file = os.path.join(output_dir, dev.get_name() + ".jpeg")
 
-        print("Looking for source flatbed ...")
-        src = get_source(dev, "flatbed")
-        list_opts(src)
+            print("Looking for source flatbed ...")
+            src = get_source(dev, "flatbed")
+            list_opts(src)
 
-        # set the options
-        set_opt(src, 'resolution', 150)
+            # set the options
+            set_opt(src, 'resolution', 150)
 
-        print("Scanning ...")
-        scan(src, output_file)
-        print("Scan done")
+            print("Scanning ...")
+            scan(src, output_file)
+            print("Scan done")
+        finally:
+            dev.close()
 
     print("All scan done")
 
