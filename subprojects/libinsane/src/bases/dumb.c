@@ -156,9 +156,7 @@ static void dumb_cleanup_opts(struct lis_dumb_private *private)
 
 	for (i = 0 ; private->opts[i] != NULL ; i++) {
 		opt_private = LIS_DUMB_OPTION(private->opts[i]);
-		if (private->opts[i]->value.type == LIS_TYPE_STRING) {
-			FREE(opt_private->value.string);
-		}
+		lis_free(private->opts[i]->value.type, &opt_private->value);
 		FREE(opt_private);
 	}
 }
@@ -249,18 +247,7 @@ static enum lis_error dumb_opt_set_value(struct lis_option_descriptor *self,
 		return LIS_ERR_DEVICE_BUSY;
 	}
 
-	switch(self->value.type) {
-		case LIS_TYPE_BOOL:
-		case LIS_TYPE_INTEGER:
-		case LIS_TYPE_DOUBLE:
-		case LIS_TYPE_IMAGE_FORMAT:
-			memcpy(&private->value, &value, sizeof(private->value));
-			break;
-		case LIS_TYPE_STRING:
-			FREE(private->value.string);
-			private->value.string = strdup(value.string);
-			break;
-	}
+	lis_copy(self->value.type, &value, &private->value);
 	private->has_value = 1;
 
 	*set_flags = LIS_SET_FLAG_MUST_RELOAD_PARAMS;

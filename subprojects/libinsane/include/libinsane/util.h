@@ -33,7 +33,7 @@ extern "C" {
  * \param[in] original value to copy.
  * \param[out] copy duplicated value.
  */
-void lis_copy(
+enum lis_error lis_copy(
 	const enum lis_value_type type, const union lis_value *original, union lis_value *copy
 );
 
@@ -59,8 +59,11 @@ enum lis_error lis_maximize_scan_area(struct lis_item *item);
 
 
 /*!
- * \brief tries to convert variable type as well as possible.
+ * \brief compare values
+ * \retval 1 if values are identical
+ * \retval 0 if values are different
  */
+int lis_compare(enum lis_value_type type, union lis_value val1, union lis_value val2);
 
 
 #ifdef __cplusplus

@@ -24,6 +24,7 @@ LIBINSANE_SRCS = files(
     'workarounds/no_write_on_readonly_opt.c',
     'workarounds/opt_names.c',
     'workarounds/opt_values.c',
+    'util.c',
 )
 
 if host_machine.system() == 'windows'
