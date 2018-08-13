@@ -94,6 +94,12 @@ static const struct {
 		.wrap_cb = lis_api_normalizer_resolution,
 		.enabled_by_default = 1,
 	},
+	{
+		.name = "normalizer_clean_dev_descs",
+		.env = "LIBINSANE_NORMALIZER_CLEAN_DEV_DESCS",
+		.wrap_cb = lis_api_normalizer_clean_dev_descs,
+		.enabled_by_default = 1,
+	},
 };
 
 

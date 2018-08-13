@@ -171,7 +171,7 @@ static enum lis_error lis_multi_list_devices(
 			}
 			memcpy((*out_dev_descs)[nb_devs], devs[i][j], sizeof(struct lis_device_descriptor));
 			if (asprintf(&((*out_dev_descs)[nb_devs])->dev_id, "%s:%s",
-					((*out_dev_descs)[nb_devs])->impl->base_name,
+					private->impls[i]->base_name,
 					((*out_dev_descs)[nb_devs])->dev_id) < 0) {
 				((*out_dev_descs)[nb_devs])->dev_id = NULL;
 				lis_log_error("out of memory");

@@ -88,10 +88,8 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 				err = lis_api_normalizer_strip_non_scanners(*impls, &next);
 			} else if (strcmp(tok, "safe_defaults") == 0) {
 				err = lis_api_normalizer_safe_defaults(*impls, &next);
-			} else if (strcmp(tok, "clean_dev_model_char") == 0) {
-				err = lis_api_normalizer_clean_dev_model_char(*impls, &next);
-			} else if (strcmp(tok, "clean_dev_model_from_manufacturer") == 0) {
-				err = lis_api_normalizer_clean_dev_model_from_manufacturer(*impls, &next);
+			} else if (strcmp(tok, "clean_dev_descs") == 0) {
+				err = lis_api_normalizer_clean_dev_descs(*impls, &next);
 			}
 			// -> workarounds
 			else if (strcmp(tok, "dedicated_thread") == 0) {

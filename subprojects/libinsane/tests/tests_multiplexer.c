@@ -54,17 +54,14 @@ static void test_list_devices_prefix(void)
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 
 	LIS_ASSERT_EQUAL(strncmp(descs[0]->dev_id, "dummy0:", 7), 0);
-	LIS_ASSERT_NOT_EQUAL(descs[0]->impl, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[0]->vendor, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[0]->model, NULL);
 
 	LIS_ASSERT_EQUAL(strncmp(descs[1]->dev_id, "dummy1:", 7), 0);
-	LIS_ASSERT_NOT_EQUAL(descs[1]->impl, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[1]->vendor, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[1]->model, NULL);
 
 	LIS_ASSERT_EQUAL(strncmp(descs[2]->dev_id, "dummy1:", 7), 0);
-	LIS_ASSERT_NOT_EQUAL(descs[2]->impl, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[2]->vendor, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[2]->model, NULL);
 
@@ -84,7 +81,6 @@ static void test_list_devices_ko(void)
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 
 	LIS_ASSERT_EQUAL(strncmp(descs[0]->dev_id, "dummy0:", 7), 0);
-	LIS_ASSERT_NOT_EQUAL(descs[0]->impl, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[0]->vendor, NULL);
 	LIS_ASSERT_NOT_EQUAL(descs[0]->model, NULL);
 

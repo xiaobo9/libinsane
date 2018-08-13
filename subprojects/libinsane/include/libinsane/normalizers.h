@@ -256,7 +256,15 @@ extern enum lis_error lis_api_normalizer_source_names(
 
 
 /*!
- * \brief Device model name may contain manufacturer name
+ * \brief Clean device descriptors (name, model, etc)
+ *
+ * ## Device model name may contain '_' instead of spaces
+ *
+ * - API: Sane
+ * - Culprit: HP
+ * - Seen on: [all HP devices](https://openpaper.work/scanner_db/vendor/7/)
+ *
+ * ## Device model name may contain manufacturer name
  *
  * - API: Sane, WIA
  * - Culprits: too many. Especially HP.
@@ -279,22 +287,7 @@ extern enum lis_error lis_api_normalizer_source_names(
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
-extern enum lis_error lis_api_normalizer_clean_dev_model_from_manufacturer(
-	struct lis_api *to_wrap, struct lis_api **out_impl
-);
-
-
-/*!
- * \brief Device model name may contain '_' instead of spaces
- *
- * - API: Sane
- * - Culprit: HP
- * - Seen on: [all HP devices](https://openpaper.work/scanner_db/vendor/7/)
- *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] out_impl Implementation of the out_impl including the workaround.
- */
-extern enum lis_error lis_api_normalizer_clean_dev_model_char(
+extern enum lis_error lis_api_normalizer_clean_dev_descs(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 

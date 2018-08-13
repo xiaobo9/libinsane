@@ -45,6 +45,7 @@ struct lis_dumb_private {
 
 	enum lis_error list_devices_ret;
 	struct lis_device_descriptor **descs;
+	int allocated_descs;
 
 	enum lis_error get_device_ret;
 	struct lis_dumb_item **devices;
@@ -167,7 +168,9 @@ static void dumb_cleanup(struct lis_api *self)
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
 	free((void*)self->base_name);
 
-	dumb_cleanup_descs(private->descs);
+	if (private->allocated_descs) {
+		dumb_cleanup_descs(private->descs);
+	}
 	dumb_cleanup_devices(private->devices);
 	dumb_cleanup_opts(private);
 	free(private);
@@ -336,9 +339,9 @@ void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices)
 	struct lis_dumb_item *item;
 
 	private->descs = calloc(nb_devices + 1, sizeof(struct lis_device_descriptor *));
+	private->allocated_descs = 1;
 	for (i = 0 ; i < nb_devices ; i++) {
 		private->descs[i] = calloc(1, sizeof(struct lis_device_descriptor));
-		private->descs[i]->impl = &private->base;
 		asprintf(&private->descs[i]->dev_id, LIS_DUMB_DEV_ID_FORMAT, i);
 		private->descs[i]->vendor = "Microsoft";
 		private->descs[i]->model = "Bugware";
@@ -353,6 +356,13 @@ void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices)
 		item->dev_id = private->descs[i]->dev_id;
 		private->devices[i] = item;
 	}
+}
+
+
+void lis_dumb_set_dev_descs(struct lis_api *self, struct lis_device_descriptor **descs)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	private->descs = descs;
 }
 
 

@@ -288,7 +288,6 @@ static enum lis_error lis_sane_list_devices(
 			err = LIS_ERR_NO_MEM;
 			goto error;
 		}
-		(*out_dev_descs)[i]->impl = impl;
 		(*out_dev_descs)[i]->dev_id = strdup(dev_list[i]->name);
 		(*out_dev_descs)[i]->vendor = strdup(dev_list[i]->vendor);
 		(*out_dev_descs)[i]->model = strdup(dev_list[i]->model);

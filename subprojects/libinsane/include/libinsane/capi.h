@@ -13,8 +13,6 @@ extern "C" {
  * \brief Basic informations regarding a scanner.
  */
 struct lis_device_descriptor {
-	struct lis_api *impl;
-
 	/*!
 	 * \brief Device id to use to identify and access the scanner.
 	 *

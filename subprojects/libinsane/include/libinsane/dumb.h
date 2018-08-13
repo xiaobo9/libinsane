@@ -19,6 +19,11 @@ extern "C" {
  */
 extern enum lis_error lis_api_dumb(struct lis_api **impl, const char *name);
 
+void lis_dumb_set_dev_descs(struct lis_api *impl, struct lis_device_descriptor **descs);
+
+/**
+ * \brief generate fake device (and device descriptors)
+ */
 void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices);
 void lis_dumb_set_list_devices_return(struct lis_api *self, enum lis_error ret);
 void lis_dumb_set_get_device_return(struct lis_api *self, enum lis_error ret);
