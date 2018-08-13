@@ -21,7 +21,7 @@ Work In Progress
   - [ ] [raw24](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#ade0dd5eaafad0116abe8dec7110a09d4) (Sane)
   - [X] [safe_defaults](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a67a372c4f853395a4666d6a08582b98a) (Sane, WIA)
   - [X] [source_names](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a84a13e5fb92110ea221550e1f8962920) (Sane, WIA)
-  - [ ] [clean_dev_descs](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html) (Sane, WIA)
+  - [X] [clean_dev_descs](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html) (Sane, WIA)
 * Workarounds
   - [X] [opt_names](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a2b87714fe5739e8e479aa955a5b0bb93) (Sane)
   - [X] [opt values](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds_8h.html#a5f3347627b2e65cc425d070701e78659) (Sane)
