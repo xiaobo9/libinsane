@@ -13,6 +13,8 @@ static enum lis_error get_value(struct lis_option_descriptor *self, union lis_va
 	struct lis_option_descriptor *original = lis_bw_get_original_opt(self);
 
 	if (!LIS_OPT_IS_READABLE(original)) {
+		lis_log_warning("get_value(%s) -> capabilities prevent getting the value",
+			self->name);
 		return LIS_ERR_ACCESS_DENIED;
 	}
 
@@ -24,19 +26,25 @@ static enum lis_error set_value(struct lis_option_descriptor *self, union lis_va
 {
 	struct lis_option_descriptor *original = lis_bw_get_original_opt(self);
 
-	if (!LIS_OPT_IS_READABLE(original) || !LIS_OPT_IS_WRITABLE(original)) {
-		return LIS_ERR_ACCESS_DENIED;
-	}
-
 	// WORKAROUND(JFlesch): constraint has only one possible value
 	// --> don't try to set it. But still try to keep a consistent behavior.
 	if (original->constraint.type == LIS_CONSTRAINT_LIST
 			&& original->constraint.possible.list.nb_values == 1) {
 		if (lis_compare(original->value.type, value, original->constraint.possible.list.values[0])) {
+			lis_log_info("set_value(%s): Only one value possible -> option not set",
+				self->name);
 			return LIS_OK;
 		} else {
+			lis_log_warning("set_value(%s) -> only one value possible != different"
+				" from value request -> denied", self->name);
 			return LIS_ERR_INVALID_VALUE;
 		}
+	}
+
+	if (!LIS_OPT_IS_READABLE(original) || !LIS_OPT_IS_WRITABLE(original)) {
+		lis_log_warning("set_value(%s) -> capabilities prevent setting the value",
+			self->name);
+		return LIS_ERR_ACCESS_DENIED;
 	}
 
 	return original->fn.set_value(original, value, set_flags);
