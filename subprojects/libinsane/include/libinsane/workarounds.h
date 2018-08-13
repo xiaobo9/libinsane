@@ -99,6 +99,7 @@ extern enum lis_error lis_api_workaround_opt_values(
  * - API: Sane
  * - Culprit: Epson
  * - Seen on: [Epson DS-310](https://openpaper.work/scanner_db/report/120/)
+ * - Seen on: Epson XP-425
  *
  * When trying to set a value on a property that accept only one value
  * (ex: source=ADF), Sane driver may return SANE_STATUS_INVAL instead of success.

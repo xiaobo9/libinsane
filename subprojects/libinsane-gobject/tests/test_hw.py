@@ -4,6 +4,7 @@
 # subprojects/libinsane-gobject/examples/test_hw.py <directory>
 
 import os
+import re
 import sys
 
 import PIL.Image
@@ -134,6 +135,10 @@ def scan(source, output_file):
         session.cancel()
 
 
+def clean_filename(filename):
+    return re.sub("[^0-9a-zA-Z.]", "_", filename)
+
+
 def main():
     Libinsane.register_logger(Logger())
 
@@ -155,7 +160,8 @@ def main():
         dev = api.get_device(dev_id)
         try:
             print("Using device {}".format(dev.get_name()))
-            output_file = os.path.join(output_dir, dev.get_name() + ".jpeg")
+            output_file = clean_filename(dev.get_name() + ".jpeg")
+            output_file = os.path.join(output_dir, output_file)
 
             print("Looking for source flatbed ...")
             src = get_source(dev, "flatbed")
