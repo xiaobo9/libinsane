@@ -29,7 +29,7 @@ def main():
         dev = api.get_device(dev.get_dev_id())
 
         for item in [dev] + dev.get_children():
-            print("|-- " + dev.get_name())
+            print("|-- " + item.get_name())
             opts = item.get_options()
             for opt in opts:
                 print("|   |-- {}".format(opt.get_name()))
