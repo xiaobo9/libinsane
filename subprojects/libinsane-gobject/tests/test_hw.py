@@ -70,8 +70,7 @@ def set_opt(item, opt_name, opt_value):
     opts = item.get_options()
     opts = {opt.get_name(): opt for opt in opts}
     if opt_name not in opts:
-        print("Option '{}' not found".format(opt_name))
-        return
+        raise Exception("Option '{}' not found".format(opt_name))
     print("- Old {}: {}".format(opt_name, opts[opt_name].get_value()))
     print("- Allowed values: {}".format(opts[opt_name].get_constraint()))
     opts[opt_name].set_value(opt_value)

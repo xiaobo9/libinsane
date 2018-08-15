@@ -304,6 +304,7 @@ static enum lis_error opts_source_get_options(
 			lis_log_info("Adding option '%s' from root item to child item '%s'",
 				dev_opts[dev_opt_idx]->name, self->name);
 			private->opts[nb_opts] = dev_opts[dev_opt_idx];
+			nb_opts++;
 		}
 	}
 

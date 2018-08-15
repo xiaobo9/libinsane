@@ -44,6 +44,27 @@ static int tests_opts_init(void)
 	static const union lis_value opt_source_default = {
 		.string = OPT_VALUE_SOURCE_FLATBED
 	};
+	static const struct lis_option_descriptor opt_resolution = {
+		.name = OPT_NAME_RESOLUTION,
+		.title = "resolution title",
+		.desc = "resolution desc",
+		.capabilities = LIS_CAP_SW_SELECT,
+		.value = {
+			.type = LIS_TYPE_INTEGER,
+			.unit = LIS_UNIT_DPI,
+		},
+		.constraint = {
+			.type = LIS_CONSTRAINT_RANGE,
+			.possible.range = {
+				.min.integer = 50,
+				.max.integer = 250,
+				.interval.integer = 50,
+			},
+		},
+	};
+	static const union lis_value opt_resolution_default = {
+		.integer = 120,
+	};
 	enum lis_error err;
 
 	g_dumb = NULL;
@@ -56,6 +77,7 @@ static int tests_opts_init(void)
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
 	lis_dumb_add_option(g_dumb, &opt_source_template, &opt_source_default);
+	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
 
 	err = lis_api_normalizer_source_nodes(g_dumb, &g_sn);
 	if (LIS_IS_ERROR(err)) {
@@ -93,7 +115,8 @@ static void tests_sources_have_opts(void)
 	err = item->get_options(item, &opts);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(strcasecmp(opts[0]->name, OPT_NAME_SOURCE), 0);
-	LIS_ASSERT_EQUAL(opts[1], NULL);
+	LIS_ASSERT_EQUAL(strcasecmp(opts[1]->name, OPT_NAME_RESOLUTION), 0);
+	LIS_ASSERT_EQUAL(opts[2], NULL);
 
 	// should have been replicated on the children
 	err = item->get_children(item, &children);
@@ -103,7 +126,8 @@ static void tests_sources_have_opts(void)
 	err = children[0]->get_options(children[0], &opts);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(strcasecmp(opts[0]->name, OPT_NAME_SOURCE), 0);
-	LIS_ASSERT_EQUAL(opts[1], NULL);
+	LIS_ASSERT_EQUAL(strcasecmp(opts[1]->name, OPT_NAME_RESOLUTION), 0);
+	LIS_ASSERT_EQUAL(opts[2], NULL);
 
 	err = opts[0]->fn.get_value(opts[0], &value);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
