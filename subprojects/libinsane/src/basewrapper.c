@@ -424,7 +424,7 @@ static enum lis_error lis_bw_item_get_options(
 		return err;
 	}
 	if(private->impl->opt_desc_filter.cb == NULL) {
-		lis_log_info("%s: No option filter defined. Returning options as is.",
+		lis_log_debug("%s: No option filter defined. Returning options as is.",
 			private->impl->wrapper_name);
 		*descs = opts;
 		return err;
