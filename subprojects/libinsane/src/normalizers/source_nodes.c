@@ -72,7 +72,7 @@ struct lis_scan_session g_sn_scan_session_template = {
 };
 
 
-static enum lis_error lis_sn_get_options(
+static enum lis_error lis_sn_dev_get_options(
 	struct lis_item *self, struct lis_option_descriptor ***descs
 );
 
@@ -88,7 +88,7 @@ static const struct lis_item g_sn_dev_template = {
 	.name = NULL,
 	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = lis_sn_dev_get_children,
-	.get_options = lis_sn_get_options,
+	.get_options = lis_sn_dev_get_options,
 	/* we have to let get_scan_parameters() and scan_start() work on the root node
 	 * as well, otherwise the normalizer 'min_one_source' can't work
 	 */
@@ -99,6 +99,9 @@ static const struct lis_item g_sn_dev_template = {
 
 
 static enum lis_error lis_sn_src_get_children(struct lis_item *self, struct lis_item ***children);
+static enum lis_error lis_sn_src_get_options(
+	struct lis_item *self, struct lis_option_descriptor ***descs
+);
 static void lis_sn_src_close(struct lis_item *self);
 
 
@@ -106,7 +109,7 @@ static const struct lis_item g_sn_source_template = {
 	.name = NULL,
 	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = lis_sn_src_get_children,
-	.get_options = lis_sn_get_options,
+	.get_options = lis_sn_src_get_options,
 	.get_scan_parameters = lis_sn_get_scan_parameters,
 	.scan_start = lis_sn_scan_start,
 	.close = lis_sn_src_close,
@@ -225,12 +228,25 @@ static enum lis_error lis_sn_dev_get_children(struct lis_item *self, struct lis_
 }
 
 
-static enum lis_error lis_sn_get_options(
+static enum lis_error lis_sn_dev_get_options(
 		struct lis_item *self, struct lis_option_descriptor ***descs
-		)
+	)
 {
 	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
 	return private->device->wrapped->get_options(private->device->wrapped, descs);
+}
+
+
+static enum lis_error lis_sn_src_get_options(
+		struct lis_item *self, struct lis_option_descriptor ***out_descs
+	)
+{
+	// do not return any option ; that would be redundant with normalizer
+	// 'all_opts_on_all_sources'
+	static const struct lis_option_descriptor *descs[] = { NULL };
+	LIS_UNUSED(self);
+	*out_descs = (struct lis_option_descriptor **)descs;
+	return LIS_OK;
 }
 
 

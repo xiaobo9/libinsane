@@ -387,10 +387,12 @@ struct lis_item {
 	void (*close)(struct lis_item *self);
 };
 
+
 enum lis_device_locations {
 	LIS_DEVICE_LOCATIONS_ANY = 0, /*!< local and remote */
 	LIS_DEVICE_LOCATIONS_LOCAL_ONLY,
 };
+
 
 /*!
  * \brief LibInsane C API.

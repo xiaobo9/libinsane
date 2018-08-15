@@ -9,7 +9,7 @@
 
 int register_tests(void);
 
-// #define LOG_DEBUG
+#define LOG_DEBUG
 
 #ifndef LOG_DEBUG
 static void noop() {}
