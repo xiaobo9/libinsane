@@ -16,7 +16,6 @@ Work In Progress
   - [ ] [scan_area_opts](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a083c0198fa60e7432ed767bc7eec1ff6) (WIA)
   - [X] [resolution](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a2d8204e4f237beec9eaeed1e81f86aab)
   - [X] [source_types](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a1a053e0afa1e078d4b4f7259d6ede3fb) (Sane)
-  - [ ] [strip_non_scanners](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a6ad81b76fa1e382563696a4d48595c13) (Sane)
   - [ ] [raw](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a22994c0572bb0851582d7725ecb5706e) (WIA)
   - [ ] [raw24](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#ade0dd5eaafad0116abe8dec7110a09d4) (Sane)
   - [X] [safe_defaults](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a67a372c4f853395a4666d6a08582b98a) (Sane, WIA)

@@ -128,23 +128,6 @@ extern enum lis_error lis_api_normalizer_source_types(
 
 
 /*!
- * \brief Ensure there is only supported devices
- *
- * - Culprits: Sane project, Microsoft
- *
- * Sane: Remove v4l devices (video for linux ; Camera).
- *
- * WIA: Video devices are directly stripped by the WIA support module of LibInsane.
- *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] out_impl Implementation of the out_impl including the workaround.
- */
-extern enum lis_error lis_api_normalizer_strip_non_scanners(
-	struct lis_api *to_wrap, struct lis_api **out_impl
-);
-
-
-/*!
  * \brief Ensure the output format is RAW
  *
  * - Culprit: Microsoft.
