@@ -20,36 +20,27 @@
 
 struct safe_setter {
 	const char *opt_name;
-	enum lis_error (*cb)(struct lis_option_descriptor *opt, void *cb_data);
+	enum lis_error (*cb)(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
 	void *cb_data;
 };
 
 
-static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data);
-static enum lis_error set_to_limit_fail_allowed(struct lis_option_descriptor *opt, void *cb_data);
-static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data);
-static enum lis_error set_str_fail_allowed(struct lis_option_descriptor *opt, void *cb_data);
-static enum lis_error set_bool(struct lis_option_descriptor *opt, void *cb_data);
-static enum lis_error set_int_fail_allowed(struct lis_option_descriptor *opt, void *cb_data);
+static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
+static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
+static enum lis_error set_bool(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
+static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
 
 static int g_numbers[] = { -1, 1, 0, 300};
 
-struct safe_setter g_safe_setters[] = {
+static const struct safe_setter g_safe_setters[] = {
 	// all backends:
 	{ .opt_name = OPT_NAME_MODE, .cb = set_str, .cb_data = OPT_VALUE_MODE_COLOR },
 	{ .opt_name = OPT_NAME_PREVIEW, .cb = set_bool, .cb_data = &g_numbers[2] /* false */ },
-	// WORKAROUND(Jflesch): Sane test backend: Sometimes setting 'resolution' return
-	// "invalid value" for no apparent reason ?
-	{
-		.opt_name = OPT_NAME_RESOLUTION, .cb = set_int_fail_allowed,
-		.cb_data = &g_numbers[3] /* 300 */
-	},
-	// WORKAROUND(Jflesch): Sane test backend: capabilities=SW_SELECT, but setting the values
-	// will still fail
-	{ .opt_name = OPT_NAME_TL_X, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[0] },
-	{ .opt_name = OPT_NAME_TL_Y, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[0] },
-	{ .opt_name = OPT_NAME_BR_X, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[1] },
-	{ .opt_name = OPT_NAME_BR_Y, .cb = set_to_limit_fail_allowed, .cb_data = &g_numbers[1] },
+	{ .opt_name = OPT_NAME_RESOLUTION, .cb = set_int, .cb_data = &g_numbers[3] /* 300 */ },
+	{ .opt_name = OPT_NAME_TL_X, .cb = set_to_limit, .cb_data = &g_numbers[0] },
+	{ .opt_name = OPT_NAME_TL_Y, .cb = set_to_limit, .cb_data = &g_numbers[0] },
+	{ .opt_name = OPT_NAME_BR_X, .cb = set_to_limit, .cb_data = &g_numbers[1] },
+	{ .opt_name = OPT_NAME_BR_Y, .cb = set_to_limit, .cb_data = &g_numbers[1] },
 
 	// WORKAROUND(Jflesch): Fujistu SnapScan S1500 (Sane) + Fujistu SnapScan iX500 (Sane)
 	// page-width: Specifies the width of the media. Required for automatic centering of sheet-fed scans.
@@ -60,29 +51,15 @@ struct safe_setter g_safe_setters[] = {
 	{ .opt_name = "page-height", .cb = set_to_limit, .cb_data = &g_numbers[1] },
 
 	// Sane test backend:
-	{ .opt_name = "test-picture", .cb = set_str_fail_allowed, .cb_data = "Color pattern" },
+	{ .opt_name = "test-picture", .cb = set_str, .cb_data = "Color pattern" },
 
 	{ .opt_name = NULL },
 };
 
 
-const struct safe_setter *get_setter(const char *opt_name)
-{
-	int i;
-
-	for (i = 0 ; g_safe_setters[i].opt_name != NULL ; i++) {
-		if (strcasecmp(opt_name, g_safe_setters[i].opt_name) == 0) {
-			return &g_safe_setters[i];
-		}
-	}
-	return NULL;
-}
-
-
-static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data)
+static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data, int *set_flags)
 {
 	int minmax = *((int *)cb_data);
-	int set_flags;
 	union lis_value value;
 	enum lis_error err;
 	const char *minmax_str = minmax > 0 ? "max" : "min";
@@ -96,31 +73,21 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 	}
 
 	lis_log_info("Setting option '%s' to %s", opt->name, minmax_str);
-	err = opt->fn.set_value(opt, value, &set_flags);
+	err = opt->fn.set_value(opt, value, set_flags);
 	if (LIS_IS_OK(err)) {
 		lis_log_info("'%s'=%s: 0x%X, %s (set_flags=0x%X)",
-			opt->name, minmax_str, err, lis_strerror(err), set_flags);
+			opt->name, minmax_str, err, lis_strerror(err), *set_flags);
 	} else {
-		lis_log_warning("'%s'=%s: 0x%X, %s",
+		*set_flags = 0;
+		lis_log_error("'%s'=%s: 0x%X, %s",
 			opt->name, minmax_str, err, lis_strerror(err));
 	}
 	return err;
 }
 
 
-static enum lis_error set_to_limit_fail_allowed(struct lis_option_descriptor *opt, void *cb_data)
+static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data, int *set_flags)
 {
-	set_to_limit(opt, cb_data);
-	/* WORKAROUND(Jflesch): Sane test backend:
-	 * Sane test backend doesn't let us change the scan area ...
-	 */
-	return LIS_OK;
-}
-
-
-static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data)
-{
-	int set_flags;
 	union lis_value value;
 	enum lis_error err;
 
@@ -133,28 +100,21 @@ static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data)
 		return LIS_ERR_UNSUPPORTED;
 	}
 
-	err = opt->fn.set_value(opt, value, &set_flags);
+	err = opt->fn.set_value(opt, value, set_flags);
 	if (LIS_IS_OK(err)) {
 		lis_log_info("'%s'='%s': 0x%X, %s (set_flags=0x%X)",
-			opt->name, value.string, err, lis_strerror(err), set_flags);
+			opt->name, value.string, err, lis_strerror(err), *set_flags);
 	} else {
-		lis_log_warning("'%s'='%s': 0x%X, %s",
+		*set_flags = 0;
+		lis_log_error("'%s'='%s': 0x%X, %s",
 			opt->name, value.string, err, lis_strerror(err));
 	}
 	return err;
 }
 
 
-static enum lis_error set_str_fail_allowed(struct lis_option_descriptor *opt, void *cb_data)
+static enum lis_error set_bool(struct lis_option_descriptor *opt, void *cb_data, int *set_flags)
 {
-	set_str(opt, cb_data);
-	return LIS_OK;
-}
-
-
-static enum lis_error set_bool(struct lis_option_descriptor *opt, void *cb_data)
-{
-	int set_flags;
 	union lis_value value;
 	enum lis_error err;
 
@@ -167,20 +127,20 @@ static enum lis_error set_bool(struct lis_option_descriptor *opt, void *cb_data)
 		return LIS_ERR_UNSUPPORTED;
 	}
 
-	err = opt->fn.set_value(opt, value, &set_flags);
+	err = opt->fn.set_value(opt, value, set_flags);
 	if (LIS_IS_OK(err)) {
 		lis_log_info("'%s'='%d': 0x%X, %s (set_flags=0x%X)",
-			opt->name, value.boolean, err, lis_strerror(err), set_flags);
+			opt->name, value.boolean, err, lis_strerror(err), *set_flags);
 	} else {
-		lis_log_warning("'%s'='%d': 0x%X, %s",
+		*set_flags = 0;
+		lis_log_error("'%s'='%d': 0x%X, %s",
 			opt->name, value.boolean, err, lis_strerror(err));
 	}
 	return err;
 }
 
-static enum lis_error set_int_fail_allowed(struct lis_option_descriptor *opt, void *cb_data)
+static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, int *set_flags)
 {
-	int set_flags;
 	union lis_value value;
 	enum lis_error err;
 	int closest, closest_distance, distance, constraint_idx;
@@ -220,15 +180,16 @@ static enum lis_error set_int_fail_allowed(struct lis_option_descriptor *opt, vo
 		}
 	}
 
-	err = opt->fn.set_value(opt, value, &set_flags);
+	err = opt->fn.set_value(opt, value, set_flags);
 	if (LIS_IS_OK(err)) {
 		lis_log_info("'%s'='%d': 0x%X, %s (set_flags=0x%X)",
-			opt->name, value.integer, err, lis_strerror(err), set_flags);
+			opt->name, value.integer, err, lis_strerror(err), *set_flags);
 	} else {
-		lis_log_warning("'%s'='%d': 0x%X, %s",
+		*set_flags = 0;
+		lis_log_error("'%s'='%d': 0x%X, %s",
 			opt->name, value.integer, err, lis_strerror(err));
 	}
-	return LIS_OK;
+	return err;
 }
 
 
@@ -238,31 +199,48 @@ static enum lis_error item_filter(struct lis_item *item, int root, void *user_da
 	struct lis_option_descriptor **opts;
 	int opt_idx;
 	const struct safe_setter *setter;
+	int set_flags;
+	int setter_idx;
 
 	LIS_UNUSED(user_data);
 
-	lis_log_debug(NAME "->item_filter(): Getting options for item '%s' (%d)...", item->name, root);
-	err = item->get_options(item, &opts);
-	if (LIS_IS_ERROR(err)) {
-		lis_log_error(NAME "->item_filter(): Failed to get options of item '%s' (%d): 0x%X, %s",
-			item->name, root, err, lis_strerror(err));
-		return err;
-	}
+	for (setter_idx = 0; g_safe_setters[setter_idx].opt_name != NULL ; ) {
 
-	for (opt_idx = 0 ; opts[opt_idx] != NULL ; opt_idx++) {
-		setter = get_setter(opts[opt_idx]->name);
-		if (setter == NULL) {
-			continue;
-		}
-		err = setter->cb(opts[opt_idx], setter->cb_data);
+		lis_log_debug(NAME "->item_filter(): Getting options for item '%s' (%d)...", item->name, root);
+		err = item->get_options(item, &opts);
 		if (LIS_IS_ERROR(err)) {
-			lis_log_error(
-				NAME "->item_filter(): Failed to set option '%s'"
-				" to safe default: 0x%X, %s",
-				opts[opt_idx]->name, err, lis_strerror(err)
-			);
+			lis_log_error(NAME "->item_filter(): Failed to get options of item '%s' (%d): 0x%X, %s",
+				item->name, root, err, lis_strerror(err));
 			return err;
 		}
+
+		for (; g_safe_setters[setter_idx].opt_name != NULL ; setter_idx++) {
+			set_flags = 0;
+			setter = &g_safe_setters[setter_idx];
+
+			for (opt_idx = 0 ; opts[opt_idx] != NULL ; opt_idx++) {
+				if (strcasecmp(setter->opt_name, opts[opt_idx]->name) != 0) {
+					continue;
+				}
+
+				err = setter->cb(opts[opt_idx], setter->cb_data, &set_flags);
+				if (LIS_IS_ERROR(err)) {
+					lis_log_error(
+						NAME "->item_filter(): Failed to set option '%s'"
+						" to safe default: 0x%X, %s",
+						opts[opt_idx]->name, err, lis_strerror(err)
+					);
+					return err;
+				}
+				break;
+			}
+			if (set_flags & LIS_SET_FLAG_MUST_RELOAD_OPTIONS) {
+				lis_log_info("Must reload options");
+				setter_idx++;
+				break;
+			}
+		}
+
 	}
 
 	return LIS_OK;

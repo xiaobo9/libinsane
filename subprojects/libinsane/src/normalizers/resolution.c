@@ -126,7 +126,7 @@ static enum lis_error range_to_list(const struct lis_value_range *in, struct lis
 		assert(idx < out->nb_values);
 		lis_log_debug(
 			"Resolution range constraint %d-%d-%d --> list constraint: %d",
-			in->min.integer, in->max.integer, interval, val
+			in->min.integer, in->max.integer, interval, val + offset
 		);
 		out->values[idx].integer = val + offset;
 		if (val == 1) {
