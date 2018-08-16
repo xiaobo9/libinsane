@@ -200,10 +200,7 @@ static enum lis_error opt_desc_filter(
 	LIS_UNUSED(item);
 	LIS_UNUSED(user_data);
 
-	if (desc->value.type != LIS_TYPE_STRING
-	    || desc->constraint.type != LIS_CONSTRAINT_LIST) {
-		lis_log_debug("Cannot map values of option '%s': unexpectred value/constraint types (%d, %d)",
-			desc->name, desc->value.type, desc->constraint.type);
+	if (desc->value.type != LIS_TYPE_STRING || desc->constraint.type != LIS_CONSTRAINT_LIST) {
 		return LIS_OK;
 	}
 
