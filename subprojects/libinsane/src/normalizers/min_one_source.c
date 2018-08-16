@@ -35,7 +35,7 @@ static enum lis_error item_scan_start(struct lis_item *self, struct lis_scan_ses
 static void child_close(struct lis_item *self);
 
 
-static struct lis_item g_mos_item_template =
+static const struct lis_item g_mos_item_template =
 {
 	.get_children = child_get_children,
 	.get_options = item_get_options,

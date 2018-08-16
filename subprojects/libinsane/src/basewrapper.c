@@ -81,7 +81,7 @@ static enum lis_error lis_bw_list_devices(
 static enum lis_error lis_bw_get_device(struct lis_api *impl, const char *dev_id, struct lis_item **item);
 
 
-struct lis_api g_bw_impl_template = {
+static const struct lis_api g_bw_impl_template = {
 	.cleanup = lis_bw_cleanup,
 	.list_devices = lis_bw_list_devices,
 	.get_device = lis_bw_get_device,
@@ -99,7 +99,7 @@ static enum lis_error lis_bw_item_scan_start(struct lis_item *self, struct lis_s
 static void lis_bw_item_root_close(struct lis_item *self);
 
 
-struct lis_item g_bw_item_root_template = {
+static const struct lis_item g_bw_item_root_template = {
 	.get_children = lis_bw_item_get_children,
 	.get_options = lis_bw_item_get_options,
 	.get_scan_parameters = lis_bw_item_get_scan_parameters,
@@ -110,7 +110,7 @@ struct lis_item g_bw_item_root_template = {
 
 static void lis_bw_item_child_close(struct lis_item *self);
 
-struct lis_item g_bw_item_child_template = {
+static const struct lis_item g_bw_item_child_template = {
 	.get_children = lis_bw_item_get_children,
 	.get_options = lis_bw_item_get_options,
 	.get_scan_parameters = lis_bw_item_get_scan_parameters,

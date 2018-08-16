@@ -26,7 +26,7 @@ struct lis_clean_private {
 #define LIS_CLEAN_PRIVATE(impl) ((struct lis_clean_private *)(impl))
 
 
-static struct lis_api g_api_template = {
+static const struct lis_api g_api_template = {
 	.cleanup = impl_cleanup,
 	.list_devices = impl_list_devices,
 	.get_device = impl_get_device,
