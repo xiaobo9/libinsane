@@ -18,4 +18,6 @@
 #define OPT_NAME_BR_X "br-x"
 #define OPT_NAME_BR_Y "br-y"
 
+#define OPT_NAME_PREVIEW "preview"
+
 #endif

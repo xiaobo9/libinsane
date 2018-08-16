@@ -171,13 +171,15 @@ extern enum lis_error lis_api_normalizer_raw24(
 
 
 /*!
- * \brief Set safest default values
+ * \brief Set safest default values.
  *
- * ## Ensure default mode is Color
+ * ## Ensure most commonly used default values
  *
- * Not all scanner have mode=Color by default
+ * - Set mode=Color
+ * - Set resolution=300 (or the closest resolution available)
+ * - Set preview=False
  *
- * ## Ensure the scan area is set to the maximum by default.
+ * ## Ensure the scan area is set to the maximum by default
  *
  * By default, some drivers don't have the scan area set to the maximum.
  * This workaround just make sure the default area is the maximum area.

@@ -29,7 +29,7 @@ static int tests_opt_init(void)
 		{ .string = OPT_VALUE_MODE_BW, },
 		{ .string = OPT_VALUE_MODE_COLOR, },
 	};
-	static const struct lis_option_descriptor opt_mode_template = {
+	static const struct lis_option_descriptor opt_mode = {
 		.name = OPT_NAME_MODE,
 		.title = "mode title",
 		.desc = "mode desc",
@@ -49,7 +49,7 @@ static int tests_opt_init(void)
 	static const union lis_value opt_mode_default = {
 		.string = OPT_VALUE_MODE_BW,
 	};
-	static const struct lis_option_descriptor opt_tlx_template = {
+	static const struct lis_option_descriptor opt_tlx = {
 		.name = OPT_NAME_TL_X,
 		.title = "tl-x title",
 		.desc = "tl-x desc",
@@ -72,6 +72,34 @@ static int tests_opt_init(void)
 	static const union lis_value opt_tlx_default = {
 		.integer = 300,
 	};
+	static const union lis_value opt_resolution_constraint[] = {
+		{ .integer = 50, },
+		{ .integer = 75, },
+		{ .integer = 150, },
+		{ .integer = 350, },
+		{ .integer = 500, },
+		{ .integer = 600, },
+	};
+	static const struct lis_option_descriptor opt_resolution = {
+		.name = OPT_NAME_RESOLUTION,
+		.title = "resolution title",
+		.desc = "resolution desc",
+		.capabilities = LIS_CAP_SW_SELECT,
+		.value = {
+			.type = LIS_TYPE_INTEGER,
+			.unit = LIS_UNIT_DPI,
+		},
+		.constraint = {
+			.type = LIS_CONSTRAINT_LIST,
+			.possible.list = {
+				.nb_values = LIS_COUNT_OF(opt_resolution_constraint),
+				.values = (union lis_value*)&opt_resolution_constraint,
+			},
+		},
+	};
+	static const union lis_value opt_resolution_default = {
+		.integer = 50,
+	};
 	enum lis_error err;
 
 	g_opt = NULL;
@@ -81,8 +109,9 @@ static int tests_opt_init(void)
 	}
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_mode_template, &opt_mode_default);
-	lis_dumb_add_option(g_dumb, &opt_tlx_template, &opt_tlx_default);
+	lis_dumb_add_option(g_dumb, &opt_mode, &opt_mode_default);
+	lis_dumb_add_option(g_dumb, &opt_tlx, &opt_tlx_default);
+	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
 
 	return 0;
 }
@@ -113,7 +142,8 @@ static void tests_opt_defaults(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[0]->name, OPT_NAME_MODE), 0);
 	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[1]->name, OPT_NAME_TL_X), 0);
-	LIS_ASSERT_EQUAL(opt_opts[2], NULL);
+	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[2]->name, OPT_NAME_RESOLUTION), 0);
+	LIS_ASSERT_EQUAL(opt_opts[3], NULL);
 
 	err = opt_opts[0]->fn.get_value(opt_opts[0], &value);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -123,6 +153,9 @@ static void tests_opt_defaults(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(value.integer, 100);
 
+	err = opt_opts[2]->fn.get_value(opt_opts[2], &value);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(value.integer, 350);
 
 	opt_item->close(opt_item);
 	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
@@ -164,7 +197,7 @@ static void tests_opt_scan_area_failed(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[0]->name, OPT_NAME_MODE), 0);
 	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[1]->name, OPT_NAME_TL_X), 0);
-	LIS_ASSERT_EQUAL(opt_opts[2], NULL);
+	LIS_ASSERT_EQUAL(opt_opts[3], NULL);
 
 	err = opt_opts[0]->fn.get_value(opt_opts[0], &value);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
