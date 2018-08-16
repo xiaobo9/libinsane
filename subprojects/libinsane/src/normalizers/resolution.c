@@ -108,6 +108,7 @@ static enum lis_error fix_range_type(enum lis_value_type type, struct lis_value_
 static enum lis_error range_to_list(const struct lis_value_range *in, struct lis_value_list *out)
 {
 	int val, idx;
+	int offset = 0;
 	int interval = in->interval.integer;
 
 	if (interval < MIN_RESOLUTION_INTERVAL) {
@@ -127,7 +128,12 @@ static enum lis_error range_to_list(const struct lis_value_range *in, struct lis
 			"Resolution range constraint %d-%d-%d --> list constraint: %d",
 			in->min.integer, in->max.integer, interval, val
 		);
-		out->values[idx].integer = val;
+		out->values[idx].integer = val + offset;
+		if (val == 1) {
+			// WORKAROUND(Jflesch): Sane test backend returns the range [1.0, 1200.0, 1.0],
+			// but we prefer round values --> [1.0, 50.0, 100.0, ...]
+			offset = -1;
+		}
 	}
 	out->nb_values = idx;
 
