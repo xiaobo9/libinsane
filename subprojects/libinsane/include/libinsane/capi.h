@@ -428,7 +428,8 @@ struct lis_api {
 	 * \retval LIS_OK dev_infos has been set to a list of devices. See \ref LIS_IS_OK.
 	 */
 	enum lis_error (*list_devices)(
-		struct lis_api *impl, enum lis_device_locations, struct lis_device_descriptor ***dev_infos
+		struct lis_api *impl, enum lis_device_locations locs,
+		struct lis_device_descriptor ***dev_infos
 	);
 
 	/*!
@@ -444,7 +445,9 @@ struct lis_api {
 	 *		See \ref LIS_IS_ERROR.
 	 * \retval LIS_ERR_ACCESS_DENIED Permission denied. See \ref LIS_IS_ERROR.
 	 */
-	enum lis_error (*get_device)(struct lis_api *impl, const char *dev_id, struct lis_item **item);
+	enum lis_error (*get_device)(
+		struct lis_api *impl, const char *dev_id, struct lis_item **item
+	);
 };
 
 #ifdef __cplusplus

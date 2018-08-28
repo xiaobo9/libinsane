@@ -70,7 +70,9 @@ extern enum lis_error lis_api_normalizer_all_opts_on_all_sources(
 
 
 /*!
- * \brief Ensure scan area option names are all the same
+ * \brief Make aliases for some options
+ *
+ * ## Ensure scan area option names are all the same
  *
  * Sane: [Sane scan area options](http://sane.alioth.debian.org/sane2/0.08/doc014.html#s4.5.4)
  * are used as reference.
@@ -78,10 +80,15 @@ extern enum lis_error lis_api_normalizer_all_opts_on_all_sources(
  * WIA2: Fake options are added to simulate Sane options. They act like Sane
  * options, and any change to these options is applied back to the WIA2 options.
  *
+ * ## Alias 'xres' and 'yres' to 'resolution'
+ *
+ * WIA2 provides to options 'xres' and 'yres'. This normalizer will create an alias option
+ * 'resolution' that will set both options. 'xres' is used for reading the value.
+ *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
-extern enum lis_error lis_api_normalizer_scan_area_opts(
+extern enum lis_error lis_api_normalizer_opt_aliases(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 

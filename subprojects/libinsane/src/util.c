@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <string.h>
 
 #include <libinsane/capi.h>
@@ -54,4 +55,52 @@ int lis_compare(enum lis_value_type type, union lis_value val1, union lis_value 
 	}
 	lis_log_error("Unknown value type: %d !", type);
 	return 0;
+}
+
+
+union lis_value lis_add(enum lis_value_type type, union lis_value a, union lis_value b)
+{
+	union lis_value out;
+
+	switch(type) {
+		case LIS_TYPE_BOOL:
+		case LIS_TYPE_STRING:
+		case LIS_TYPE_IMAGE_FORMAT:
+			break;
+		case LIS_TYPE_INTEGER:
+			out.integer = a.integer + b.integer;
+			return out;
+		case LIS_TYPE_DOUBLE:
+			out.dbl = a.dbl + b.dbl;
+			return out;
+	}
+
+	lis_log_error("Can't add type %d", type);
+	assert(0);
+	out.integer = 0;
+	return out;
+}
+
+
+union lis_value lis_sub(enum lis_value_type type, union lis_value a, union lis_value b)
+{
+	union lis_value out;
+
+	switch(type) {
+		case LIS_TYPE_BOOL:
+		case LIS_TYPE_STRING:
+		case LIS_TYPE_IMAGE_FORMAT:
+			break;
+		case LIS_TYPE_INTEGER:
+			out.integer = a.integer - b.integer;
+			return out;
+		case LIS_TYPE_DOUBLE:
+			out.dbl = a.dbl - b.dbl;
+			return out;
+	}
+
+	lis_log_error("Can't substract type %d", type);
+	assert(0);
+	out.integer = 0;
+	return out;
 }

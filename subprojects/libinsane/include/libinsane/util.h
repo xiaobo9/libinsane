@@ -66,6 +66,10 @@ enum lis_error lis_maximize_scan_area(struct lis_item *item);
 int lis_compare(enum lis_value_type type, union lis_value val1, union lis_value val2);
 
 
+union lis_value lis_add(enum lis_value_type type, union lis_value a, union lis_value b);
+union lis_value lis_sub(enum lis_value_type type, union lis_value a, union lis_value b);
+
+
 #ifdef __cplusplus
 }
 #endif
