@@ -281,6 +281,7 @@ struct lis_scan_session {
 	 * \retval LIS_END_OF_FEED A whole page feed has been read. Do not call \ref lis_scan_session.cancel().
 	 * \retval LIS_WARMING_UP Scanner is warming up. No data available yet. Keep calling
 	 *		\ref lis_scan_session.scan_read() until there is.
+	 * \warning This operation may take many seconds.
 	 */
 	enum lis_error (*scan_read) (
 		struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
