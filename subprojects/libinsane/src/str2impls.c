@@ -72,8 +72,8 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 				err = lis_api_normalizer_all_opts_on_all_sources(*impls, &next);
 			} else if (strcmp(tok, "min_one_source") == 0) {
 				err = lis_api_normalizer_min_one_source(*impls, &next);
-			} else if (strcmp(tok, "raw") == 0) {
-				err = lis_api_normalizer_raw(*impls, &next);
+			} else if (strcmp(tok, "bmp2raw") == 0) {
+				err = lis_api_normalizer_bmp2raw(*impls, &next);
 			} else if (strcmp(tok, "raw24") == 0) {
 				err = lis_api_normalizer_raw24(*impls, &next);
 			} else if (strcmp(tok, "resolution") == 0) {

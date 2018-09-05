@@ -149,12 +149,13 @@ extern enum lis_error lis_api_normalizer_source_types(
  * JPEG, PNG, etc. Not all drivers support returning the image as RAW24.
  * LibInsane supports only BMP and will output the image as RAW24.
  * WIA2 drivers
- * [must support the BMP format](https://msdn.microsoft.com/en-us/ie/ff546016(v=vs.94)).
+ * [must support the BMP format](https://msdn.microsoft.com/en-us/ie/ff546016(v=vs.94))
+ * (Microsoft documentation states that they all must).
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
-extern enum lis_error lis_api_normalizer_raw(
+extern enum lis_error lis_api_normalizer_bmp2raw(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
