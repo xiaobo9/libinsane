@@ -42,6 +42,13 @@ void *lis_bw_item_get_user_ptr(struct lis_item *item);
  */
 struct lis_item *lis_bw_get_original_item(struct lis_item *modified);
 
+/**
+ * \brief Returns the root item corresponding to this item.
+ * \param[in] child child or root item
+ * \return root item (same pointer as argument if argument is root).
+ *    Never NULL.
+ */
+struct lis_item *lis_bw_get_root_item(struct lis_item *child);
 
 /**
  * \brief Filter can change option descriptors on-the-fly.
@@ -69,6 +76,32 @@ void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt);
  * \return the original descriptor without the modifications (do not modify !). NULL if not found.
  */
 struct lis_option_descriptor *lis_bw_get_original_opt(struct lis_option_descriptor *modified);
+
+
+/**
+ * \brief Called when a scan session is requested.
+ * \param[out] session scan session callbacks
+ */
+typedef enum lis_error (*lis_bw_on_scan_start)(
+	struct lis_item *item, struct lis_scan_session **session,
+	void *user_data
+);
+void lis_bw_set_on_scan_start(
+	struct lis_api *impl, lis_bw_on_scan_start cb, void *user_data
+);
+
+
+/**
+ * \brief Called when scan parameters are requested.
+ * \param[in,out] params scan parameters.
+ */
+typedef void (*lis_bw_get_scan_parameters)(
+	struct lis_item *item, struct lis_scan_parameters *params,
+	void *user_data
+);
+void lis_bw_set_get_scan_parameters(
+	struct lis_api *impl, lis_bw_get_scan_parameters cb, void *user_data
+);
 
 
 /**

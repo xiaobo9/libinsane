@@ -108,24 +108,13 @@ def list_opts(item):
 #! [ExampleRawToImg]
 def raw_to_img(params, img_bytes):
     fmt = params.get_format()
-    if fmt == Libinsane.ImgFormat.RAW_RGB_24:
-        (w, h) = (
-            params.get_width(),
-            int(len(img_bytes) / 3 / params.get_width())
-        )
-        mode = "RGB"
-    elif fmt == Libinsane.ImgFormat.GRAYSCALE_8:
-        (w, h) = (
-            params.get_width(),
-            int(len(img_bytes) / params.get_width())
-        )
-        mode = "L"
-    elif fmt == Libinsane.ImgFormat.BW_1:
-        assert()  # TODO
-    else:
-        assert()  # unexpected format
-    print("Mode: {} : Size: {}x{}".format(mode, w, h))
-    return PIL.Image.frombuffer(mode, (w, h), img_bytes, "raw", mode, 0, 1)
+    assert(fmt == Libinsane.ImgFormat.RAW_RGB_24)
+    (w, h) = (
+        params.get_width(),
+        int(len(img_bytes) / 3 / params.get_width())
+    )
+    print("Mode: RGB : Size: {}x{}".format(w, h))
+    return PIL.Image.frombuffer("RGB", (w, h), img_bytes, "raw", "RGB", 0, 1)
 #! [ExampleRawToImg]
 
 
@@ -151,7 +140,7 @@ def scan(source, output_file):
                 out = None
             print("Scanning page {} --> {}".format(page_nb, out))
             while True:
-                data = session.read_bytes(32 * 1024)
+                data = session.read_bytes(128 * 1024)
                 data = data.get_data()
                 img.append(data)
                 r += len(data)
@@ -210,6 +199,8 @@ def main():
     # set the options
 #! [ExampleOptsToSet]
     set_opt(source, 'resolution', 300)
+    # set_opt(source, 'mode', "Lineart")
+    # set_opt(source, 'depth', 1)
 #! [ExampleOptsToSet]
 
     print("Scanning ...")

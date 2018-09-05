@@ -36,7 +36,13 @@ struct lis_dumb_read {
 	size_t nb_bytes;
 };
 
-void lis_dumb_set_scan_result(struct lis_api *self, const struct lis_dumb_read *read_contents, int nb_reads);
+void lis_dumb_set_scan_parameters(
+	struct lis_api *self, const struct lis_scan_parameters *params
+);
+void lis_dumb_set_scan_result(
+	struct lis_api *self, const struct lis_dumb_read *read_contents,
+	int nb_reads
+);
 
 #ifdef __cplusplus
 }

@@ -83,6 +83,16 @@ static const struct {
 		.enabled_by_default = 1,
 	},
 	{
+		.name = "normalizer_raw24",
+		.env = "LIBINSANE_NORMALIZER_RAW24",
+		.wrap_cb = lis_api_normalizer_raw24,
+#ifdef OS_WINDOWS
+		.enabled_by_default = 0, /* WIA returns BMP images */
+#else
+		.enabled_by_default = 1, /* Sane returns various RAW formats */
+#endif
+	},
+	{
 		.name = "normalizer_resolution",
 		.env = "LIBINSANE_NORMALIZER_RESOLUTION",
 		.wrap_cb = lis_api_normalizer_resolution,

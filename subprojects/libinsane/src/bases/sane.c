@@ -464,6 +464,9 @@ static enum lis_error lis_sane_item_get_scan_parameters(
 			break;
 	}
 
+	lis_log_info("Image format: %d", out_p->format);
+	lis_log_info("Image WxH: %dx%d", out_p->width, out_p->height);
+	lis_log_info("Image size: %zd", out_p->image_size);
 	return err;
 }
 

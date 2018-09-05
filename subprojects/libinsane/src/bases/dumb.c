@@ -52,6 +52,8 @@ struct lis_dumb_private {
 
 	struct lis_option_descriptor *opts[MAX_DUMB_OPTS + 1];
 
+	struct lis_scan_parameters scan_parameters;
+
 	struct {
 		const struct lis_dumb_read *read_contents;
 		int nb_reads;
@@ -107,6 +109,13 @@ static enum lis_error dumb_list_devices(
 static enum lis_error dumb_get_device(
 	struct lis_api *impl, const char *dev_id, struct lis_item **item
 );
+
+static struct lis_scan_parameters g_scan_parameters_template = {
+	.format = LIS_IMG_FORMAT_RAW_RGB_24,
+	.width = 256,
+	.height = 256,
+	.image_size = 256 * 256 * 3,
+};
 
 
 static struct lis_api g_dumb_api_template = {
@@ -268,20 +277,22 @@ static enum lis_error dumb_get_options(
 }
 
 
+void lis_dumb_set_scan_parameters(struct lis_api *self,
+	const struct lis_scan_parameters *params)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	memcpy(
+		&private->scan_parameters, params,
+		sizeof(private->scan_parameters)
+	);
+}
+
 static enum lis_error dumb_get_scan_parameters(
 		struct lis_item *self, struct lis_scan_parameters *parameters
 	)
 {
-	static struct lis_scan_parameters template = {
-		.format = LIS_IMG_FORMAT_RAW_RGB_24,
-		.width = 256,
-		.height = 256,
-		.image_size = 256 * 256 * 3,
-	};
-
-	LIS_UNUSED(self);
-
-	memcpy(parameters, &template, sizeof(*parameters));
+	struct lis_dumb_item *item = LIS_DUMB_ITEM(self);
+	memcpy(parameters, &item->impl->scan_parameters, sizeof(*parameters));
 	return LIS_OK;
 }
 
@@ -321,6 +332,10 @@ enum lis_error lis_api_dumb(struct lis_api **out_impl, const char *name)
 
 	private = calloc(1, sizeof(struct lis_dumb_private));
 	memcpy(&private->base, &g_dumb_api_template, sizeof(private->base));
+	memcpy(
+		&private->scan_parameters, &g_scan_parameters_template,
+		sizeof(private->scan_parameters)
+	);
 	private->base.base_name = strdup(name);
 
 	private->list_devices_ret = LIS_OK;
@@ -432,6 +447,9 @@ static int dumb_end_of_feed(struct lis_scan_session *session)
 static int dumb_end_of_page(struct lis_scan_session *session)
 {
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
+	if (dumb_end_of_feed(session)) {
+		return 1;
+	}
 	return private->impl->scan.read_contents[private->read_idx].nb_bytes <= 0;
 }
 
@@ -442,10 +460,11 @@ static enum lis_error dumb_scan_read(
 {
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
 	*buffer_size = MIN(private->impl->scan.read_contents[private->read_idx].nb_bytes, *buffer_size);
-	if (*buffer_size != private->impl->scan.read_contents[private->read_idx].nb_bytes) {
+	if (*buffer_size < private->impl->scan.read_contents[private->read_idx].nb_bytes) {
 		/* not supported because I'm too lazy */
 		lis_log_error("TESTS: DUMB IMPLEMENTATION: TRUNCATED READ: %zd instead of %zd",
 				*buffer_size, private->impl->scan.read_contents[private->read_idx].nb_bytes);
+		return LIS_ERR_INVALID_VALUE;
 	}
 	if (*buffer_size > 0) {
 		memcpy(out_buffer, private->impl->scan.read_contents[private->read_idx].content, *buffer_size);

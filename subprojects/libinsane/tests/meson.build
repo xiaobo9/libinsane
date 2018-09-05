@@ -8,6 +8,7 @@ LIBINSANE_VALGRIND_TESTS = [
     'normalizer_clean_dev_descs',
     'normalizer_min_one_source',
     'normalizer_opt_aliases',
+    'normalizer_raw24',
     'normalizer_resolution',
     'normalizer_safe_defaults',
     'normalizer_source_names',

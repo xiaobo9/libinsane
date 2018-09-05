@@ -24,14 +24,24 @@ struct lis_bw_impl_private {
 	} item_filter;
 
 	struct {
-		lis_bw_clean_impl cb;
+		lis_bw_on_scan_start cb;
 		void *user_data;
-	} impl_clean;
+	} scan_start;
+
+	struct {
+		lis_bw_get_scan_parameters cb;
+		void *user_data;
+	} scan_parameters;
 
 	struct {
 		lis_bw_on_close_item cb;
 		void *user_data;
 	} on_close_item;
+
+	struct {
+		lis_bw_clean_impl cb;
+		void *user_data;
+	} impl_clean;
 
 	struct lis_bw_item *roots;
 
@@ -43,6 +53,7 @@ struct lis_bw_impl_private {
 struct lis_bw_item {
 	struct lis_item parent;
 	struct lis_item *wrapped;
+	struct lis_bw_item *root;
 	struct lis_bw_impl_private *impl;
 
 	struct lis_bw_item **children;
@@ -215,6 +226,7 @@ static enum lis_error lis_bw_get_device(struct lis_api *impl, const char *dev_id
 	memcpy(&out->parent, &g_bw_item_root_template, sizeof(out->parent));
 	out->parent.name = out->wrapped->name;
 	out->parent.type = out->wrapped->type;
+	out->root = out;
 	out->impl = private;
 
 	if (private->item_filter.cb == NULL) {
@@ -383,6 +395,7 @@ static enum lis_error lis_bw_item_get_children(struct lis_item *self, struct lis
 			memcpy(&private->children[i]->parent, &g_bw_item_child_template,
 					sizeof(private->children[i]->parent));
 			private->children[i]->wrapped = to_wrap[i];
+			private->children[i]->root = private;
 			private->children[i]->parent.name = to_wrap[i]->name;
 			private->children[i]->parent.type = to_wrap[i]->type;
 			private->children[i]->impl = private->impl;
@@ -485,13 +498,33 @@ static enum lis_error lis_bw_item_get_scan_parameters(
 )
 {
 	struct lis_bw_item *item = LIS_BW_ITEM(self);
-	return item->wrapped->get_scan_parameters(item->wrapped, parameters);
+	enum lis_error err;
+	err = item->wrapped->get_scan_parameters(item->wrapped, parameters);
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
+	if (item->impl->scan_parameters.cb != NULL) {
+		item->impl->scan_parameters.cb(
+			self, parameters,
+			item->impl->scan_parameters.user_data
+		);
+	}
+	return LIS_OK;
 }
 
 
-static enum lis_error lis_bw_item_scan_start(struct lis_item *self, struct lis_scan_session **session)
+static enum lis_error lis_bw_item_scan_start(
+		struct lis_item *self, struct lis_scan_session **session
+	)
 {
 	struct lis_bw_item *item = LIS_BW_ITEM(self);
+
+	if (item->impl->scan_start.cb != NULL) {
+		return item->impl->scan_start.cb(
+			self, session, item->impl->scan_start.user_data
+		);
+	}
+
 	return item->wrapped->scan_start(item->wrapped, session);
 }
 
@@ -535,6 +568,13 @@ struct lis_item *lis_bw_get_original_item(struct lis_item *modified)
 {
 	struct lis_bw_item *item = LIS_BW_ITEM(modified);
 	return item->wrapped;
+}
+
+
+struct lis_item *lis_bw_get_root_item(struct lis_item *child)
+{
+	struct lis_bw_item *private = LIS_BW_ITEM(child);
+	return &private->root->parent;
 }
 
 
@@ -598,13 +638,33 @@ void *lis_bw_opt_get_user_ptr(struct lis_option_descriptor *opt)
 }
 
 
+void lis_bw_set_on_scan_start(
+		struct lis_api *impl, lis_bw_on_scan_start cb, void *user_data
+	)
+{
+	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
+	private->scan_start.cb = cb;
+	private->scan_start.user_data = user_data;
+}
+
+
+void lis_bw_set_get_scan_parameters(
+		struct lis_api *impl, lis_bw_get_scan_parameters cb,
+		void *user_data
+	)
+{
+	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
+	private->scan_parameters.cb = cb;
+	private->scan_parameters.user_data = user_data;
+}
+
+
 void lis_bw_set_on_close_item(struct lis_api *impl, lis_bw_on_close_item cb, void *user_data)
 {
 	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
 	private->on_close_item.cb = cb;
 	private->on_close_item.user_data = user_data;
 }
-
 
 
 void lis_bw_set_clean_impl(struct lis_api *impl, lis_bw_clean_impl cb, void *user_data)
