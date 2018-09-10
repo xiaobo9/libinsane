@@ -55,7 +55,7 @@ static int tests_raw_clean(void)
 
 static void tests_unpack8(void)
 {
-	char buffer[32] = {
+	uint8_t buffer[32] = {
 		0xAB, 0xCD,
 	};
 	size_t bufsize = 2;
@@ -74,7 +74,7 @@ static void tests_unpack8(void)
 
 static void tests_unpack1(void)
 {
-	char buffer[48] = {
+	uint8_t buffer[48] = {
 		0xAB, // 0b10101011
 		0xCD, // 0b11001101
 	};
@@ -149,7 +149,7 @@ static void tests_raw8(void)
 	enum lis_error err;
 	struct lis_item *item;
 	struct lis_scan_session *session;
-	char buffer[32];
+	uint8_t buffer[32];
 	size_t bufsize;
 	struct lis_scan_parameters out_params;
 
@@ -233,7 +233,7 @@ static void tests_raw1(void)
 	enum lis_error err;
 	struct lis_item *item;
 	struct lis_scan_session *session;
-	char buffer[64];
+	uint8_t buffer[64];
 	size_t bufsize;
 	struct lis_scan_parameters out_params;
 
