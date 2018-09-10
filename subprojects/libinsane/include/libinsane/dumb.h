@@ -32,7 +32,7 @@ void lis_dumb_add_option(struct lis_api *self, const struct lis_option_descripto
 	const union lis_value *default_value);
 
 struct lis_dumb_read {
-	const char *content;
+	const void *content;
 	size_t nb_bytes;
 };
 

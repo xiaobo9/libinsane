@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -21,9 +22,9 @@ static struct lis_api *g_raw = NULL;
 
 static int tests_raw_init(void)
 {
-	static const char line_a[] = { 0x00, 0xAA, };
-	static const char line_b[] = { 0x55, };
-	static const char line_c[] = { 0xFF, };
+	static const uint8_t line_a[] = { 0x00, 0xAA, };
+	static const uint8_t line_b[] = { 0x55, };
+	static const uint8_t line_c[] = { 0xFF, };
 	static const struct lis_dumb_read reads[] = {
 		{ .content = line_a, .nb_bytes = LIS_COUNT_OF(line_a) },
 		{ .content = line_b, .nb_bytes = LIS_COUNT_OF(line_b) },

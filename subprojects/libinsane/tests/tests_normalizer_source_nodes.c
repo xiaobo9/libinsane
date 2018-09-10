@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -43,8 +44,8 @@ static int tests_sn_init(void)
 	static const union lis_value opt_source_default = {
 		.string = OPT_VALUE_SOURCE_FLATBED
 	};
-	static const char line_a[] = { 0x00, 0x1, 0x2, 0x3, 0x4 };
-	static const char line_b[] = { 0x05, 0x6, 0x7, 0x8,};
+	static const uint8_t line_a[] = { 0x00, 0x1, 0x2, 0x3, 0x4 };
+	static const uint8_t line_b[] = { 0x05, 0x6, 0x7, 0x8,};
 	static const struct lis_dumb_read reads[] = {
 		{ .content = line_a, .nb_bytes = LIS_COUNT_OF(line_a) },
 		{ .content = line_b, .nb_bytes = LIS_COUNT_OF(line_b) },
