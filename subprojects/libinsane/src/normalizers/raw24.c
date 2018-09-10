@@ -14,6 +14,10 @@
 #define NAME "raw24"
 
 
+static enum lis_error lis_raw24_get_scan_parameters(
+	struct lis_scan_session *self,
+	struct lis_scan_parameters *params
+);
 static int lis_raw24_end_of_feed(struct lis_scan_session *session);
 static int lis_raw24_end_of_page(struct lis_scan_session *session);
 static enum lis_error lis_raw24_scan_read(
@@ -36,6 +40,7 @@ struct lis_raw24_scan_session
 
 
 static struct lis_scan_session g_scan_session_template = {
+	.get_scan_parameters = lis_raw24_get_scan_parameters,
 	.end_of_feed = lis_raw24_end_of_feed,
 	.end_of_page = lis_raw24_end_of_page,
 	.scan_read = lis_raw24_scan_read,
@@ -80,7 +85,8 @@ static enum lis_error raw24_scan_start(
 	private->item = root;
 
 	// grab the current parameters: see raw24_get_scan_parameters()
-	err = item->get_scan_parameters(item, &private->params);
+	err = private->parent.get_scan_parameters(
+		&private->parent, &private->params);
 	if (LIS_IS_ERROR(err)) {
 		lis_log_error(
 			"get_scan_parameters() failed: 0x%X, %s",
@@ -96,29 +102,36 @@ static enum lis_error raw24_scan_start(
 }
 
 
-static void raw24_get_scan_parameters(
-		struct lis_item *item, struct lis_scan_parameters *params,
-		void *user_data
+static enum lis_error lis_raw24_get_scan_parameters(
+		struct lis_scan_session *self,
+		struct lis_scan_parameters *params
 	)
 {
-	struct lis_item *root = lis_bw_get_root_item(item);
-	struct lis_raw24_scan_session *private;
+	enum lis_error err;
+	struct lis_raw24_scan_session *private = \
+		LIS_RAW24_SCAN_SESSION_PRIVATE(self);
 
-	LIS_UNUSED(user_data);
+	err = private->wrapped->get_scan_parameters(
+		private->wrapped, params
+	);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error(
+			"get_scan_parameters() failed: 0x%X, %s",
+			err, lis_strerror(err)
+		);
+		return err;
+	}
 
-	private = lis_bw_item_get_user_ptr(root);
-	if (private != NULL) {
-		if (&private->params != params) {
-			memcpy(
-				&private->params, params,
-				sizeof(private->params)
-			);
-		}
+	if (&private->params != params) {
+		memcpy(
+			&private->params, params,
+			sizeof(private->params)
+		);
 	}
 
 	switch(params->format) {
 		case LIS_IMG_FORMAT_RAW_RGB_24:
-			return;
+			return LIS_OK;
 		case LIS_IMG_FORMAT_GRAYSCALE_8:
 			lis_log_info(
 				"Will automatically convert from"
@@ -129,7 +142,7 @@ static void raw24_get_scan_parameters(
 			if (private != NULL) {
 				private->params.image_size *= 3;
 			}
-			return;
+			return LIS_OK;
 		case LIS_IMG_FORMAT_BW_1:
 			lis_log_info(
 				"Will automatically convert from"
@@ -140,7 +153,7 @@ static void raw24_get_scan_parameters(
 			if (private != NULL) {
 				private->params.image_size *= 3;
 			}
-			return;
+			return LIS_OK;
 		case LIS_IMG_FORMAT_BMP:
 		case LIS_IMG_FORMAT_GIF:
 		case LIS_IMG_FORMAT_JPEG:
@@ -149,6 +162,7 @@ static void raw24_get_scan_parameters(
 	}
 
 	lis_log_warning("Unsupported image format: %d", params->format);
+	return LIS_OK;
 }
 
 
@@ -385,7 +399,6 @@ enum lis_error lis_api_normalizer_raw24(
 	}
 
 	lis_bw_set_on_close_item(*api, raw24_on_item_close, NULL);
-	lis_bw_set_get_scan_parameters(*api, raw24_get_scan_parameters, NULL);
 	lis_bw_set_on_scan_start(*api, raw24_scan_start, NULL);
 
 	return err;

@@ -29,11 +29,6 @@ struct lis_bw_impl_private {
 	} scan_start;
 
 	struct {
-		lis_bw_get_scan_parameters cb;
-		void *user_data;
-	} scan_parameters;
-
-	struct {
 		lis_bw_on_close_item cb;
 		void *user_data;
 	} on_close_item;
@@ -103,9 +98,6 @@ static enum lis_error lis_bw_item_get_children(struct lis_item *self, struct lis
 static enum lis_error lis_bw_item_get_options(
 	struct lis_item *self, struct lis_option_descriptor ***descs
 );
-static enum lis_error lis_bw_item_get_scan_parameters(
-	struct lis_item *self, struct lis_scan_parameters *parameters
-);
 static enum lis_error lis_bw_item_scan_start(struct lis_item *self, struct lis_scan_session **session);
 static void lis_bw_item_root_close(struct lis_item *self);
 
@@ -113,7 +105,6 @@ static void lis_bw_item_root_close(struct lis_item *self);
 static const struct lis_item g_bw_item_root_template = {
 	.get_children = lis_bw_item_get_children,
 	.get_options = lis_bw_item_get_options,
-	.get_scan_parameters = lis_bw_item_get_scan_parameters,
 	.scan_start = lis_bw_item_scan_start,
 	.close = lis_bw_item_root_close,
 };
@@ -124,7 +115,6 @@ static void lis_bw_item_child_close(struct lis_item *self);
 static const struct lis_item g_bw_item_child_template = {
 	.get_children = lis_bw_item_get_children,
 	.get_options = lis_bw_item_get_options,
-	.get_scan_parameters = lis_bw_item_get_scan_parameters,
 	.scan_start = lis_bw_item_scan_start,
 	.close = lis_bw_item_child_close,
 };
@@ -493,26 +483,6 @@ static enum lis_error lis_bw_item_get_options(
 }
 
 
-static enum lis_error lis_bw_item_get_scan_parameters(
-	struct lis_item *self, struct lis_scan_parameters *parameters
-)
-{
-	struct lis_bw_item *item = LIS_BW_ITEM(self);
-	enum lis_error err;
-	err = item->wrapped->get_scan_parameters(item->wrapped, parameters);
-	if (LIS_IS_ERROR(err)) {
-		return err;
-	}
-	if (item->impl->scan_parameters.cb != NULL) {
-		item->impl->scan_parameters.cb(
-			self, parameters,
-			item->impl->scan_parameters.user_data
-		);
-	}
-	return LIS_OK;
-}
-
-
 static enum lis_error lis_bw_item_scan_start(
 		struct lis_item *self, struct lis_scan_session **session
 	)
@@ -645,17 +615,6 @@ void lis_bw_set_on_scan_start(
 	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
 	private->scan_start.cb = cb;
 	private->scan_start.user_data = user_data;
-}
-
-
-void lis_bw_set_get_scan_parameters(
-		struct lis_api *impl, lis_bw_get_scan_parameters cb,
-		void *user_data
-	)
-{
-	struct lis_bw_impl_private *private = LIS_BW_IMPL_PRIVATE(impl);
-	private->scan_parameters.cb = cb;
-	private->scan_parameters.user_data = user_data;
 }
 
 

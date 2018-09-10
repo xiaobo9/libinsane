@@ -59,6 +59,10 @@ struct lis_sn_scan_session_private
 #define LIS_SN_SCAN_SESSION_PRIVATE(session) ((struct lis_sn_scan_session_private *)(session))
 
 
+static enum lis_error lis_sn_get_scan_parameters(
+	struct lis_scan_session *session,
+	struct lis_scan_parameters *params
+);
 static int lis_sn_end_of_feed(struct lis_scan_session *session);
 static int lis_sn_end_of_page(struct lis_scan_session *session);
 static enum lis_error lis_sn_scan_read(
@@ -67,6 +71,7 @@ static enum lis_error lis_sn_scan_read(
 static void lis_sn_cancel(struct lis_scan_session *session);
 
 static const struct lis_scan_session g_sn_scan_session_template = {
+	.get_scan_parameters = lis_sn_get_scan_parameters,
 	.end_of_feed = lis_sn_end_of_feed,
 	.end_of_page = lis_sn_end_of_page,
 	.scan_read = lis_sn_scan_read,
@@ -78,9 +83,6 @@ static enum lis_error lis_sn_dev_get_options(
 	struct lis_item *self, struct lis_option_descriptor ***descs
 );
 
-static enum lis_error lis_sn_get_scan_parameters(
-	struct lis_item *self, struct lis_scan_parameters *parameters
-);
 static enum lis_error lis_sn_scan_start(struct lis_item *self, struct lis_scan_session **session);
 static enum lis_error lis_sn_dev_get_children(struct lis_item *self, struct lis_item ***children);
 static void lis_sn_dev_close(struct lis_item *self);
@@ -91,10 +93,9 @@ static const struct lis_item g_sn_dev_template = {
 	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = lis_sn_dev_get_children,
 	.get_options = lis_sn_dev_get_options,
-	/* we have to let get_scan_parameters() and scan_start() work on the root node
+	/* we have to let scan_start() work on the root node
 	 * as well, otherwise the normalizer 'min_one_source' can't work
 	 */
-	.get_scan_parameters = lis_sn_get_scan_parameters,
 	.scan_start = lis_sn_scan_start,
 	.close = lis_sn_dev_close,
 };
@@ -112,7 +113,6 @@ static const struct lis_item g_sn_source_template = {
 	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = lis_sn_src_get_children,
 	.get_options = lis_sn_src_get_options,
-	.get_scan_parameters = lis_sn_get_scan_parameters,
 	.scan_start = lis_sn_scan_start,
 	.close = lis_sn_src_close,
 };
@@ -294,28 +294,6 @@ static enum lis_error set_source(struct lis_sn_item_private *private)
 }
 
 
-static enum lis_error lis_sn_get_scan_parameters(
-		struct lis_item *self, struct lis_scan_parameters *parameters
-	)
-{
-	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
-	enum lis_error err;
-
-	/* Don't try to set an option if the scan is already running. Will probably return error "Busy".
-	 * Also, scan_start() has already set this option.
-	 */
-	if (!private->device->scan_running) {
-		err = set_source(private);
-		if (LIS_IS_ERROR(err)) {
-			lis_log_error("setting source has failed --> get_scan_parameters() failed: 0x%X, %s",
-					err, lis_strerror(err));
-			return err;
-		}
-	}
-	return private->device->wrapped->get_scan_parameters(private->device->wrapped, parameters);
-}
-
-
 static enum lis_error lis_sn_scan_start(struct lis_item *self, struct lis_scan_session **session)
 {
 	struct lis_sn_item_private *private_item = LIS_SN_ITEM_PRIVATE(self);
@@ -421,6 +399,17 @@ enum lis_error lis_api_normalizer_source_nodes(struct lis_api *to_wrap, struct l
 
 	*api = &private->parent;
 	return LIS_OK;
+}
+
+
+static enum lis_error lis_sn_get_scan_parameters(
+		struct lis_scan_session *self,
+		struct lis_scan_parameters *params
+	)
+{
+	struct lis_sn_scan_session_private *private = \
+		LIS_SN_SCAN_SESSION_PRIVATE(self);
+	return private->wrapped->get_scan_parameters(private->wrapped, params);
 }
 
 

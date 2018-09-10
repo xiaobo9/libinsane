@@ -39,11 +39,11 @@ Expected order of calling when most of the normalizers are enabled:
       - \ref lis_option_descriptor.set_value "options[y]->fn.set_value()".
       - \ref lis_option_descriptor.get_value "options[z]->fn.get_value()".
       - \ref lis_option_descriptor.set_value "options[z]->fn.set_value()".
-    - \ref lis_item.get_scan_parameters "sources[a]->get_scan_parameters()"
     - \ref lis_scan_session "scan_session" = \ref lis_item.scan_start "sources[a]->scan_start()"<br>
       From this point and until \ref lis_scan_session.end_of_feed return true,
       \ref lis_scan_session.cancel "scan_session->cancel()"
       can be called at any moment.
+    - \ref lis_scan_session.get_scan_parameters "scan_session->get_scan_parameters()"
     - while not \ref lis_scan_session.end_of_feed "scan_session->end_of_feed()":
       - while not \ref lis_scan_session.end_of_page "scan_session->end_of_page()":
         - \ref lis_scan_session.scan_read "scan_session->scan_read()".

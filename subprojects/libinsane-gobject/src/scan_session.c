@@ -3,6 +3,8 @@
 
 #include <libinsane-gobject/error.h>
 #include <libinsane-gobject/error_private.h>
+#include <libinsane-gobject/scan_parameters.h>
+#include <libinsane-gobject/scan_parameters_private.h>
 #include <libinsane-gobject/scan_session.h>
 #include <libinsane-gobject/scan_session_private.h>
 
@@ -60,6 +62,35 @@ LibinsaneScanSession *libinsane_scan_session_new_from_libinsane(
 
 	return session;
 }
+
+
+/**
+ * libinsane_scan_session_get_scan_parameters:
+ * Returns: (transfer full): item scan parameters.
+ */
+LibinsaneScanParameters *libinsane_scan_session_get_scan_parameters(LibinsaneScanSession *self, GError **error)
+{
+	LibinsaneScanSessionPrivate *private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(self);
+	struct lis_scan_parameters lis_params;
+	enum lis_error err;
+	LibinsaneScanParameters *params;
+
+	lis_log_debug("enter");
+	err = private->session->get_scan_parameters(private->session, &lis_params);
+	if (LIS_IS_ERROR(err)) {
+		SET_LIBINSANE_GOBJECT_ERROR(error, err,
+			"Libinsane scan_session->get_scan_parameters() error: 0x%X, %s",
+			err, lis_strerror(err));
+		lis_log_debug("error");
+		return NULL;
+	}
+
+	params = libinsane_scan_parameters_new_from_libinsane(&lis_params);
+	lis_log_debug("leave");
+
+	return params;
+}
+
 
 gboolean libinsane_scan_session_end_of_feed(LibinsaneScanSession *self)
 {

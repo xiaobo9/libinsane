@@ -7,8 +7,6 @@
 #include <libinsane-gobject/item.h>
 #include <libinsane-gobject/option_descriptor.h>
 #include <libinsane-gobject/option_descriptor_private.h>
-#include <libinsane-gobject/scan_parameters.h>
-#include <libinsane-gobject/scan_parameters_private.h>
 #include <libinsane-gobject/scan_session.h>
 #include <libinsane-gobject/scan_session_private.h>
 
@@ -175,34 +173,6 @@ GList *libinsane_item_get_options(LibinsaneItem *self, GError **error)
 
 	lis_log_debug("leave");
 	return g_list_reverse(out);
-}
-
-
-/**
- * libinsane_item_get_scan_parameters:
- * Returns: (transfer full): item scan parameters.
- */
-LibinsaneScanParameters *libinsane_item_get_scan_parameters(LibinsaneItem *self, GError **error)
-{
-	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
-	struct lis_scan_parameters lis_params;
-	enum lis_error err;
-	LibinsaneScanParameters *params;
-
-	lis_log_debug("enter");
-	err = private->item->get_scan_parameters(private->item, &lis_params);
-	if (LIS_IS_ERROR(err)) {
-		SET_LIBINSANE_GOBJECT_ERROR(error, err,
-			"Libinsane item->get_scan_parameters() error: 0x%X, %s",
-			err, lis_strerror(err));
-		lis_log_debug("error");
-		return NULL;
-	}
-
-	params = libinsane_scan_parameters_new_from_libinsane(&lis_params);
-	lis_log_debug("leave");
-
-	return params;
 }
 
 

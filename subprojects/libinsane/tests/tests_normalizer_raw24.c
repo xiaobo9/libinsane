@@ -166,7 +166,7 @@ static void tests_raw8(void)
 	err = item->scan_start(item, &session);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
-	err = item->get_scan_parameters(item, &out_params);
+	err = session->get_scan_parameters(session, &out_params);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(out_params.format, LIS_IMG_FORMAT_RAW_RGB_24);
 	LIS_ASSERT_EQUAL(out_params.width, 2);
@@ -250,7 +250,7 @@ static void tests_raw1(void)
 	err = item->scan_start(item, &session);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
-	err = item->get_scan_parameters(item, &out_params);
+	err = session->get_scan_parameters(session, &out_params);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_EQUAL(out_params.format, LIS_IMG_FORMAT_RAW_RGB_24);
 	LIS_ASSERT_EQUAL(out_params.width, 16);

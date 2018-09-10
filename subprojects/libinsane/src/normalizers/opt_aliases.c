@@ -167,9 +167,6 @@ static enum lis_error aliases_get_children(struct lis_item *self, struct lis_ite
 static enum lis_error aliases_get_options(
 	struct lis_item *self, struct lis_option_descriptor ***descs
 );
-static enum lis_error aliases_get_scan_parameters(
-	struct lis_item *self, struct lis_scan_parameters *parameters
-);
 static enum lis_error aliases_scan_start(struct lis_item *self, struct lis_scan_session **session);
 static void aliases_close(struct lis_item *self);
 
@@ -177,7 +174,6 @@ static void aliases_close(struct lis_item *self);
 static const struct lis_item g_item_template = {
 	.get_children = aliases_get_children,
 	.get_options = aliases_get_options,
-	.get_scan_parameters = aliases_get_scan_parameters,
 	.scan_start = aliases_scan_start,
 	.close = aliases_close,
 };
@@ -432,15 +428,6 @@ static enum lis_error aliases_get_options(
 
 	*out_descs = private->opts_ptr;
 	return LIS_OK;
-}
-
-
-static enum lis_error aliases_get_scan_parameters(
-		struct lis_item *self, struct lis_scan_parameters *parameters
-	)
-{
-	struct aliases_item *private = ALIASES_ITEM_PRIVATE(self);
-	return private->wrapped->get_scan_parameters(private->wrapped, parameters);
 }
 
 

@@ -107,7 +107,7 @@ void lets_scan(void)
 
     // scan parameters must be obtained *after* the scan session has been started
     // if we want a reliable image width (this is a limitation of some drivers).
-    CHECK_ERR(sources[0]->get_scan_parameters(sources[0], &parameters));
+    CHECK_ERR(scan_session->get_scan_parameters(scan_session, &parameters));
     printf("Scan will be: %dpx x %dpx (%zd bytes)\n",
         parameters.width, parameters.height, parameters.image_size);
 

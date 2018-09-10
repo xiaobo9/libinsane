@@ -92,19 +92,6 @@ void lis_bw_set_on_scan_start(
 
 
 /**
- * \brief Called when scan parameters are requested.
- * \param[in,out] params scan parameters.
- */
-typedef void (*lis_bw_get_scan_parameters)(
-	struct lis_item *item, struct lis_scan_parameters *params,
-	void *user_data
-);
-void lis_bw_set_get_scan_parameters(
-	struct lis_api *impl, lis_bw_get_scan_parameters cb, void *user_data
-);
-
-
-/**
  * \brief called when item are closed. Will be called for all items: root and sources.
  */
 typedef void (*lis_bw_on_close_item)(struct lis_item *item, int root, void *user_data);

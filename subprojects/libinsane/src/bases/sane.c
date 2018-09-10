@@ -69,9 +69,6 @@ static enum lis_error lis_sane_item_get_children(struct lis_item *self,
 		struct lis_item ***children);
 static enum lis_error lis_sane_item_get_options(struct lis_item *self,
 		struct lis_option_descriptor ***descs);
-static enum lis_error lis_sane_item_get_scan_parameters(
-	struct lis_item *self, struct lis_scan_parameters *parameters
-);
 static enum lis_error lis_sane_scan_start(struct lis_item *self,
 	struct lis_scan_session **session);
 static void lis_sane_item_close(struct lis_item *dev);
@@ -86,6 +83,9 @@ static enum lis_error lis_sane_opt_set_value(struct lis_option_descriptor *self,
 
 
 /* scan session functions */
+static enum lis_error lis_sane_item_get_scan_parameters(
+	struct lis_scan_session *self, struct lis_scan_parameters *parameters
+);
 static int lis_sane_end_of_feed(struct lis_scan_session *session);
 static int lis_sane_end_of_page(struct lis_scan_session *session);
 static enum lis_error lis_sane_scan_read(
@@ -106,13 +106,13 @@ static struct lis_item g_sane_item_template = {
 	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = lis_sane_item_get_children,
 	.get_options = lis_sane_item_get_options,
-	.get_scan_parameters = lis_sane_item_get_scan_parameters,
 	.scan_start = lis_sane_scan_start,
 	.close = lis_sane_item_close,
 };
 
 
 static struct lis_scan_session g_sane_scan_session_template = {
+	.get_scan_parameters = lis_sane_item_get_scan_parameters,
 	.end_of_feed = lis_sane_end_of_feed,
 	.end_of_page = lis_sane_end_of_page,
 	.scan_read = lis_sane_scan_read,
@@ -422,10 +422,12 @@ static void cleanup_options(struct lis_sane_item *private)
 
 
 static enum lis_error lis_sane_item_get_scan_parameters(
-		struct lis_item *self, struct lis_scan_parameters *out_p
+		struct lis_scan_session *self,
+		struct lis_scan_parameters *out_p
 	)
 {
-	struct lis_sane_item *private = LIS_SANE_ITEM_PRIVATE(self);
+	struct lis_sane_scan_session *private = \
+		LIS_SANE_SCAN_SESSION_PRIVATE(self);
 	enum lis_error err;
 	SANE_Parameters p;
 
@@ -433,11 +435,14 @@ static enum lis_error lis_sane_item_get_scan_parameters(
 	memset(&p, 0, sizeof(p)); // don't trust sane drivers --> init to 0.
 
 	lis_log_debug("sane_get_parameters() ...");
-	err = sane_status_to_lis_error(sane_get_parameters(private->handle, &p));
+	err = sane_status_to_lis_error(sane_get_parameters(
+		private->item->handle, &p
+	));
 	lis_log_debug("sane_get_parameters(): 0x%X, %s", err, lis_strerror(err));
 	if (LIS_IS_ERROR(err)) {
 		lis_log_error("%s->sane_get_parameters(): 0x%X, %s",
-				self->name, err, lis_strerror(err));
+				private->item->parent.name,
+				err, lis_strerror(err));
 		return err;
 	}
 

@@ -4,6 +4,8 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include "scan_parameters.h"
+
 G_BEGIN_DECLS
 
 #define LIBINSANE_SCAN_SESSION_TYPE \
@@ -33,6 +35,7 @@ GType libinsane_scan_session_get_type(void) G_GNUC_CONST;
 
 /* no public constructor */
 
+LibinsaneScanParameters *libinsane_scan_session_get_scan_parameters(LibinsaneScanSession *self, GError **error);
 gboolean libinsane_scan_session_end_of_feed(LibinsaneScanSession *self);
 gboolean libinsane_scan_session_end_of_page(LibinsaneScanSession *self);
 gssize libinsane_scan_session_read(LibinsaneScanSession *self, void *buffer, gsize lng, GError **error);

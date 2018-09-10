@@ -64,6 +64,9 @@ struct lis_dumb_private {
 #define LIS_DUMB_PRIVATE(impl) ((struct lis_dumb_private *)(impl))
 
 
+static enum lis_error dumb_get_scan_parameters(
+	struct lis_scan_session *self, struct lis_scan_parameters *parameters
+);
 static int dumb_end_of_feed(struct lis_scan_session *session);
 static int dumb_end_of_page(struct lis_scan_session *session);
 static enum lis_error dumb_scan_read(
@@ -73,6 +76,7 @@ static void dumb_cancel(struct lis_scan_session *session);
 
 
 static struct lis_scan_session g_dumb_scan_session_template = {
+	.get_scan_parameters = dumb_get_scan_parameters,
 	.end_of_feed = dumb_end_of_feed,
 	.end_of_page = dumb_end_of_page,
 	.scan_read = dumb_scan_read,
@@ -84,9 +88,6 @@ static enum lis_error dumb_get_children(struct lis_item *self, struct lis_item *
 static enum lis_error dumb_get_options(
 	struct lis_item *self, struct lis_option_descriptor ***descs
 );
-static enum lis_error dumb_get_scan_parameters(
-	struct lis_item *self, struct lis_scan_parameters *parameters
-);
 static enum lis_error dumb_scan_start(struct lis_item *self, struct lis_scan_session **session);
 static void dumb_close(struct lis_item *self);
 
@@ -96,7 +97,6 @@ static struct lis_item g_dumb_item_template = {
 	.type = LIS_ITEM_DEVICE,
 	.get_children = dumb_get_children,
 	.get_options = dumb_get_options,
-	.get_scan_parameters = dumb_get_scan_parameters,
 	.scan_start = dumb_scan_start,
 	.close = dumb_close,
 };
@@ -288,11 +288,13 @@ void lis_dumb_set_scan_parameters(struct lis_api *self,
 }
 
 static enum lis_error dumb_get_scan_parameters(
-		struct lis_item *self, struct lis_scan_parameters *parameters
+		struct lis_scan_session *self,
+		struct lis_scan_parameters *parameters
 	)
 {
-	struct lis_dumb_item *item = LIS_DUMB_ITEM(self);
-	memcpy(parameters, &item->impl->scan_parameters, sizeof(*parameters));
+	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(self);
+	memcpy(parameters, &private->impl->scan_parameters,
+		sizeof(*parameters));
 	return LIS_OK;
 }
 

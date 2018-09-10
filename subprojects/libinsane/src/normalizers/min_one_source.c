@@ -28,9 +28,6 @@ static enum lis_error child_get_children(struct lis_item *self, struct lis_item 
 static enum lis_error item_get_options(
 		struct lis_item *self, struct lis_option_descriptor ***descs
 	);
-static enum lis_error item_get_scan_parameters(
-		struct lis_item *self, struct lis_scan_parameters *parameters
-	);
 static enum lis_error item_scan_start(struct lis_item *self, struct lis_scan_session **session);
 static void child_close(struct lis_item *self);
 
@@ -39,7 +36,6 @@ static const struct lis_item g_mos_item_template =
 {
 	.get_children = child_get_children,
 	.get_options = item_get_options,
-	.get_scan_parameters = item_get_scan_parameters,
 	.scan_start = item_scan_start,
 	.close = child_close,
 };
@@ -132,15 +128,6 @@ static enum lis_error item_get_options(
 {
 	struct mos_child *private = LIS_MOS_CHILD(self);
 	return private->wrapped->get_options(private->wrapped, descs);
-}
-
-
-static enum lis_error item_get_scan_parameters(
-		struct lis_item *self, struct lis_scan_parameters *parameters
-	)
-{
-	struct mos_child *private = LIS_MOS_CHILD(self);
-	return private->wrapped->get_scan_parameters(private->wrapped, parameters);
 }
 
 
