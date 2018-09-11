@@ -104,7 +104,7 @@ def raw_to_img(params, img_bytes):
 def scan(source, output_file):
     session = source.scan_start()
 
-    scan_params = source.get_scan_parameters()
+    scan_params = session.get_scan_parameters()
     print("Expected scan parameters: {} ; {}x{} = {} bytes".format(
           scan_params.get_format(),
           scan_params.get_width(), scan_params.get_height(),
