@@ -5,6 +5,7 @@ LIBINSANE_SRCS = files(
     'log.c',
     'multiplexer.c',
     'normalizers/all_opts_on_all_sources.c',
+    'normalizers/bmp.c',
     'normalizers/bmp2raw.c',
     'normalizers/clean_dev_descs.c',
     'normalizers/min_one_source.c',
