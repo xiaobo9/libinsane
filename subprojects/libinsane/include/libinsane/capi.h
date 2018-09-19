@@ -381,7 +381,8 @@ struct lis_item {
 	 * \brief Close the access to a scanner.
 	 *
 	 * Will free all the child items of this root item and all the option descriptors.
-	 * No need to call this method on child items (will do nothing).
+	 * No need to call this method on child items (will do nothing). Call it
+	 * only on the root item.
 	 *
 	 * Will also be done automatically if you call \ref lis_api.cleanup(). (TODO(Jflesch): nornalizer)
 	 */

@@ -1,4 +1,4 @@
-LIBINSANE_SRCS = files(
+libinsane_srcs = files(
     'bases/dumb.c',
     'basewrapper.c',
     'error.c',
@@ -25,23 +25,24 @@ LIBINSANE_SRCS = files(
     'util.c',
 )
 
+deps = [dependency('threads')]
+
 if host_machine.system() == 'windows'
-    LIBINSANE_SRCS += [
+    libinsane_srcs += [
         'bases/twain.c',
         'bases/wia_automation.c',
         'bases/wia_ll.c',
     ]
-    SANE = []
 else
-    LIBINSANE_SRCS += [
+    libinsane_srcs += [
         'bases/sane.c',
     ]
-    SANE = dependency('sane-backends')
+    deps += dependency('sane-backends')
 endif
 
-libinsane = library('insane', LIBINSANE_SRCS,
+libinsane = library('insane', libinsane_srcs,
     include_directories: libinsane_inc,
-    dependencies: SANE,
+    dependencies: deps,
     install: true)
 libinsane_dep = declare_dependency(
     include_directories: libinsane_inc,

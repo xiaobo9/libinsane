@@ -18,6 +18,7 @@ LIBINSANE_VALGRIND_TESTS = [
     'workaround_opt_values',
     'workaround_opt_names',
     'workaround_check_capabilities',
+    'workaround_dedicated_thread',
 ]
 
 CUNIT = dependency('cunit')

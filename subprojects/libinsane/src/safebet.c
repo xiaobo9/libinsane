@@ -126,6 +126,12 @@ static const struct {
 		.wrap_cb = lis_api_normalizer_safe_defaults,
 		.enabled_by_default = 1,
 	},
+	{
+		.name = "workaround_dedicated_thread",
+		.env = "LIBINSANE_WORKAROUND_DEDICATED_THREAD",
+		.wrap_cb = lis_api_workaround_dedicated_thread,
+		.enabled_by_default = 1,
+	},
 };
 
 
