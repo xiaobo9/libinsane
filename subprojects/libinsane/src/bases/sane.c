@@ -182,28 +182,41 @@ static enum lis_error sane_status_to_lis_error(SANE_Status status)
 }
 
 
-enum lis_error lis_api_sane(struct lis_api **out_impl)
+static enum lis_error ensure_sane_is_init(void)
 {
 	enum lis_error err;
 	SANE_Int version_code = 0;
-	struct lis_sane *private;
-
-	private = calloc(1, sizeof(struct lis_sane));
-	if (private == NULL) {
-		lis_log_error("Out of memory");
-		return LIS_ERR_NO_MEM;
-	}
 
 	if (g_sane_initialized <= 0) {
 		lis_log_debug("sane_init() ...");
 		err = sane_status_to_lis_error(sane_init(&version_code, auth_callback));
 		lis_log_debug("sane_init(): 0x%X, %s", err, lis_strerror(err));
 		if (LIS_IS_ERROR(err)) {
-			free(private);
+			lis_log_error(
+				"sane_init() failed: 0x%X, %s",
+				err, lis_strerror(err)
+			);
 			return err;
 		}
 		lis_log_info("Sane version code: 0x%X", version_code);
 		g_sane_initialized++;
+	}
+
+	return LIS_OK;
+}
+
+
+enum lis_error lis_api_sane(struct lis_api **out_impl)
+{
+	struct lis_sane *private;
+
+	// do not init sane here. This is the only call not covered
+	// by the dedicated_thread workaround. --> not thread safe.
+
+	private = calloc(1, sizeof(struct lis_sane));
+	if (private == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
 	}
 
 	memcpy(&private->parent, &g_sane_impl_template, sizeof(private->parent));
@@ -254,6 +267,11 @@ static enum lis_error lis_sane_list_devices(
 	const SANE_Device **dev_list = NULL;
 	int nb_devs, i;
 	int local_only = 0;
+
+	err = ensure_sane_is_init();
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
 
 	switch(locations) {
 		case LIS_DEVICE_LOCATIONS_ANY:
@@ -321,6 +339,11 @@ static enum lis_error lis_sane_get_device(struct lis_api *impl, const char *dev_
 	enum lis_error err;
 
 	LIS_UNUSED(impl);
+
+	err = ensure_sane_is_init();
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
 
 	private = calloc(1, sizeof(struct lis_sane_item));
 	if (private == NULL) {
