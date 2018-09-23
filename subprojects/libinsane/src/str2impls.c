@@ -98,6 +98,8 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 				err = lis_api_workaround_opt_names(*impls, &next);
 			} else if (strcmp(tok, "opt_values") == 0) {
 				err = lis_api_workaround_opt_values(*impls, &next);
+			} else if (strcmp(tok, "one_page_flatbed") == 0) {
+				err = lis_api_workaround_one_page_flatbed(*impls, &next);
 			} else {
 				lis_log_error("Unknown API wrapper: %s", tok);
 				err = LIS_ERR_INTERNAL_NOT_IMPLEMENTED;

@@ -129,7 +129,7 @@ static enum lis_error dt_scan_read(
 static void dt_scan_cancel(struct lis_scan_session *self);
 
 
-struct lis_scan_session g_scan_session_template = {
+static struct lis_scan_session g_scan_session_template = {
 	.get_scan_parameters = dt_scan_get_scan_parameters,
 	.end_of_feed = dt_scan_end_of_feed,
 	.end_of_page = dt_scan_end_of_page,

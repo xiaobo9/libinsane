@@ -43,7 +43,6 @@ extern enum lis_error lis_api_workaround_opt_names(
  * ## Option 'mode': Unusual mode values
  *
  * - API: Sane
- * - Culprits: Brother, Samsung
  * - Seen on:
  *   - [Brother MFC-7360N](https://openpaper.work/scanner_db/report/20/)
  *   - [Samsung CLX-3300](https://openpaper.work/scanner_db/report/31/)
@@ -76,12 +75,12 @@ extern enum lis_error lis_api_workaround_opt_values(
 
 
 /*!
- * \brief Prevent operations on options that are not allowed by capilities
+ * \brief Prevent operations on options that are not allowed by capabilities
  *
  * ## Do not let application access value of inactive options
  *
  * - API: Sane
- * - Culprit: Can't remember
+ * - Seen on: Sane test backend
  *
  * Some drivers allows access to inactive options (even just for reading).
  * Some may even crash if the user application tries to set a value on an inactive option.
@@ -89,7 +88,7 @@ extern enum lis_error lis_api_workaround_opt_values(
  * ## Do not let application set value on read-only options
  *
  * - API: Sane
- * - Culprit: Can't remember
+ * - Seen on: Can't remember
  *
  * Behavior is undefined when trying to set read-only values.
  * This workaround makes it defined: it always returns an error.
@@ -97,7 +96,6 @@ extern enum lis_error lis_api_workaround_opt_values(
  * ##  Do not let application set value on option that can have only one value
  *
  * - API: Sane
- * - Culprit: Epson
  * - Seen on: [Epson DS-310](https://openpaper.work/scanner_db/report/120/)
  * - Seen on: Epson XP-425
  *
@@ -129,6 +127,27 @@ extern enum lis_error lis_api_workaround_check_capabilities(
  * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
 extern enum lis_error lis_api_workaround_dedicated_thread(
+	struct lis_api *to_wrap, struct lis_api **out_impl
+);
+
+
+/*!
+ * \brief Ensure Flatbeds return only one page.
+ *
+ * - API: Sane, WIA
+ * - Culprit: EPSON XP-425 (Sane)
+ *
+ * Flatbed can only contain one single page. However when requesting
+ * another page/image, some drivers keep saying "yeah sure no problem"
+ * instead of "no more pages", and keep returning the same page/image
+ * again and again.
+ *
+ * Requires normalizer 'normalizer_source_types'.
+ *
+ * \param[in] to_wrap Base implementation to wrap.
+ * \param[out] out_impl Implementation of the out_impl including the workaround.
+ */
+extern enum lis_error lis_api_workaround_one_page_flatbed(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 

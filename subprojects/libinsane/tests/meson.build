@@ -15,10 +15,11 @@ LIBINSANE_VALGRIND_TESTS = [
     'normalizer_source_names',
     'normalizer_source_nodes',
     'normalizer_source_types',
-    'workaround_opt_values',
-    'workaround_opt_names',
     'workaround_check_capabilities',
     'workaround_dedicated_thread',
+    'workaround_one_page_flatbed',
+    'workaround_opt_names',
+    'workaround_opt_values',
 ]
 
 CUNIT = dependency('cunit')

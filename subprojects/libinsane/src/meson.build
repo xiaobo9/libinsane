@@ -20,6 +20,7 @@ libinsane_srcs = files(
     'str2impls.c',
     'workarounds/dedicated_thread.c',
     'workarounds/check_capabilities.c',
+    'workarounds/one_page_flatbed.c',
     'workarounds/opt_names.c',
     'workarounds/opt_values.c',
     'util.c',

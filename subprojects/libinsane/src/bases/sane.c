@@ -256,7 +256,7 @@ static void lis_sane_cleanup(struct lis_api *impl)
 	if (lis_getenv("LIBINSANE_WORKAROUND_SANE_EXIT", 1)) {
 		lis_log_warning(
 			"[workaround] Call to sane_exit() disabled."
-			" libsane will remain active"
+			" libsane will remain active until the program stops"
 		);
 	} else {
 		if (g_sane_initialized > 0) {

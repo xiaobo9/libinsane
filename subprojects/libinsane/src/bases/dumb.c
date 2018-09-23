@@ -449,6 +449,11 @@ static int dumb_end_of_feed(struct lis_scan_session *session)
 static int dumb_end_of_page(struct lis_scan_session *session)
 {
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
+
+	if (private->impl->scan.read_contents[private->read_idx].nb_bytes == 0) {
+		return 1;
+	}
+
 	if (dumb_end_of_feed(session)) {
 		return 1;
 	}
@@ -461,6 +466,11 @@ static enum lis_error dumb_scan_read(
 	)
 {
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
+
+	while(private->impl->scan.read_contents[private->read_idx].nb_bytes == 0) {
+		private->read_idx++;
+	}
+
 	*buffer_size = MIN(private->impl->scan.read_contents[private->read_idx].nb_bytes, *buffer_size);
 	if (*buffer_size < private->impl->scan.read_contents[private->read_idx].nb_bytes) {
 		/* not supported because I'm too lazy */

@@ -295,6 +295,8 @@ struct lis_scan_session {
 	 * \warning You're advised to NOT use \ref LIS_IS_OK(). You can however use safely
 	 *		\ref LIS_IS_ERROR().
 	 * \warning You should manage every non-error return value carefully.
+	 * \warning It may return 0 bytes. It does *not* mean end-of-page/end-of-page. It just
+	 *		means no data at the moment.
 	 * \retval LIS_OK A chunk of the current page/image has been read.
 	 * \retval LIS_CANCELLED Scan has been cancelled by \ref lis_scan_session.cancel() or by hardware.
 	 *		You can throw the image chunks you got away. Do not call again \ref scan_read().
