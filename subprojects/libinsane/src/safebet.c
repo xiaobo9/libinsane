@@ -22,18 +22,6 @@
 #endif
 
 
-static int lis_getenv(const char *var, int default_val)
-{
-	const char *val_str;
-
-	val_str = getenv(var);
-	if (val_str == NULL) {
-		return default_val;
-	}
-	return atoi(val_str);
-}
-
-
 static const struct {
 	const char *name;
 	const char *env;

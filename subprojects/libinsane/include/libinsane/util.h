@@ -69,6 +69,12 @@ int lis_compare(enum lis_value_type type, union lis_value val1, union lis_value 
 union lis_value lis_add(enum lis_value_type type, union lis_value a, union lis_value b);
 union lis_value lis_sub(enum lis_value_type type, union lis_value a, union lis_value b);
 
+/*!
+ * \brief return the value of an environment variable.
+ * \param[in] var env variable name
+ * \param[in] default_val default value if the variable is not set
+ */
+int lis_getenv(const char *var, int default_val);
 
 #ifdef __cplusplus
 }

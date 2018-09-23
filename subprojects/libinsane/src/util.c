@@ -104,3 +104,15 @@ union lis_value lis_sub(enum lis_value_type type, union lis_value a, union lis_v
 	out.integer = 0;
 	return out;
 }
+
+
+int lis_getenv(const char *var, int default_val)
+{
+	const char *val_str;
+
+	val_str = getenv(var);
+	if (val_str == NULL) {
+		return default_val;
+	}
+	return atoi(val_str);
+}

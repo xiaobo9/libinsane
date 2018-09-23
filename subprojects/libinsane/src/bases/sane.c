@@ -245,14 +245,29 @@ static void lis_sane_cleanup_dev_descriptors(struct lis_device_descriptor **dev_
 static void lis_sane_cleanup(struct lis_api *impl)
 {
 	struct lis_sane *private = LIS_SANE_PRIVATE(impl);
-	if (g_sane_initialized > 0) {
-		lis_log_debug("sane_exit()");
-		sane_exit();
-		g_sane_initialized--;
-		lis_log_debug("freeing Libinsane data ...");
-		lis_sane_cleanup_dev_descriptors(private->dev_descs);
-		free(private);
-		lis_log_debug("Libinsane data freed ...");
+
+	/* WORKAROUND(Jflesch):
+	 * sane_exit() must be called from the main thread or it will crash
+	 * (not sure why).
+	 * But because of workaround 'dedicated_thread', there is no way
+	 * here to run sane_exit() from the sane thread.
+	 * .. so we leak by default.
+	 */
+	if (lis_getenv("LIBINSANE_WORKAROUND_SANE_EXIT", 1)) {
+		lis_log_warning(
+			"[workaround] Call to sane_exit() disabled."
+			" libsane will remain active"
+		);
+	} else {
+		if (g_sane_initialized > 0) {
+			lis_log_debug("sane_exit()");
+			sane_exit();
+			g_sane_initialized--;
+			lis_log_debug("freeing Libinsane data ...");
+			lis_sane_cleanup_dev_descriptors(private->dev_descs);
+			free(private);
+			lis_log_debug("Libinsane data freed ...");
+		}
 	}
 }
 
