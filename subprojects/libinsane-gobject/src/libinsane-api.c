@@ -17,14 +17,12 @@
 
 #include <enums.h>
 
-
 struct _LibinsaneApiPrivate
 {
 	struct lis_api *impl;
 };
 
-#define LIBINSANE_API_GET_PRIVATE(obj) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((obj), LIBINSANE_API_TYPE, LibinsaneApiPrivate))
+G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneApi, libinsane_api, G_TYPE_OBJECT)
 
 
 static void libinsane_api_finalize(GObject *self)
@@ -70,7 +68,6 @@ static void libinsane_api_class_init(LibinsaneApiClass *cls)
 {
 	GObjectClass *go_cls;
 
-	g_type_class_add_private(cls, sizeof(LibinsaneApiPrivate));
 	go_cls = G_OBJECT_CLASS(cls);
 	go_cls->finalize = libinsane_api_finalize;
 
@@ -96,7 +93,7 @@ static void libinsane_api_init(LibinsaneApi *self)
 LibinsaneApi *libinsane_api_new_safebet(GError **error)
 {
 	LibinsaneApi *api = g_object_new(LIBINSANE_API_TYPE, NULL);
-	LibinsaneApiPrivate *priv = LIBINSANE_API_GET_PRIVATE(api);
+	LibinsaneApiPrivate *priv = libinsane_api_get_instance_private(api);
 
 	enum lis_error err;
 
@@ -146,7 +143,7 @@ void libinsane_api_cleanup(LibinsaneApi *self)
 
 	lis_log_debug("enter");
 
-	priv = LIBINSANE_API_GET_PRIVATE(self);
+	priv = libinsane_api_get_instance_private(self);
 	if (priv->impl != NULL) {
 		lis_log_debug("cleanup");
 		priv->impl->cleanup(priv->impl);
@@ -186,7 +183,7 @@ GList *libinsane_api_list_devices(
 			break;
 	}
 
-	priv = LIBINSANE_API_GET_PRIVATE(self);
+	priv = libinsane_api_get_instance_private(self);
 	err = priv->impl->list_devices(priv->impl, lis_locations, &dev_infos);
 	if (LIS_IS_ERROR(err)) {
 		SET_LIBINSANE_GOBJECT_ERROR(error, err,
@@ -219,7 +216,7 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 
 	lis_log_debug("enter");
 
-	priv = LIBINSANE_API_GET_PRIVATE(self);
+	priv = libinsane_api_get_instance_private(self);
 
 	lis_err = priv->impl->get_device(priv->impl, dev_id, &lis_item);
 	if (LIS_IS_ERROR(lis_err)) {
@@ -234,5 +231,3 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 	lis_log_debug("leave");
 	return item;
 }
-
-G_DEFINE_TYPE(LibinsaneApi, libinsane_api, G_TYPE_OBJECT)

@@ -21,10 +21,9 @@ struct _LibinsaneOptionDescriptorPrivate
 	GValue last_value;
 };
 
-#define LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(obj) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((obj), LIBINSANE_OPTION_DESCRIPTOR_TYPE, \
-		LibinsaneOptionDescriptorPrivate))
-
+G_DEFINE_TYPE_WITH_PRIVATE(
+		LibinsaneOptionDescriptor, libinsane_option_descriptor, G_TYPE_OBJECT
+	)
 
 static void libinsane_option_descriptor_finalize(GObject *object)
 {
@@ -36,7 +35,6 @@ static void libinsane_option_descriptor_finalize(GObject *object)
 static void libinsane_option_descriptor_class_init(LibinsaneOptionDescriptorClass *cls)
 {
 	GObjectClass *go_cls;
-	g_type_class_add_private(cls, sizeof(LibinsaneOptionDescriptorPrivate));
 	go_cls = G_OBJECT_CLASS(cls);
 	go_cls->finalize = libinsane_option_descriptor_finalize;
 }
@@ -58,7 +56,7 @@ LibinsaneOptionDescriptor *libinsane_option_descriptor_new_from_libinsane(
 
 	lis_log_debug("[gobject] enter");
 	opt = g_object_new(LIBINSANE_OPTION_DESCRIPTOR_TYPE, NULL);
-	private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(opt);
+	private = libinsane_option_descriptor_get_instance_private(opt);
 
 	private->opt = lis_opt;
 
@@ -74,28 +72,28 @@ LibinsaneOptionDescriptor *libinsane_option_descriptor_new_from_libinsane(
 
 const char *libinsane_option_descriptor_get_name(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 	return private->opt->name;
 }
 
 
 const char *libinsane_option_descriptor_get_title(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 	return private->opt->title;
 }
 
 
 const char *libinsane_option_descriptor_get_desc(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 	return private->opt->desc;
 }
 
 
 LibinsaneCapability libinsane_option_descriptor_get_capabilities(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 	int cap = private->opt->capabilities;
 	LibinsaneCapability out = 0;
 
@@ -117,7 +115,7 @@ LibinsaneCapability libinsane_option_descriptor_get_capabilities(LibinsaneOption
 
 GType libinsane_option_descriptor_get_value_type(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 
 	switch(private->opt->value.type) {
 		case LIS_TYPE_BOOL:
@@ -138,7 +136,7 @@ GType libinsane_option_descriptor_get_value_type(LibinsaneOptionDescriptor *self
 
 LibinsaneUnit libinsane_option_descriptor_get_value_unit(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 	switch(private->opt->value.unit) {
 		case LIS_UNIT_NONE:
 			return LIBINSANE_UNIT_NONE;
@@ -161,7 +159,7 @@ LibinsaneUnit libinsane_option_descriptor_get_value_unit(LibinsaneOptionDescript
 
 LibinsaneConstraintType libinsane_option_descriptor_get_constraint_type(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 	switch(private->opt->constraint.type) {
 		case LIS_CONSTRAINT_NONE:
 			return LIBINSANE_CONSTRAINT_TYPE_NONE;
@@ -231,7 +229,7 @@ static void lis_value_to_gvalue(enum lis_value_type type, union lis_value value,
  */
 GArray *libinsane_option_descriptor_get_constraint(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private = libinsane_option_descriptor_get_instance_private(self);
 	GArray *out = NULL;
 	GValue val = G_VALUE_INIT;
 	int i;
@@ -283,25 +281,28 @@ GArray *libinsane_option_descriptor_get_constraint(LibinsaneOptionDescriptor *se
 
 gboolean libinsane_option_descriptor_is_readable(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private;
+	private = libinsane_option_descriptor_get_instance_private(self);
 	return LIS_OPT_IS_READABLE(private->opt);
 }
 
 
 gboolean libinsane_option_descriptor_is_writable(LibinsaneOptionDescriptor *self)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private;
+	private = libinsane_option_descriptor_get_instance_private(self);
 	return LIS_OPT_IS_WRITABLE(private->opt);
 }
 
 
 const GValue *libinsane_option_descriptor_get_value(LibinsaneOptionDescriptor *self, GError **error)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private;
 	enum lis_error err;
 	union lis_value val;
 
 	lis_log_debug("enter");
+	private = libinsane_option_descriptor_get_instance_private(self);
 	err = private->opt->fn.get_value(private->opt, &val);
 	if (LIS_IS_ERROR(err)) {
 		SET_LIBINSANE_GOBJECT_ERROR(error, err,
@@ -376,13 +377,14 @@ LibinsaneSetFlag libinsane_option_descriptor_set_value(LibinsaneOptionDescriptor
 		GValue *value, GError **error
 	)
 {
-	LibinsaneOptionDescriptorPrivate *private = LIBINSANE_OPTION_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneOptionDescriptorPrivate *private;
 	enum lis_error err;
 	union lis_value val;
 	int set_flags = 0;
 	LibinsaneSetFlag out;
 
 	lis_log_debug("enter");
+	private = libinsane_option_descriptor_get_instance_private(self);
 	if (!gvalue_to_lis_value(value, private->opt->value.type, &val)) {
 		err = LIS_ERR_INVALID_VALUE;
 		SET_LIBINSANE_GOBJECT_ERROR(error, err,
@@ -415,6 +417,3 @@ LibinsaneSetFlag libinsane_option_descriptor_set_value(LibinsaneOptionDescriptor
 	lis_log_debug("leave");
 	return out;
 }
-
-
-G_DEFINE_TYPE(LibinsaneOptionDescriptor, libinsane_option_descriptor, G_TYPE_OBJECT)

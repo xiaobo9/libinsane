@@ -14,15 +14,14 @@ struct _LibinsaneScanSessionPrivate
 	struct lis_scan_session *session;
 	int finished;
 };
-#define LIBINSANE_SCAN_SESSION_GET_PRIVATE(obj) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((obj), LIBINSANE_SCAN_SESSION_TYPE, \
-	LibinsaneScanSessionPrivate))
+
+G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneScanSession, libinsane_scan_session, G_TYPE_OBJECT)
 
 
 static void libinsane_scan_session_finalize(GObject *self)
 {
 	LibinsaneScanSession *session = LIBINSANE_SCAN_SESSION(self);
-	LibinsaneScanSessionPrivate *private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(session);
+	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(session);
 	lis_log_debug("[gobject] Finalizing");
 	if (!private->finished) {
 		private->session->cancel(private->session);
@@ -34,7 +33,6 @@ static void libinsane_scan_session_finalize(GObject *self)
 static void libinsane_scan_session_class_init(LibinsaneScanSessionClass *cls)
 {
 	GObjectClass *go_cls;
-	g_type_class_add_private(cls, sizeof(LibinsaneScanSessionPrivate));
 	go_cls = G_OBJECT_CLASS(cls);
 	go_cls->finalize = libinsane_scan_session_finalize;
 }
@@ -55,7 +53,7 @@ LibinsaneScanSession *libinsane_scan_session_new_from_libinsane(
 
 	lis_log_debug("[gobject] enter");
 	session = g_object_new(LIBINSANE_SCAN_SESSION_TYPE, NULL);
-	private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(session);
+	private = libinsane_scan_session_get_instance_private(session);
 	private->session = scan_session;
 	private->finished = 0;
 	lis_log_debug("[gobject] leave");
@@ -70,7 +68,7 @@ LibinsaneScanSession *libinsane_scan_session_new_from_libinsane(
  */
 LibinsaneScanParameters *libinsane_scan_session_get_scan_parameters(LibinsaneScanSession *self, GError **error)
 {
-	LibinsaneScanSessionPrivate *private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(self);
+	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(self);
 	struct lis_scan_parameters lis_params;
 	enum lis_error err;
 	LibinsaneScanParameters *params;
@@ -94,14 +92,14 @@ LibinsaneScanParameters *libinsane_scan_session_get_scan_parameters(LibinsaneSca
 
 gboolean libinsane_scan_session_end_of_feed(LibinsaneScanSession *self)
 {
-	LibinsaneScanSessionPrivate *private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(self);
+	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(self);
 	return private->session->end_of_feed(private->session) > 0;
 }
 
 
 gboolean libinsane_scan_session_end_of_page(LibinsaneScanSession *self)
 {
-	LibinsaneScanSessionPrivate *private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(self);
+	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(self);
 	return private->session->end_of_page(private->session) > 0;
 }
 
@@ -120,7 +118,7 @@ gboolean libinsane_scan_session_end_of_page(LibinsaneScanSession *self)
  */
 gssize libinsane_scan_session_read(LibinsaneScanSession *self, void *buffer, gsize lng, GError **error)
 {
-	LibinsaneScanSessionPrivate *private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(self);
+	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(self);
 	size_t buf_length = lng;
 	enum lis_error err;
 
@@ -167,10 +165,7 @@ GBytes *libinsane_scan_session_read_bytes(LibinsaneScanSession *self, gsize lng,
 
 void libinsane_scan_session_cancel(LibinsaneScanSession *self)
 {
-	LibinsaneScanSessionPrivate *private = LIBINSANE_SCAN_SESSION_GET_PRIVATE(self);
+	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(self);
 	private->session->cancel(private->session);
 	private->finished = 1;
 }
-
-
-G_DEFINE_TYPE(LibinsaneScanSession, libinsane_scan_session, G_TYPE_OBJECT)

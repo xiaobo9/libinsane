@@ -11,9 +11,8 @@ struct _LibinsaneScanParametersPrivate
 {
 	struct lis_scan_parameters parameters;
 };
-#define LIBINSANE_SCAN_PARAMETERS_GET_PRIVATE(obj) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((obj), LIBINSANE_SCAN_PARAMETERS_TYPE, \
-		LibinsaneScanParametersPrivate))
+
+G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneScanParameters, libinsane_scan_parameters, G_TYPE_OBJECT)
 
 
 static void libinsane_scan_parameters_finalize(GObject *object)
@@ -26,7 +25,6 @@ static void libinsane_scan_parameters_finalize(GObject *object)
 static void libinsane_scan_parameters_class_init(LibinsaneScanParametersClass *cls)
 {
 	GObjectClass *go_cls;
-	g_type_class_add_private(cls, sizeof(LibinsaneScanParametersPrivate));
 	go_cls = G_OBJECT_CLASS(cls);
 	go_cls->finalize = libinsane_scan_parameters_finalize;
 }
@@ -46,7 +44,7 @@ LibinsaneScanParameters *libinsane_scan_parameters_new_from_libinsane(struct lis
 
 	lis_log_debug("[gobject] enter");
 	params = g_object_new(LIBINSANE_SCAN_PARAMETERS_TYPE, NULL);
-	private = LIBINSANE_SCAN_PARAMETERS_GET_PRIVATE(params);
+	private = libinsane_scan_parameters_get_instance_private(params);
 	memcpy(&private->parameters, lis_params, sizeof(private->parameters));
 	lis_log_debug("[gobject] leave");
 
@@ -56,7 +54,7 @@ LibinsaneScanParameters *libinsane_scan_parameters_new_from_libinsane(struct lis
 
 LibinsaneImgFormat libinsane_scan_parameters_get_format(LibinsaneScanParameters *self)
 {
-	LibinsaneScanParametersPrivate *private = LIBINSANE_SCAN_PARAMETERS_GET_PRIVATE(self);
+	LibinsaneScanParametersPrivate *private = libinsane_scan_parameters_get_instance_private(self);
 
 	switch(private->parameters.format) {
 		case LIS_IMG_FORMAT_RAW_RGB_24:
@@ -82,23 +80,23 @@ LibinsaneImgFormat libinsane_scan_parameters_get_format(LibinsaneScanParameters 
 
 int libinsane_scan_parameters_get_width(LibinsaneScanParameters *self)
 {
-	LibinsaneScanParametersPrivate *private = LIBINSANE_SCAN_PARAMETERS_GET_PRIVATE(self);
+	LibinsaneScanParametersPrivate *private;
+	private = libinsane_scan_parameters_get_instance_private(self);
 	return private->parameters.width;
 }
 
 
 int libinsane_scan_parameters_get_height(LibinsaneScanParameters *self)
 {
-	LibinsaneScanParametersPrivate *private = LIBINSANE_SCAN_PARAMETERS_GET_PRIVATE(self);
+	LibinsaneScanParametersPrivate *private;
+	private = libinsane_scan_parameters_get_instance_private(self);
 	return private->parameters.height;
 }
 
 
 gsize libinsane_scan_parameters_get_image_size(LibinsaneScanParameters *self)
 {
-	LibinsaneScanParametersPrivate *private = LIBINSANE_SCAN_PARAMETERS_GET_PRIVATE(self);
+	LibinsaneScanParametersPrivate *private;
+	private = libinsane_scan_parameters_get_instance_private(self);
 	return private->parameters.image_size;
 }
-
-
-G_DEFINE_TYPE(LibinsaneScanParameters, libinsane_scan_parameters, G_TYPE_OBJECT)

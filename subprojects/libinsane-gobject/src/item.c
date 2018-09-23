@@ -15,8 +15,8 @@ struct _LibinsaneItemPrivate
 {
 	struct lis_item *item;
 };
-#define LIBINSANE_ITEM_GET_PRIVATE(obj) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((obj), LIBINSANE_ITEM_TYPE, LibinsaneItemPrivate))
+
+G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneItem, libinsane_item, G_TYPE_OBJECT)
 
 
 static void libinsane_item_finalize(GObject *object)
@@ -29,7 +29,6 @@ static void libinsane_item_finalize(GObject *object)
 static void libinsane_item_class_init(LibinsaneItemClass *cls)
 {
 	GObjectClass *go_cls;
-	g_type_class_add_private(cls, sizeof(LibinsaneItemPrivate));
 	go_cls = G_OBJECT_CLASS(cls);
 	go_cls->finalize = libinsane_item_finalize;
 }
@@ -49,7 +48,7 @@ LibinsaneItem *libinsane_item_new_from_libinsane(struct lis_item *lis_item)
 
 	lis_log_debug("[gobject] enter");
 	item = g_object_new(LIBINSANE_ITEM_TYPE, NULL);
-	private = LIBINSANE_ITEM_GET_PRIVATE(item);
+	private = libinsane_item_get_instance_private(item);
 	private->item = lis_item;
 	lis_log_debug("[gobject] leave");
 
@@ -65,14 +64,14 @@ LibinsaneItem *libinsane_item_new_from_libinsane(struct lis_item *lis_item)
  */
 const char *libinsane_item_get_name(LibinsaneItem *self)
 {
-	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
+	LibinsaneItemPrivate *private = libinsane_item_get_instance_private(self);
 	return private->item->name;
 }
 
 
 LibinsaneItemType libinsane_item_get_item_type(LibinsaneItem *self)
 {
-	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
+	LibinsaneItemPrivate *private = libinsane_item_get_instance_private(self);
 	switch(private->item->type)
 	{
 		case LIS_ITEM_DEVICE:
@@ -92,7 +91,7 @@ LibinsaneItemType libinsane_item_get_item_type(LibinsaneItem *self)
 
 void libinsane_item_close(LibinsaneItem *self, GError **error)
 {
-	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
+	LibinsaneItemPrivate *private = libinsane_item_get_instance_private(self);
 	LIS_UNUSED(error);
 	private->item->close(private->item);
 }
@@ -111,7 +110,7 @@ void libinsane_item_close(LibinsaneItem *self, GError **error)
  */
 GList *libinsane_item_get_children(LibinsaneItem *self, GError **error)
 {
-	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
+	LibinsaneItemPrivate *private = libinsane_item_get_instance_private(self);
 	struct lis_item **children;
 	GList *out = NULL;
 	enum lis_error err;
@@ -149,7 +148,7 @@ GList *libinsane_item_get_children(LibinsaneItem *self, GError **error)
  */
 GList *libinsane_item_get_options(LibinsaneItem *self, GError **error)
 {
-	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
+	LibinsaneItemPrivate *private = libinsane_item_get_instance_private(self);
 	enum lis_error err;
 	struct lis_option_descriptor **opts;
 	LibinsaneOptionDescriptor *desc;
@@ -182,7 +181,7 @@ GList *libinsane_item_get_options(LibinsaneItem *self, GError **error)
  */
 LibinsaneScanSession *libinsane_item_scan_start(LibinsaneItem *self, GError **error)
 {
-	LibinsaneItemPrivate *private = LIBINSANE_ITEM_GET_PRIVATE(self);
+	LibinsaneItemPrivate *private = libinsane_item_get_instance_private(self);
 	enum lis_error err;
 	struct lis_scan_session *lis_scan_session = NULL;
 	LibinsaneScanSession *scan_session;
@@ -202,5 +201,3 @@ LibinsaneScanSession *libinsane_item_scan_start(LibinsaneItem *self, GError **er
 	return scan_session;
 }
 
-
-G_DEFINE_TYPE(LibinsaneItem, libinsane_item, G_TYPE_OBJECT)

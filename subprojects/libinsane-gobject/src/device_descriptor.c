@@ -15,15 +15,14 @@ struct _LibinsaneDeviceDescriptorPrivate
 	char *to_string;
 };
 
-#define LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(obj) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((obj), LIBINSANE_DEVICE_DESCRIPTOR_TYPE, LibinsaneDeviceDescriptorPrivate))
-
+G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneDeviceDescriptor, libinsane_device_descriptor, G_TYPE_OBJECT)
 
 
 static void libinsane_device_descriptor_finalize(GObject *object)
 {
 	LibinsaneDeviceDescriptor *self = LIBINSANE_DEVICE_DESCRIPTOR(object);
-	LibinsaneDeviceDescriptorPrivate *private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneDeviceDescriptorPrivate *private = \
+		libinsane_device_descriptor_get_instance_private(self);
 
 	lis_log_debug("[gobject] Finalizing");
 	g_free(private->api);
@@ -38,7 +37,6 @@ static void libinsane_device_descriptor_finalize(GObject *object)
 static void libinsane_device_descriptor_class_init(LibinsaneDeviceDescriptorClass *cls)
 {
 	GObjectClass *go_cls;
-	g_type_class_add_private(cls, sizeof(LibinsaneDeviceDescriptorPrivate));
 	go_cls = G_OBJECT_CLASS(cls);
 	go_cls->finalize = libinsane_device_descriptor_finalize;
 }
@@ -59,7 +57,7 @@ LibinsaneDeviceDescriptor *libinsane_device_descriptor_new_from_libinsane(
 
 	lis_log_debug("[gobject] enter");
 	desc = g_object_new(LIBINSANE_DEVICE_DESCRIPTOR_TYPE, NULL);
-	private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(desc);
+	private = libinsane_device_descriptor_get_instance_private(desc);
 	private->dev_id = g_strdup(lis_desc->dev_id);
 	private->vendor = g_strdup(lis_desc->vendor);
 	private->model = g_strdup(lis_desc->model);
@@ -75,35 +73,40 @@ LibinsaneDeviceDescriptor *libinsane_device_descriptor_new_from_libinsane(
 
 const char *libinsane_device_descriptor_get_api(LibinsaneDeviceDescriptor *self)
 {
-	LibinsaneDeviceDescriptorPrivate *private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneDeviceDescriptorPrivate *private;
+	private = libinsane_device_descriptor_get_instance_private(self);
 	return private->api;
 }
 
 
 const char *libinsane_device_descriptor_get_dev_id(LibinsaneDeviceDescriptor *self)
 {
-	LibinsaneDeviceDescriptorPrivate *private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneDeviceDescriptorPrivate *private;
+	private = libinsane_device_descriptor_get_instance_private(self);
 	return private->dev_id;
 }
 
 
 const char *libinsane_device_descriptor_get_dev_vendor(LibinsaneDeviceDescriptor *self)
 {
-	LibinsaneDeviceDescriptorPrivate *private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneDeviceDescriptorPrivate *private;
+	private = libinsane_device_descriptor_get_instance_private(self);
 	return private->vendor;
 }
 
 
 const char *libinsane_device_descriptor_get_dev_model(LibinsaneDeviceDescriptor *self)
 {
-	LibinsaneDeviceDescriptorPrivate *private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneDeviceDescriptorPrivate *private;
+	private = libinsane_device_descriptor_get_instance_private(self);
 	return private->model;
 }
 
 
 const char *libinsane_device_descriptor_get_dev_type(LibinsaneDeviceDescriptor *self)
 {
-	LibinsaneDeviceDescriptorPrivate *private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneDeviceDescriptorPrivate *private;
+	private = libinsane_device_descriptor_get_instance_private(self);
 	return private->type;
 }
 
@@ -114,9 +117,7 @@ const char *libinsane_device_descriptor_get_dev_type(LibinsaneDeviceDescriptor *
  */
 const char *libinsane_device_descriptor_to_string(LibinsaneDeviceDescriptor *self)
 {
-	LibinsaneDeviceDescriptorPrivate *private = LIBINSANE_DEVICE_DESCRIPTOR_GET_PRIVATE(self);
+	LibinsaneDeviceDescriptorPrivate *private;
+	private = libinsane_device_descriptor_get_instance_private(self);
 	return private->to_string;
 }
-
-
-G_DEFINE_TYPE(LibinsaneDeviceDescriptor, libinsane_device_descriptor, G_TYPE_OBJECT)
