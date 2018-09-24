@@ -386,11 +386,16 @@ static void real_item_get_children(void *_data)
 
 	for(nb_children = 0 ; to_wrap[nb_children] != NULL ; nb_children++) { }
 
+	if (nb_children == 0) {
+		*(data->children) = to_wrap;
+		return;
+	}
+
 	data->private->children = calloc(
 		nb_children, sizeof(struct dt_item_private)
 	);
 	data->private->children_ptrs = calloc(
-		nb_children + 1, sizeof(struct lis_item)
+		nb_children + 1, sizeof(struct lis_item *)
 	);
 
 	if (data->private->children == NULL || data->private->children_ptrs == NULL) {
@@ -455,9 +460,14 @@ static void real_item_get_options(void *_data)
 
 	for (nb_opts = 0 ; to_wrap[nb_opts] != NULL ; nb_opts++) { }
 
+	if (nb_opts == 0) {
+		*(data->descs) = to_wrap;
+		return;
+	}
+
 	data->private->opts = calloc(nb_opts, sizeof(struct dt_opt_private));
 	data->private->opts_ptrs = calloc(
-		nb_opts + 1, sizeof(struct lis_item *)
+		nb_opts + 1, sizeof(struct lis_option_descriptor *)
 	);
 	if (data->private->opts == NULL || data->private->opts_ptrs == NULL) {
 		FREE(data->private->opts);
