@@ -1,6 +1,6 @@
 PYTHON ?= python3
 VERBOSE ?=
-DESTDIR ?= /usr/local
+PREFIX ?= /usr/local
 
 SRCS = $(wildcard src/libinsane/*.c)
 HEADERS = $(wildcard include/libinsane/*.h)
@@ -17,7 +17,7 @@ build_py:
 
 build/build.ninja:
 	mkdir -p build
-	(cd build && meson --werror --warnlevel 3 ..)
+	(cd build && meson --werror --warnlevel 3 --prefix=${PREFIX} ..)
 
 build_c: build/build.ninja
 	(cd build && ninja)
