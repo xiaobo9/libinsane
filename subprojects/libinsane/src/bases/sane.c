@@ -1143,7 +1143,6 @@ static enum lis_error lis_sane_scan_read(
 			return LIS_OK;
 		case SANE_STATUS_NO_DOCS:
 			private->end_of_page = 1;
-			private->end_of_feed = 1;
 			lis_sane_cancel(&private->parent);
 			return LIS_OK;
 		default:
@@ -1158,5 +1157,8 @@ static enum lis_error lis_sane_scan_read(
 static void lis_sane_cancel(struct lis_scan_session *session)
 {
 	struct lis_sane_scan_session *private = LIS_SANE_SCAN_SESSION_PRIVATE(session);
-	sane_cancel(private->item->handle);
+	if (!private->end_of_feed) { // else, it's already cancelled
+		sane_cancel(private->item->handle);
+	}
+	private->end_of_feed = 1;
 }
