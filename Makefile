@@ -87,6 +87,7 @@ install_c: build/build.ninja
 uninstall_py:
 
 uninstall_c:
+	(cd build && ninja uninstall)
 
 help:
 	@echo "make build || make build_c || make build_py"
