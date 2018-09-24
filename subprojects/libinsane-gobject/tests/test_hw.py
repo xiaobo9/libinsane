@@ -154,7 +154,12 @@ def main():
 
     print("Looking for devices ...")
 
-    for dev_id in get_devices(api):
+    devs = get_devices(api)
+    if len(devs) <= 0:
+        print("No device found")
+        sys.exit(1)
+
+    for dev_id in devs:
         print("Will use device {}".format(dev_id))
         dev = api.get_device(dev_id)
         try:
