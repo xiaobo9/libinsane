@@ -153,7 +153,7 @@ def scan(source, output_file):
             img = raw_to_img(scan_params, img)
             if out is not None:
                 print("Saving page as {} ...".format(out))
-                img.save(out)
+                img.save(out, format="PNG")
             page_nb += 1
             print("Page {} scanned".format(page_nb))
         if page_nb == 0:
@@ -168,15 +168,15 @@ def main():
     Libinsane.register_logger(ExampleLogger())
 #! [ExampleSetLogger]
 
-    if len(sys.argv) > 1 and (sys.argv[1] == "-h" or sys.argv[1] == "--help"):
+    if len(sys.argv) <= 1 or (sys.argv[1] == "-h" or sys.argv[1] == "--help"):
         print(
             "Syntax: {}"
-            " [<output file>]"
+            " <PNG output file>"
             " [<scan dev id> [<scan source name>]]".format(sys.argv[0])
         )
         sys.exit(1)
 
-    output_file = sys.argv[1] if len(sys.argv) > 1 else None
+    output_file = sys.argv[1]
     dev_id = None
     source = None
     source_name = None
