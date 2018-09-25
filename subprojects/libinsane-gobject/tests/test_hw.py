@@ -81,22 +81,12 @@ def set_opt(item, opt_name, opt_value):
 
 def raw_to_img(params, img_bytes):
     fmt = params.get_format()
-    if fmt == Libinsane.ImgFormat.RAW_RGB_24:
-        (w, h) = (
-            params.get_width(),
-            int(len(img_bytes) / 3 / params.get_width())
-        )
-        mode = "RGB"
-    elif fmt == Libinsane.ImgFormat.GRAYSCALE_8:
-        (w, h) = (
-            params.get_width(),
-            int(len(img_bytes) / params.get_width())
-        )
-        mode = "L"
-    elif fmt == Libinsane.ImgFormat.BW_1:
-        assert()  # TODO
-    else:
-        assert()  # unexpected format
+    assert(fmt == Libinsane.ImgFormat.RAW_RGB_24)
+    (w, h) = (
+        params.get_width(),
+        int(len(img_bytes) / 3 / params.get_width())
+    )
+    mode = "RGB"
     print("Mode: {} : Size: {}x{}".format(mode, w, h))
     return PIL.Image.frombuffer(mode, (w, h), img_bytes, "raw", mode, 0, 1)
 
