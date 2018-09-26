@@ -474,8 +474,10 @@ static enum lis_error dumb_scan_read(
 	*buffer_size = MIN(private->impl->scan.read_contents[private->read_idx].nb_bytes, *buffer_size);
 	if (*buffer_size < private->impl->scan.read_contents[private->read_idx].nb_bytes) {
 		/* not supported because I'm too lazy */
-		lis_log_error("TESTS: DUMB IMPLEMENTATION: TRUNCATED READ: %zd instead of %zd",
-				*buffer_size, private->impl->scan.read_contents[private->read_idx].nb_bytes);
+		lis_log_error("TESTS: DUMB IMPLEMENTATION: TRUNCATED READ: %ld instead of %ld",
+				((long)(*buffer_size)),
+				((long)(private->impl->scan.read_contents[private->read_idx].nb_bytes))
+		);
 		return LIS_ERR_INVALID_VALUE;
 	}
 	if (*buffer_size > 0) {

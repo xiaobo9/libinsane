@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include <libinsane/log.h>
 #include <libinsane/normalizers.h>
@@ -255,8 +256,8 @@ static enum lis_error raw8_scan_read(
 
 	if (*out_buffer_size < 3) {
 		lis_log_warning(
-			"Buffer too small (%zdB < 3), Cannot unpack raw8",
-			*out_buffer_size
+			"Buffer too small (%luB < 3), Cannot unpack raw8",
+			(long unsigned)*out_buffer_size
 		);
 		*out_buffer_size = 0;
 		return LIS_OK; // hope for a bigger one next time
@@ -288,8 +289,8 @@ static enum lis_error raw1_scan_read(
 
 	if (*out_buffer_size < 8 * 3) {
 		lis_log_error(
-			"Buffer too small (%zdB < 24), Cannot unpack raw8",
-			*out_buffer_size
+			"Buffer too small (%ldB < 24), Cannot unpack raw8",
+			(long)*out_buffer_size
 		);
 		*out_buffer_size = 0;
 		return LIS_OK; // hope for a bigger one next time
@@ -315,9 +316,12 @@ static enum lis_error raw1_scan_read(
 	assert(buflen % 8 == 0);
 	buflen /= 8;
 
-	lis_log_info("scan_read(): Input buffer = %zu B", *out_buffer_size);
-	lis_log_info("scan_read(): Actually requested = %zu B", buflen);
-	lis_log_info("scan_read(): Expected nb of pixels = %zu", nb_pixels);
+	lis_log_info("scan_read(): Input buffer = %lu B",
+		(long unsigned) *out_buffer_size);
+	lis_log_info("scan_read(): Actually requested = %lu B",
+		(long unsigned) buflen);
+	lis_log_info("scan_read(): Expected nb of pixels = %lu",
+		(long unsigned) nb_pixels);
 
 	out_buflen = buflen;
 	err = private->wrapped->scan_read(
@@ -333,8 +337,8 @@ static enum lis_error raw1_scan_read(
 		nb_pixels = out_buflen * 8;
 	}
 	lis_log_info(
-		"scan_read(): Got %zu B --> %zu pixels",
-		out_buflen, nb_pixels
+		"scan_read(): Got %lu B --> %lu pixels",
+		(long unsigned)out_buflen, (long unsigned)nb_pixels
 	);
 
 	unpack_1_to_24(out_buffer, &out_buflen);

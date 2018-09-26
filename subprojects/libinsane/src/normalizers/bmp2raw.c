@@ -68,8 +68,9 @@ static enum lis_error scan_read(
 		if (LIS_IS_ERROR(err)) {
 			lis_log_error(
 				"Failed to read BMP header: 0x%X, %s"
-				" (already read: %zu B)",
-				err, lis_strerror(err), nb
+				" (already read: %lu B)",
+				err, lis_strerror(err),
+				(long unsigned)nb
 			);
 			return err;
 		}
@@ -81,8 +82,8 @@ static enum lis_error scan_read(
 	if (bufsize > 0) {
 		lis_log_error(
 			"Failed to read BMP header: unexpected EOF"
-			" (remaining: %zu B",
-			bufsize
+			" (remaining: %lu B",
+			(long unsigned)bufsize
 		);
 		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
 	}
@@ -112,7 +113,7 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 	h -= BMP_HEADER_SIZE;
 
 	if (h > 0) {
-		lis_log_info("Extra BMP header: %zu B", h);
+		lis_log_info("Extra BMP header: %lu B", (long unsigned)h);
 	}
 
 	while(h > 0) {
@@ -122,8 +123,8 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 		if (LIS_IS_ERROR(err)) {
 			lis_log_error(
 				"Failed to read extra BMP header: 0x%X, %s"
-				" (remaining to read: %zu B)",
-				err, lis_strerror(err), h
+				" (remaining to read: %lu B)",
+				err, lis_strerror(err), (long unsigned)h
 			);
 			return err;
 		}

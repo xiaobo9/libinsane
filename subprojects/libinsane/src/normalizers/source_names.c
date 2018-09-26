@@ -191,10 +191,13 @@ static enum lis_error item_filter(struct lis_item *item, int root, void *user_da
 			matches[1].rm_eo - matches[1].rm_so,
 			g_source_name_mappings[i].lowercase
 		);
-		lis_log_info("%s -> %s -> %.*s (%d-%d) -> %s",
-			item->name, g_source_name_mappings[i].regex,
-			matches[1].rm_eo - matches[1].rm_so, item->name + matches[1].rm_so,
-			matches[1].rm_eo, matches[1].rm_so,
+		lis_log_info("%s -> %s -> %.*s (%ld-%ld) -> %s",
+			item->name,
+			g_source_name_mappings[i].regex,
+			(int)(matches[1].rm_eo - matches[1].rm_so),
+			item->name + matches[1].rm_so,
+			(long)matches[1].rm_eo,
+			(long)matches[1].rm_so,
 			modified
 		);
 		item->name = modified;

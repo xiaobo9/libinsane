@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <endian.h>
 #include <inttypes.h>
 #include <stdint.h>
 
@@ -7,6 +6,21 @@
 #include <libinsane/util.h>
 
 #include "bmp.h"
+
+#ifdef OS_LINUX
+#include <endian.h>
+#else
+
+// assuming Windows x86 --> little endian
+
+#define le32toh(v) (v)
+
+static inline uint16_t be16toh(uint16_t v)
+{
+	return ((v << 8) | (v >> 8));
+}
+
+#endif
 
 
 struct bmp_header {
@@ -75,8 +89,9 @@ enum lis_error lis_bmp2scan_params(
 	params->height = le32toh(header->height);
 	params->image_size = header->file_size - header->offset_to_data;
 	lis_log_info(
-		"BMP header says: %d x %d = %zu",
-		params->width, params->height, params->image_size
+		"BMP header says: %d x %d = %lu",
+		params->width, params->height,
+		(long unsigned)params->image_size
 	);
 
 	return LIS_OK;

@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -116,6 +114,7 @@ static enum lis_error lis_multi_list_devices(
 	enum lis_error err, last_err = LIS_OK;
 	int has_success = 0, i, j, nb_devs;
 	struct lis_device_descriptor **devs[MAX_APIS];
+	char *devid;
 
 	assert(private->nb_impls > 0);
 	assert(private->nb_impls <= MAX_APIS);
@@ -170,14 +169,23 @@ static enum lis_error lis_multi_list_devices(
 				goto error;
 			}
 			memcpy((*out_dev_descs)[nb_devs], devs[i][j], sizeof(struct lis_device_descriptor));
-			if (asprintf(&((*out_dev_descs)[nb_devs])->dev_id, "%s:%s",
-					private->impls[i]->base_name,
-					((*out_dev_descs)[nb_devs])->dev_id) < 0) {
+			devid = calloc(
+				strlen(private->impls[i]->base_name)
+				+ strlen(((*out_dev_descs)[nb_devs])->dev_id)
+				+ 2,
+				sizeof(char)
+			);
+			if (devid == NULL) {
 				((*out_dev_descs)[nb_devs])->dev_id = NULL;
 				lis_log_error("out of memory");
 				err = LIS_ERR_NO_MEM;
 				goto error;
 			}
+			sprintf(devid,
+					"%s:%s",
+					private->impls[i]->base_name,
+					((*out_dev_descs)[nb_devs])->dev_id);
+			((*out_dev_descs)[nb_devs])->dev_id = devid;
 			nb_devs++;
 		}
 	}
@@ -204,7 +212,8 @@ static enum lis_error lis_multi_get_device(struct lis_api *impl, const char *dev
 		return LIS_ERR_INVALID_VALUE;
 	}
 
-	api_name = strndup(dev_id, sep - dev_id);
+	api_name = strdup(dev_id);
+	api_name[sep - dev_id] = '\0';
 	impl = NULL;
 	for (i = 0 ; i < private->nb_impls ; i++) {
 		if (strcmp(api_name, private->impls[i]->base_name) == 0) {

@@ -13,9 +13,7 @@ libinsane_srcs = files(
     'normalizers/raw24.c',
     'normalizers/resolution.c',
     'normalizers/safe_defaults.c',
-    'normalizers/source_names.c',
     'normalizers/source_nodes.c',
-    'normalizers/source_types.c',
     'safebet.c',
     'str2impls.c',
     'workarounds/dedicated_thread.c',
@@ -37,6 +35,10 @@ if host_machine.system() == 'windows'
 else
     libinsane_srcs += [
         'bases/sane.c',
+
+        # TODO Windows
+        'normalizers/source_names.c',
+        'normalizers/source_types.c',
     ]
     deps += dependency('sane-backends')
 endif

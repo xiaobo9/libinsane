@@ -131,7 +131,7 @@ gssize libinsane_scan_session_read(LibinsaneScanSession *self, void *buffer, gsi
 		lis_log_debug("error");
 		return -1;
 	}
-	lis_log_debug("leave: %zu bytes", buf_length);
+	lis_log_debug("leave: %lu bytes", (long unsigned)buf_length);
 	return buf_length;
 }
 
