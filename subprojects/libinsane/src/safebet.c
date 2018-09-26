@@ -52,14 +52,12 @@ static const struct {
 		.wrap_cb = lis_api_normalizer_all_opts_on_all_sources,
 		.enabled_by_default = 1,
 	},
-#ifdef OS_LINUX // TODO
 	{
 		.name = "normalizer_source_names",
 		.env = "LIBINSANE_NORMALIZER_SOURCE_NAMES",
 		.wrap_cb = lis_api_normalizer_source_names,
 		.enabled_by_default = 1,
 	},
-#endif
 	{
 		.name = "workaround_opt_values",
 		.env = "LIBINSANE_WORKAROUND_OPT_VALUES",
@@ -98,14 +96,12 @@ static const struct {
 		.wrap_cb = lis_api_normalizer_resolution,
 		.enabled_by_default = 1,
 	},
-#ifdef OS_LINUX // TODO
 	{
 		.name = "normalizer_source_types",
 		.env = "LIBINSANE_NORMALIZER_SOURCE_TYPES",
 		.wrap_cb = lis_api_normalizer_source_types,
 		.enabled_by_default = 1,
 	},
-#endif
 	{
 		.name = "workaround_one_page_flatbed",
 		.env = "LIBINSANE_WORKAROUND_ONE_PAGE_FLATBED",

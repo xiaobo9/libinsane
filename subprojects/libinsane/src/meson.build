@@ -13,7 +13,9 @@ libinsane_srcs = files(
     'normalizers/raw24.c',
     'normalizers/resolution.c',
     'normalizers/safe_defaults.c',
+    'normalizers/source_names.c',
     'normalizers/source_nodes.c',
+    'normalizers/source_types.c',
     'safebet.c',
     'str2impls.c',
     'workarounds/dedicated_thread.c',
@@ -32,15 +34,15 @@ if host_machine.system() == 'windows'
         'bases/wia_automation.c',
         'bases/wia_ll.c',
     ]
+    deps += [
+        dependency('regex'),
+        dependency('iconv'),
+    ]
 else
     libinsane_srcs += [
         'bases/sane.c',
-
-        # TODO Windows
-        'normalizers/source_names.c',
-        'normalizers/source_types.c',
     ]
-    deps += dependency('sane-backends')
+    deps += [dependency('sane-backends')]
 endif
 
 libinsane = library('insane', libinsane_srcs,

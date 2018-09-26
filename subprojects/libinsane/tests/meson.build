@@ -3,11 +3,6 @@ if host_machine.system() != build_machine.system() or build_machine.system() == 
 else
     LIBINSANE_TESTS = [
         'sane',
-
-        # TODO: Windows
-        'normalizer_source_names',
-        'normalizer_source_types',
-        'workaround_one_page_flatbed',
     ]
 endif
 
@@ -21,9 +16,12 @@ LIBINSANE_VALGRIND_TESTS = [
     'normalizer_raw24',
     'normalizer_resolution',
     'normalizer_safe_defaults',
+    'normalizer_source_names',
     'normalizer_source_nodes',
+    'normalizer_source_types',
     'workaround_check_capabilities',
     'workaround_dedicated_thread',
+    'workaround_one_page_flatbed',
     'workaround_opt_names',
     'workaround_opt_values',
 ]
