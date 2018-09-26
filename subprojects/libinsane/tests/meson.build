@@ -1,6 +1,10 @@
-LIBINSANE_TESTS = [
-    'sane',
-]
+if host_machine.system() != build_machine.system() or build_machine.system() == 'windows' or build_machine.system() == 'cygwin'
+    LIBINSANE_TESTS = []
+else
+    LIBINSANE_TESTS = [
+        'sane',
+    ]
+endif
 
 LIBINSANE_VALGRIND_TESTS = [
     'multiplexer',
@@ -23,16 +27,42 @@ LIBINSANE_VALGRIND_TESTS = [
 ]
 
 CUNIT = dependency('cunit')
-vg = find_program('valgrind')
 
 foreach t: LIBINSANE_TESTS
     e = executable('tests_@0@'.format(t), 'main.c', 'tests_@0@.c'.format(t),
         dependencies: [libinsane_dep, CUNIT])
     test('tests_@0@'.format(t), e)
 endforeach
-foreach t: LIBINSANE_VALGRIND_TESTS
-    e = executable('tests_@0@'.format(t), 'main.c', 'tests_@0@.c'.format(t),
-        dependencies: [libinsane_dep, CUNIT])
-    test('tests_@0@'.format(t), vg,
-        args: ['--trace-children=yes', '--leak-check=full', '--error-exitcode=10', e.full_path()])
-endforeach
+
+if host_machine.system() != build_machine.system() or build_machine.system() == 'windows' or build_machine.system() == 'cygwin'
+
+    foreach t: LIBINSANE_VALGRIND_TESTS
+        e = executable(
+            'tests_@0@'.format(t),
+            'main.c',
+            'tests_@0@.c'.format(t),
+            dependencies: [libinsane_dep, CUNIT]
+        )
+        test('tests_@0@'.format(t), e)
+    endforeach
+
+else
+
+    vg = find_program('valgrind')
+    foreach t: LIBINSANE_VALGRIND_TESTS
+        e = executable(
+            'tests_@0@'.format(t),
+            'main.c',
+            'tests_@0@.c'.format(t),
+            dependencies: [libinsane_dep, CUNIT]
+        )
+        test('tests_@0@'.format(t), vg,
+            args: [
+                '--trace-children=yes',
+                '--leak-check=full',
+                '--error-exitcode=10',
+                e.full_path()
+            ])
+    endforeach
+
+endif
