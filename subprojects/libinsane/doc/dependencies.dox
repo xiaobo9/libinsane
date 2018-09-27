@@ -1,0 +1,28 @@
+/*!
+\page dependencies Build and runtime dependencies
+
+# Debian GNU/Linux and Ubuntu GNU/Linux
+
+```
+sudo apt install \
+        meson \
+        gtk-doc-tools doxygen plantuml graphviz \
+        build-essential \
+        libsane-dev \
+        libgirepository1.0-dev gobject-introspection \
+        libcunit1-ncurses-dev \
+        valgrind
+```
+
+
+# MSYS2 Windows
+
+```
+pacman -S \
+        mingw-w64-x86_64-python3-gobject \
+        mingw-w64-x86_64-gcc \
+        mingw-w64-x86_64-gobject-introspection \
+        mingw-w64-x86_64-doxygen
+```
+
+*/

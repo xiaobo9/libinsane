@@ -9,19 +9,9 @@ Makefiles in all [OpenPaper.work](https://openpaper.work) projects present simil
 - make doc : generate the documentation (doxygen for libinsane, and gtk-doc for libinsane-gobject)
 
 
-# Building Libinsane
+# Build dependencies
 
-```
-sudo apt install \
-        meson \
-        gtk-doc-tools doxygen plantuml graphviz \
-        build-essential \
-        libsane-dev \
-        libgirepository1.0-dev gobject-introspection \
-        libcunit1-ncurses-dev \
-        valgrind
-make
-```
+\ref dependencies
 
 
 # System-wide installation
