@@ -31,8 +31,8 @@ deps = [dependency('threads')]
 if host_machine.system() == 'windows'
     libinsane_srcs += [
         'bases/twain.c',
-        'bases/wia_automation.c',
-        'bases/wia_ll.c',
+        'bases/wia/wia_automation.c',
+        'bases/wia/wia_ll.c',
     ]
     deps += [
         dependency('regex'),
@@ -48,7 +48,9 @@ endif
 libinsane = library('insane', libinsane_srcs,
     include_directories: libinsane_inc,
     dependencies: deps,
-    install: true)
+    install: true
+)
 libinsane_dep = declare_dependency(
     include_directories: libinsane_inc,
-    link_with: libinsane)
+    link_with: libinsane
+)
