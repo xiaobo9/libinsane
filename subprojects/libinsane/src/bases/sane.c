@@ -10,7 +10,7 @@
 #include <libinsane/sane.h>
 #include <libinsane/util.h>
 
-#define API_NAME "sane"
+#define NAME "sane"
 #define MAX_OPTS 128
 
 struct lis_sane
@@ -95,7 +95,7 @@ static void lis_sane_cancel(struct lis_scan_session *session);
 
 
 static struct lis_api g_sane_impl_template = {
-	.base_name = "sane",
+	.base_name = NAME,
 	.cleanup = lis_sane_cleanup,
 	.list_devices = lis_sane_list_devices,
 	.get_device = lis_sane_get_device,

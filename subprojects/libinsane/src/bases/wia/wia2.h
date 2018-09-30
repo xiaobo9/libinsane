@@ -23,8 +23,6 @@ typedef struct LisIEnumWiaItem2 {
 typedef struct LisIEnumWiaItem2Vtbl {
 	BEGIN_INTERFACE
 
-	IUnknownVtbl unknown;
-
 	HRESULT (WINAPI *QueryInterface)(
 		LisIEnumWiaItem2 *self,
 		REFIID riid,
@@ -75,7 +73,15 @@ typedef struct LisIWiaItem2 LisIWiaItem2;
 typedef struct LisIWiaItem2Vtbl {
 	BEGIN_INTERFACE
 
-	IUnknownVtbl unknown;
+	HRESULT (WINAPI *QueryInterface)(
+		LisIWiaItem2* self,
+		REFIID riid,
+		void **ppvObject
+	);
+
+	ULONG (WINAPI *AddRef)(LisIWiaItem2* self);
+
+	ULONG (WINAPI *Release)(LisIWiaItem2* self);
 
 	HRESULT (WINAPI *CreateChildItem)(
 		LisIWiaItem2 *self,
@@ -188,15 +194,6 @@ typedef struct LisIWiaItem2Vtbl {
 } LisIWiaItem2Vtbl;
 
 
-DEFINE_GUID(
-	CLSID_WiaDevMgr2,
-	0xB6CE92BC,
-	0x7C88,
-	0x41EE,
-	0x8B, 0x54,
-	0xBE, 0xC9, 0x26, 0x17, 0xE5, 0x99
-);
-
 
 typedef struct LisIWiaDevMgr2 {
 	CONST_VTBL struct LisIWiaDevMgr2Vtbl *lpVtbl;
@@ -206,7 +203,15 @@ typedef struct LisIWiaDevMgr2 {
 typedef struct LisIWiaDevMgr2Vtbl {
 	BEGIN_INTERFACE
 
-	IUnknownVtbl unknown;
+	HRESULT (WINAPI *QueryInterface)(
+		LisIWiaDevMgr2* self,
+		REFIID riid,
+		void **ppvObject
+	);
+
+	ULONG (WINAPI *AddRef)(LisIWiaDevMgr2* self);
+
+	ULONG (WINAPI *Release)(LisIWiaDevMgr2* self);
 
 	HRESULT (WINAPI *EnumDeviceInfo)(
 		LisIWiaDevMgr2 *self,
@@ -285,5 +290,23 @@ typedef struct LisIWiaDevMgr2Vtbl {
 	END_INTERFACE
 } LisIWiaDevMgr2Vtbl;
 
+
+DEFINE_GUID(
+	CLSID_LisWiaDevMgr2,
+	0xB6C292BC,
+	0x7C88,
+	0x41EE,
+	0x8B, 0x54,
+	0x8E, 0xC9, 0x26, 0x17, 0xE5, 0x99
+);
+
+DEFINE_GUID(
+	IID_LisIWiaDevMgr2,
+	0x79C07CF1,
+	0xCBDD,
+	0x41EE,
+	0x8E, 0xC3,
+	0xF0, 0x00, 0x80, 0xCA, 0xDA, 0x7A
+);
 
 #endif
