@@ -22,6 +22,7 @@ def main():
     Libinsane.register_logger(ExampleLogger())
     #! [Logger]
     api = Libinsane.Api.new_safebet()
+    print("Looking for devices ...")
     devs = api.list_devices(Libinsane.DeviceLocations.ANY)
     print("Found {} devices".format(len(devs)))
     for dev in devs:

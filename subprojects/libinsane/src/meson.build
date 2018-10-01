@@ -48,7 +48,7 @@ endif
 libinsane = library('insane', libinsane_srcs,
     include_directories: libinsane_inc,
     dependencies: deps,
-    install: true
+    install: true,
 )
 libinsane_dep = declare_dependency(
     include_directories: libinsane_inc,

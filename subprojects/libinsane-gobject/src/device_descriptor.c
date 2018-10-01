@@ -7,7 +7,6 @@
 
 struct _LibinsaneDeviceDescriptorPrivate
 {
-	char *api;
 	char *dev_id;
 	char *vendor;
 	char *model;
@@ -25,7 +24,6 @@ static void libinsane_device_descriptor_finalize(GObject *object)
 		libinsane_device_descriptor_get_instance_private(self);
 
 	lis_log_debug("[gobject] Finalizing");
-	g_free(private->api);
 	g_free(private->dev_id);
 	g_free(private->vendor);
 	g_free(private->model);
@@ -63,19 +61,11 @@ LibinsaneDeviceDescriptor *libinsane_device_descriptor_new_from_libinsane(
 	private->model = g_strdup(lis_desc->model);
 	private->type = g_strdup(lis_desc->type);
 	private->to_string = g_strdup_printf(
-		"%s %s (%s ; %s ; %s)",
-		private->vendor, private->model, private->type, private->api, private->dev_id
+		"%s %s (%s ; %s)",
+		private->vendor, private->model, private->type, private->dev_id
 	);
 	lis_log_debug("[gobject] leave");
 	return desc;
-}
-
-
-const char *libinsane_device_descriptor_get_api(LibinsaneDeviceDescriptor *self)
-{
-	LibinsaneDeviceDescriptorPrivate *private;
-	private = libinsane_device_descriptor_get_instance_private(self);
-	return private->api;
 }
 
 
