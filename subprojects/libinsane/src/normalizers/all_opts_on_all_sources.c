@@ -122,7 +122,7 @@ static enum lis_error opts_get_device(struct lis_api *impl, const char *dev_id, 
 	err = private->wrapped->get_device(private->wrapped, dev_id, &item_private->wrapped);
 	if (LIS_IS_ERROR(err)) {
 		FREE(item_private);
-		lis_log_error("get_device(%s) failed: 0x%X, %s",
+		lis_log_debug("get_device(%s) failed: 0x%X, %s",
 			dev_id, err, lis_strerror(err)
 		);
 		return err;

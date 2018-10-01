@@ -38,6 +38,13 @@ struct wiall_impl_private {
 #define WIALL_IMPL_PRIVATE(impl) ((struct wiall_impl_private *)(impl))
 
 
+struct wiall_item_private {
+	struct lis_item parent;
+	LisIWiaItem2 *wia_item;
+};
+#define WIALL_ITEM_PRIVATE(impl) ((struct wiall_item_private *)(impl))
+
+
 static void wiall_cleanup(struct lis_api *self);
 static enum lis_error wiall_list_devices(
 	struct lis_api *self, enum lis_device_locations locs,
@@ -47,6 +54,7 @@ static enum lis_error wiall_get_device(
 	struct lis_api *self, const char *dev_id, struct lis_item **item
 );
 
+
 static struct lis_api g_impl_template = {
 	.base_name = NAME,
 	.cleanup = wiall_cleanup,
@@ -55,10 +63,32 @@ static struct lis_api g_impl_template = {
 };
 
 
+static enum lis_error wiall_item_get_children(
+		struct lis_item *self, struct lis_item ***children
+	);
+static enum lis_error wiall_item_get_options(
+		struct lis_item *self, struct lis_option_descriptor ***descs
+	);
+static enum lis_error wiall_item_scan_start(
+		struct lis_item *self, struct lis_scan_session **session
+	);
+static void wiall_item_close(struct lis_item *self);
+
+
+static struct lis_item g_item_template = {
+	.get_children = wiall_item_get_children,
+	.get_options = wiall_item_get_options,
+	.scan_start = wiall_item_scan_start,
+	.close = wiall_item_close,
+};
+
+
 static enum lis_error hresult_to_lis_error(HRESULT hr) {
 	switch (hr) {
 		case S_OK:
 			return LIS_OK;
+		case E_OUTOFMEMORY:
+			return LIS_ERR_NO_MEM;
 		case REGDB_E_CLASSNOTREG:
 			lis_log_warning(
 				"Internal error: Class not registered"
@@ -180,15 +210,44 @@ static void wiall_cleanup(struct lis_api *self)
 }
 
 
-static char *propvariant2char(PROPVARIANT *prop)
+static BSTR cstr2bstr(const char *s)
+{
+	size_t len;
+	wchar_t *wchr;
+	BSTR bstr;
+
+	wchr = calloc(strlen(s) + 4, sizeof(wchar_t));
+	if (wchr == NULL) {
+		lis_log_error("Out of memory");
+		return NULL;
+	}
+
+	len = mbstowcs(wchr, s, strlen(s));
+	if (len == (size_t)-1) {
+		lis_log_error(
+			"Failed to convert wide chars from string (%s)",
+			s
+		);
+		FREE(wchr);
+		return NULL;
+	}
+
+	bstr = SysAllocString(wchr);
+	FREE(wchr);
+
+	// TODO(Jflesch): Missing string length
+
+	return bstr;
+}
+
+
+static char *bstr2cstr(BSTR bstr)
 {
 	wchar_t *wchr;
 	size_t len;
 	char *out;
 
-	assert(prop->vt == VT_BSTR);
-
-	wchr = prop->bstrVal;
+	wchr = bstr;
 	len = wcslen(wchr);
 	out = calloc(len + 1, sizeof(char));
 	if (out == NULL) {
@@ -204,6 +263,13 @@ static char *propvariant2char(PROPVARIANT *prop)
 	}
 
 	return out;
+}
+
+
+static char *propvariant2char(PROPVARIANT *prop)
+{
+	assert(prop->vt == VT_BSTR);
+	return bstr2cstr(prop->bstrVal);
 }
 
 
@@ -230,6 +296,10 @@ static enum lis_error get_device_descriptor(
 		{
 			.ulKind = PRSPEC_PROPID,
 			.propid = WIA_DIP_DEV_TYPE,
+		},
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = WIA_DPA_CONNECT_STATUS,
 		},
 	};
 	PROPVARIANT output[LIS_COUNT_OF(input)];
@@ -413,30 +483,115 @@ static enum lis_error wiall_list_devices(
 }
 
 
+static enum lis_error wiall_item_get_children(
+		struct lis_item *self, struct lis_item ***children
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(children);
+	// TODO
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+static enum lis_error wiall_item_get_options(
+		struct lis_item *self, struct lis_option_descriptor ***descs
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(descs);
+	// TODO
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+
+}
+
+
+static enum lis_error wiall_item_scan_start(
+		struct lis_item *self, struct lis_scan_session **session
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(session);
+	// TODO
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+
+}
+
+
+static void wiall_item_close(struct lis_item *self)
+{
+	struct wiall_item_private *private = WIALL_ITEM_PRIVATE(self);
+
+	FREE(private->parent.name);
+	private->wia_item->lpVtbl->Release(private->wia_item);
+	FREE(private);
+}
+
+
 static enum lis_error wiall_get_device(
-		struct lis_api *self, const char *dev_id,
-		struct lis_item **item
+		struct lis_api *self, const char *in_dev_id,
+		struct lis_item **out_item
 	)
 {
 	struct wiall_impl_private *private = WIALL_IMPL_PRIVATE(self);
+	struct wiall_item_private *item;
+	HRESULT hr;
 	enum lis_error err;
+	BSTR dev_id;
 
-	LIS_UNUSED(dev_id);
-	LIS_UNUSED(item);
-
-	lis_log_debug("wiall_get_device(%s) ...", dev_id);
+	lis_log_debug("wiall_get_device(%s) ...", in_dev_id);
 
 	if (private->wia_dev_mgr == NULL) {
 		err = wiall_init(private);
 		if (LIS_IS_ERROR(err)) {
-			lis_log_debug("wiall_get_device(%s) failed", dev_id);
+			lis_log_debug("wiall_get_device(%s) failed", in_dev_id);
 			return err;
 		}
 	}
 
-	// TODO
-	lis_log_debug("wiall_get_device(%s) done", dev_id);
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	dev_id = cstr2bstr(in_dev_id);
+	if (dev_id == NULL) {
+		lis_log_error("Failed to convert device id: %s", in_dev_id);
+		lis_log_debug("wiall_get_device(%s) failed", in_dev_id);
+		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+	}
+
+	item = calloc(1, sizeof(struct wiall_item_private));
+	if (private == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	lis_log_debug("WiaItem2->CreateDevice(%s) ...", in_dev_id);
+	hr = private->wia_dev_mgr->lpVtbl->CreateDevice(
+		private->wia_dev_mgr,
+		0, // reserved
+		dev_id,
+		&item->wia_item
+	);
+	SysFreeString(dev_id);
+	lis_log_debug(
+		"WiaItem2->CreateDevice(%s): 0x%lX",
+		in_dev_id, hr
+	);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_debug(
+			"WiaItem2->CreateDevice(%s) failed: 0x%lX -> 0x%X, %s",
+			in_dev_id, hr, err, lis_strerror(err)
+		);
+		lis_log_debug("wiall_get_device(%s) failed", in_dev_id);
+		FREE(item);
+		return err;
+	}
+
+	memcpy(&item->parent, &g_item_template, sizeof(item->parent));
+	item->parent.name = strdup(in_dev_id);
+	item->parent.type = LIS_ITEM_DEVICE;
+
+	*out_item = &item->parent;
+	lis_log_debug("wiall_get_device(%s) done", in_dev_id);
+	return LIS_OK;
 }
 
 
