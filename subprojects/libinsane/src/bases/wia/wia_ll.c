@@ -41,6 +41,9 @@ struct wiall_impl_private {
 struct wiall_item_private {
 	struct lis_item parent;
 	LisIWiaItem2 *wia_item;
+
+	struct wiall_item_private *children;
+	struct lis_item **children_ptrs;
 };
 #define WIALL_ITEM_PRIVATE(impl) ((struct wiall_item_private *)(impl))
 
@@ -72,14 +75,21 @@ static enum lis_error wiall_item_get_options(
 static enum lis_error wiall_item_scan_start(
 		struct lis_item *self, struct lis_scan_session **session
 	);
-static void wiall_item_close(struct lis_item *self);
+static void wiall_item_root_close(struct lis_item *self);
+static void wiall_item_child_close(struct lis_item *self);
 
 
-static struct lis_item g_item_template = {
+static struct lis_item g_item_root_template = {
 	.get_children = wiall_item_get_children,
 	.get_options = wiall_item_get_options,
 	.scan_start = wiall_item_scan_start,
-	.close = wiall_item_close,
+	.close = wiall_item_root_close,
+};
+static struct lis_item g_item_child_template = {
+	.get_children = wiall_item_get_children,
+	.get_options = wiall_item_get_options,
+	.scan_start = wiall_item_scan_start,
+	.close = wiall_item_child_close,
 };
 
 
@@ -210,6 +220,9 @@ static void wiall_cleanup(struct lis_api *self)
 }
 
 
+#define compare_guid(a, b) (memcmp((a), (b), sizeof(*(a))) == 0)
+
+
 static BSTR cstr2bstr(const char *s)
 {
 	size_t len;
@@ -234,8 +247,6 @@ static BSTR cstr2bstr(const char *s)
 
 	bstr = SysAllocString(wchr);
 	FREE(wchr);
-
-	// TODO(Jflesch): Missing string length
 
 	return bstr;
 }
@@ -280,7 +291,7 @@ static enum lis_error get_device_descriptor(
 {
 	enum lis_error err;
 	HRESULT hr;
-	PROPSPEC input[] = {
+	static const PROPSPEC input[] = {
 		{
 			.ulKind = PRSPEC_PROPID,
 			.propid = WIA_DIP_DEV_ID,
@@ -483,14 +494,215 @@ static enum lis_error wiall_list_devices(
 }
 
 
+static void free_children(struct wiall_item_private *private)
+{
+	int i;
+
+	if (private->children_ptrs != NULL) {
+		for (i = 0 ; private->children_ptrs[i] != NULL ; i++) {
+			private->children[i].wia_item->lpVtbl->Release(
+				private->children[i].wia_item
+			);
+			FREE(private->children[i].parent.name);
+			free_children(&private->children[i]);
+		}
+		FREE(private->children);
+		FREE(private->children_ptrs);
+	}
+}
+
+
+static enum lis_error fill_in_item(struct wiall_item_private *private)
+{
+	HRESULT hr;
+	enum lis_error err;
+	static const PROPSPEC input[] = {
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = WIA_IPA_FULL_ITEM_NAME,
+		},
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = LIS_WIA_IPA_ITEM_CATEGORY,
+		}
+	};
+	PROPVARIANT output[LIS_COUNT_OF(input)] = {0};
+	IWiaPropertyStorage *props;
+
+	memcpy(
+		&private->parent,
+		&g_item_child_template,
+		sizeof(private->parent)
+	);
+
+	hr = private->wia_item->lpVtbl->QueryInterface(
+		private->wia_item,
+		&IID_IWiaPropertyStorage,
+		(void **)&props
+	);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_error(
+			"child_item->QueryInterface(WiaPropertyStorage)"
+			" failed: 0X%lX -> 0x%X, %s",
+			hr, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	hr = props->lpVtbl->ReadMultiple(
+		props,
+		LIS_COUNT_OF(output),
+		input, output
+	);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_error(
+			"child_properties->ReadMultiple()"
+			" failed: 0X%lX -> 0x%X, %s",
+			hr, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	assert(output[0].vt == VT_BSTR);
+	assert(output[1].vt == VT_CLSID);
+
+	private->parent.name = bstr2cstr(output[0].bstrVal);
+
+	if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FINISHED_FILE)
+			|| compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FOLDER)) {
+		lis_log_warning(
+			"Unsupported source type for child '%s'",
+			private->parent.name
+		);
+		props->lpVtbl->Release(props);
+		return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	} else if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FLATBED)) {
+		private->parent.type = LIS_ITEM_FLATBED;
+	} else if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER)
+			|| compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER_FRONT)
+			|| compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER_BACK)) {
+		private->parent.type = LIS_ITEM_ADF;
+	} else {
+		private->parent.type = LIS_ITEM_UNIDENTIFIED;
+		lis_log_warning(
+			"Unknown source type for child '%s'",
+			private->parent.name
+		);
+	}
+
+	props->lpVtbl->Release(props);
+	return LIS_OK;
+}
+
+
 static enum lis_error wiall_item_get_children(
-		struct lis_item *self, struct lis_item ***children
+		struct lis_item *self, struct lis_item ***out_children
 	)
 {
-	LIS_UNUSED(self);
-	LIS_UNUSED(children);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	struct wiall_item_private *private = WIALL_ITEM_PRIVATE(self);
+	HRESULT hr;
+	enum lis_error err;
+	LisIEnumWiaItem2 *item_enum = NULL;
+	unsigned long nb_children;
+	unsigned long tmp;
+	unsigned int i;
+
+	lis_log_debug("wiall_item_get_children() ...");
+
+	free_children(private);
+
+	lis_log_debug("%s->EnumChildItems() ...", self->name);
+	hr = private->wia_item->lpVtbl->EnumChildItems(
+		private->wia_item,
+		NULL, // GUID of child category ; NULL == all
+		&item_enum
+	);
+	lis_log_debug("%s->EnumChildItems(): 0x%lX", self->name, hr);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_error(
+			"%s->EnumChjldItems() failed: 0x%lX -> 0x%X, %s",
+			self->name, hr, err, lis_strerror(err)
+		);
+		lis_log_debug("wiall_item_get_children() failed");
+		return err;
+	}
+
+	hr = item_enum->lpVtbl->GetCount(item_enum, &nb_children);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_error(
+			"%s->EnumChjldItems()->GetCount() failed:"
+			" 0x%lX -> 0x%X, %s",
+			self->name, hr, err, lis_strerror(err)
+		);
+		lis_log_debug("wiall_item_get_children() failed");
+		return err;
+	}
+
+	lis_log_info("Found %lu sources", nb_children);
+
+	private->children_ptrs = calloc(
+		nb_children + 1, sizeof(struct lis_item *)
+	);
+	if (nb_children == 0) {
+		item_enum->lpVtbl->Release(item_enum);
+		*out_children = private->children_ptrs;
+		return LIS_OK;
+	}
+	private->children = calloc(
+		nb_children, sizeof(struct wiall_item_private)
+	);
+	if (private->children_ptrs == NULL || private->children == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	for (i = 0 ; i < nb_children ; i++) {
+		tmp = 1;
+		hr = item_enum->lpVtbl->Next(
+			item_enum,
+			1, // celt ; number of elements
+			&(private->children[i].wia_item),
+			&tmp
+		);
+		if (hr == S_FALSE || tmp == 0) {
+			lis_log_warning(
+				"Got less children than expected (%u < %lu)",
+				i, nb_children
+			);
+			break;
+		}
+		if (FAILED(hr)) {
+			err = hresult_to_lis_error(hr);
+			lis_log_error(
+				"%s->EnumChjldItems()->Next() failed:"
+				" 0x%lX -> 0x%X, %s",
+				self->name, hr, err, lis_strerror(err)
+			);
+			lis_log_debug("wiall_item_get_children() failed");
+			item_enum->lpVtbl->Release(item_enum);
+			return err;
+		}
+
+		err = fill_in_item(&private->children[i]);
+		if (LIS_IS_ERROR(err)) {
+			// skipping this one
+			private->children[i].wia_item->lpVtbl->Release(
+				private->children[i].wia_item
+			);
+			i--;
+			nb_children--;
+			continue;
+		}
+		private->children_ptrs[i] = &private->children[i].parent;
+	}
+
+	item_enum->lpVtbl->Release(item_enum);
+	lis_log_debug("wiall_item_get_children() done");
+	return LIS_OK;
 }
 
 
@@ -518,13 +730,21 @@ static enum lis_error wiall_item_scan_start(
 }
 
 
-static void wiall_item_close(struct lis_item *self)
+static void wiall_item_root_close(struct lis_item *self)
 {
 	struct wiall_item_private *private = WIALL_ITEM_PRIVATE(self);
 
+	free_children(private);
 	FREE(private->parent.name);
 	private->wia_item->lpVtbl->Release(private->wia_item);
 	FREE(private);
+}
+
+
+static void wiall_item_child_close(struct lis_item *self)
+{
+	// no-op
+	LIS_UNUSED(self);
 }
 
 
@@ -585,7 +805,7 @@ static enum lis_error wiall_get_device(
 		return err;
 	}
 
-	memcpy(&item->parent, &g_item_template, sizeof(item->parent));
+	memcpy(&item->parent, &g_item_root_template, sizeof(item->parent));
 	item->parent.name = strdup(in_dev_id);
 	item->parent.type = LIS_ITEM_DEVICE;
 

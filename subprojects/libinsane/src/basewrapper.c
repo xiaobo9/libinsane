@@ -219,10 +219,7 @@ static enum lis_error lis_bw_get_device(struct lis_api *impl, const char *dev_id
 	out->root = out;
 	out->impl = private;
 
-	if (private->item_filter.cb == NULL) {
-		lis_log_info("%s: No item filter defined. Returning root item as is.",
-			private->wrapper_name);
-	} else {
+	if (private->item_filter.cb != NULL) {
 		err = private->item_filter.cb(
 			&out->parent, 1 /* root */, private->item_filter.user_data
 		);
@@ -408,11 +405,9 @@ static enum lis_error lis_bw_item_get_children(struct lis_item *self, struct lis
 }
 
 
-
-
 static enum lis_error lis_bw_item_get_options(
-	struct lis_item *self, struct lis_option_descriptor ***descs
-)
+		struct lis_item *self, struct lis_option_descriptor ***descs
+	)
 {
 	struct lis_bw_item *private = LIS_BW_ITEM(self);
 	struct lis_option_descriptor **opts;
@@ -424,8 +419,6 @@ static enum lis_error lis_bw_item_get_options(
 		return err;
 	}
 	if(private->impl->opt_desc_filter.cb == NULL) {
-		lis_log_debug("%s: No option filter defined. Returning options as is.",
-			private->impl->wrapper_name);
 		*descs = opts;
 		return err;
 	}
