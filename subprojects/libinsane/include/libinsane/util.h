@@ -76,6 +76,13 @@ union lis_value lis_sub(enum lis_value_type type, union lis_value a, union lis_v
  */
 int lis_getenv(const char *var, int default_val);
 
+
+/*!
+ * \brief return Libinsane version.
+ * \return never NULL
+ */
+const char *lis_get_version(void);
+
 #ifdef __cplusplus
 }
 #endif

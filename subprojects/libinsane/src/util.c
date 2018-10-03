@@ -5,6 +5,8 @@
 #include <libinsane/log.h>
 #include <libinsane/util.h>
 
+#include "version.h"
+
 
 enum lis_error lis_copy(const enum lis_value_type type, const union lis_value *original, union lis_value *copy)
 {
@@ -115,4 +117,10 @@ int lis_getenv(const char *var, int default_val)
 		return default_val;
 	}
 	return atoi(val_str);
+}
+
+
+const char *lis_get_version(void)
+{
+	return LIBINSANE_VERSION;
 }

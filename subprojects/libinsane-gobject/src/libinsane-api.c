@@ -231,3 +231,9 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 	lis_log_debug("leave");
 	return item;
 }
+
+
+const char *libinsane_api_get_version(void)
+{
+	return lis_get_version();
+}

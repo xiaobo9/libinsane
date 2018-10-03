@@ -18,12 +18,12 @@ libinsane_srcs = files(
     'normalizers/source_types.c',
     'safebet.c',
     'str2impls.c',
-    'workarounds/dedicated_thread.c',
+    'util.c',
     'workarounds/check_capabilities.c',
+    'workarounds/dedicated_thread.c',
     'workarounds/one_page_flatbed.c',
     'workarounds/opt_names.c',
     'workarounds/opt_values.c',
-    'util.c',
 )
 
 deps = [dependency('threads')]
@@ -45,7 +45,18 @@ else
     deps += [dependency('sane-backends')]
 endif
 
-libinsane = library('insane', libinsane_srcs,
+gen_version = custom_target(
+    'gen-version-file',
+    input: [],
+    output: ['version.h'],
+    command: [
+        join_paths(meson.current_source_dir(), 'gen_version_file.sh'),
+        '@OUTPUT@',
+    ],
+)
+
+libinsane = library(
+    'insane', libinsane_srcs, gen_version,
     include_directories: libinsane_inc,
     dependencies: deps,
     install: true,

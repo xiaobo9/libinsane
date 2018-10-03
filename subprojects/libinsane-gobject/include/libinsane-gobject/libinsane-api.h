@@ -37,6 +37,7 @@ struct _LibinsaneApiClass {
 
 GType libinsane_api_get_type(void) G_GNUC_CONST;
 
+const char *libinsane_api_get_version(void);
 LibinsaneApi *libinsane_api_new_safebet(GError **error);
 LibinsaneApi *libinsane_api_new_from_string(const char *desc, GError **error);
 GList *libinsane_api_list_devices(
