@@ -50,7 +50,7 @@ gen_version = custom_target(
     input: [],
     output: ['version.h'],
     command: [
-        join_paths(meson.current_source_dir(), 'gen_version_file.sh'),
+        'sh', join_paths(meson.current_source_dir(), 'gen_version_file.sh'),
         '@OUTPUT@',
     ],
 )
