@@ -1,3 +1,5 @@
+pkg = import('pkgconfig')
+
 libinsane_srcs = files(
     'bases/dumb.c',
     'basewrapper.c',
@@ -65,3 +67,11 @@ libinsane_dep = declare_dependency(
     include_directories: libinsane_inc,
     link_with: libinsane
 )
+
+pkg.generate(
+    description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
+    name: 'libinsane',
+    libraries: [libinsane] + deps,
+    version: '0.1',
+)
+
