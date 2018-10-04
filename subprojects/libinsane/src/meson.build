@@ -40,11 +40,17 @@ if host_machine.system() == 'windows'
         dependency('regex'),
         dependency('iconv'),
     ]
+    # Recent versions of Meson (MXE for instance) allows this
+    pkg_deps = deps
+    pkg_cflags = []
 else
     libinsane_srcs += [
         'bases/sane.c',
     ]
     deps += [dependency('sane-backends')]
+    # Older versions of Meson only allow strings (Debian stretch for instance)
+    pkg_deps = ['-pthreads', '-lsane']
+    pkg_cflags = ['-pthreads']
 endif
 
 gen_version = custom_target(
@@ -71,7 +77,8 @@ libinsane_dep = declare_dependency(
 pkg.generate(
     description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
     name: 'libinsane',
-    libraries: [libinsane] + deps,
+    extra_cflags: pkg_cflags,
+    libraries: [libinsane] + pkg_deps,
     version: '0.1',
 )
 
