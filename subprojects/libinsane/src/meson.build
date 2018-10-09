@@ -33,6 +33,7 @@ deps = [dependency('threads')]
 if host_machine.system() == 'windows'
     libinsane_srcs += [
         'bases/twain.c',
+        'bases/wia/properties.c',
         'bases/wia/wia_automation.c',
         'bases/wia/wia_ll.c',
     ]
