@@ -1,5 +1,7 @@
 if host_machine.system() != build_machine.system() or build_machine.system() == 'windows' or build_machine.system() == 'cygwin'
-    LIBINSANE_TESTS = []
+    LIBINSANE_TESTS = [
+        'wia_ll',
+    ]
 else
     LIBINSANE_TESTS = [
         'sane',
