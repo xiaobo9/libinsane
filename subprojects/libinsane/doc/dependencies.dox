@@ -24,7 +24,7 @@ pacman -S \
         mingw-w64-x86_64-gcc \
         mingw-w64-x86_64-gobject-introspection \
         mingw-w64-x86_64-doxygen \
-        mingw-w64-x86_64-valac
+        mingw-w64-x86_64-vala
 ```
 
 */
