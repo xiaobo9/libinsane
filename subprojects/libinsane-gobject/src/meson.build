@@ -34,9 +34,16 @@ libinsane_gobject_dep = declare_dependency(
 
 ## Introspection
 
-gnome.generate_gir(libinsane_gobject,
+gir = gnome.generate_gir(libinsane_gobject,
     sources: INSANE_GOBJECT_SRCS + INSANE_GOBJECT_HEADERS,
     namespace: 'Libinsane',
     nsversion: '0.1',
     includes: 'GObject-2.0',
     install: true)
+
+## Vala support
+
+gnome.generate_vapi('libinsane',
+    sources: [gir.get(0)],
+    install: true,
+    packages: ['glib-2.0', 'gobject-2.0'])

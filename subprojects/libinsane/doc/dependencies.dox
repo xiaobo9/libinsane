@@ -11,7 +11,8 @@ sudo apt install \
         libsane-dev \
         libgirepository1.0-dev gobject-introspection \
         libcunit1-ncurses-dev \
-        valgrind
+        valgrind \
+        valac
 ```
 
 
@@ -22,7 +23,8 @@ pacman -S \
         mingw-w64-x86_64-python3-gobject \
         mingw-w64-x86_64-gcc \
         mingw-w64-x86_64-gobject-introspection \
-        mingw-w64-x86_64-doxygen
+        mingw-w64-x86_64-doxygen \
+        mingw-w64-x86_64-valac
 ```
 
 */
