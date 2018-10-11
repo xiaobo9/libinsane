@@ -14,7 +14,7 @@ Makefiles in all [OpenPaper.work](https://openpaper.work) projects present simil
 \ref dependencies
 
 
-# System-wide installation
+# Build and System-wide Installation
 
 ```
 sudo make install  # will install files in /usr/local
@@ -25,6 +25,12 @@ or
 ```
 sudo make install PREFIX=/usr  # will install files in /usr
 ```
+
+The Makefile simply calls  Meson and Ninja. All OpenPaper.work projects have
+this Makefile. It is mainly used to simplify
+[continuous integration scripts](https://gitlab.gnome.org/World/OpenPaperwork/buildbot_scripts).
+Users and distribution packagers are free to use directly Meson and Ninja if
+they prefer.
 
 
 # Uninstalling
@@ -143,6 +149,13 @@ end:
 #undef CHECK_ERR
 }
 ```
+
+You can use pkg-config to get the correct compilation flags:
+
+```
+pkg-config --cflags --libs libinsane
+```
+
 
 ## Using it with any other programming language
 
