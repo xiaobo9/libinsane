@@ -69,6 +69,9 @@ libinsane = library(
     include_directories: libinsane_inc,
     dependencies: deps,
     install: true,
+    # Bug with Mingw32 + gcc 7.3.0:
+    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52991
+    c_args: ['-mno-ms-bitfields'],
 )
 libinsane_dep = declare_dependency(
     include_directories: libinsane_inc,

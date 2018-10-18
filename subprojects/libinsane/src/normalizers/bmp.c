@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <inttypes.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include <libinsane/log.h>
@@ -11,7 +12,7 @@
 #include <endian.h>
 #else
 
-// assuming Windows x86 --> little endian
+// XXX(Jflesch): assuming Windows x86 --> little endian
 
 #define le32toh(v) (v)
 
