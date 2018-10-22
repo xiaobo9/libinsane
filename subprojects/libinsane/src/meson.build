@@ -29,6 +29,8 @@ libinsane_srcs = files(
 )
 
 deps = [dependency('threads')]
+extra_cflags = []
+
 
 if host_machine.system() == 'windows'
     libinsane_srcs += [
@@ -44,6 +46,10 @@ if host_machine.system() == 'windows'
     # Recent versions of Meson (MXE for instance) allows this
     pkg_deps = deps
     pkg_cflags = []
+
+    # Bug with Mingw32 + gcc 7.3.0:
+    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52991
+    extra_cflags += ['-mno-ms-bitfields']
 else
     libinsane_srcs += [
         'bases/sane.c',
@@ -64,14 +70,13 @@ gen_version = custom_target(
     ],
 )
 
+
 libinsane = library(
     'insane', libinsane_srcs, gen_version,
     include_directories: libinsane_inc,
     dependencies: deps,
     install: true,
-    # Bug with Mingw32 + gcc 7.3.0:
-    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52991
-    c_args: ['-mno-ms-bitfields'],
+    c_args: extra_cflags,
 )
 libinsane_dep = declare_dependency(
     include_directories: libinsane_inc,
