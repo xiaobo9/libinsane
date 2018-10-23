@@ -1,11 +1,15 @@
 #ifndef __LIBINSANE_BASES_WIA_PROPERTIES_H
 #define __LIBINSANE_BASES_WIA_PROPERTIES_H
 
+#include <stdbool.h>
+
 #include <windows.h>
 #include <wia.h>
 #include <sti.h>
 
 #include <libinsane/capi.h>
+
+#define LIS_MAX_NB_PROPERTIES 256
 
 
 struct lis_wia2lis_possibles {
@@ -22,7 +26,7 @@ struct lis_wia2lis_possibles {
 struct lis_wia2lis_property {
 	int line; // useful to find back the property quickly
 
-	enum {
+	enum wia2lis_item_type {
 		LIS_PROPERTY_DEVICE,
 		LIS_PROPERTY_ITEM,
 	} item_type;
@@ -39,6 +43,29 @@ struct lis_wia2lis_property {
 
 	const struct lis_wia2lis_possibles *possibles;
 };
+
+
+const struct lis_wia2lis_property *lis_wia2lis_get_property(
+	bool root, PROPID propid
+);
+
+
+enum lis_error lis_wia2lis_get_possibles(
+	const struct lis_wia2lis_property *in_wia2lis,
+	struct lis_value_list *out_list
+);
+
+enum lis_error lis_wia2lis_get_range(
+	const struct lis_wia2lis_property *in_wia2lis,
+	PROPVARIANT in_propvariants,
+	struct lis_value_range *out_range
+);
+
+enum lis_error lis_wia2lis_get_list(
+	const struct lis_wia2lis_property *in_wia2lis,
+	PROPVARIANT in_propvariants,
+	struct lis_value_list *out_list
+);
 
 
 /* for tests only */

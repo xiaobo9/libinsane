@@ -4,9 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libinsane/log.h>
 #include <libinsane/util.h>
 
 #include "properties.h"
+#include "util.h"
 #include "wia2.h"
 
 
@@ -1336,7 +1338,7 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 		.line = __LINE__,
 		.item_type = LIS_PROPERTY_DEVICE,
 		.wia = { .id = WIA_DPS_PAGE_SIZE, .type = VT_I4, },
-		.lis = { .name = "dps_page_size", .type = LIS_TYPE_INTEGER },
+		.lis = { .name = "dps_page_size", .type = LIS_TYPE_STRING },
 		.possibles = g_possible_page_sizes,
 	},
 
@@ -1414,7 +1416,7 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 		.line = __LINE__,
 		.item_type = LIS_PROPERTY_DEVICE,
 		.wia = { .id = WIA_DPS_VERTICAL_BED_REGISTRATION, .type = VT_I4 },
-		.lis = { .name = "dps_vertical_bed_registration", .type = LIS_TYPE_INTEGER },
+		.lis = { .name = "dps_vertical_bed_registration", .type = LIS_TYPE_STRING },
 		.possibles = g_possible_vertical_registrations,
 	},
 
@@ -1859,6 +1861,167 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 	},
 };
 
+
+const struct lis_wia2lis_property *lis_wia2lis_get_property(
+		bool root, PROPID propid
+	)
+{
+	enum wia2lis_item_type expected_type = (
+		root ? LIS_PROPERTY_DEVICE : LIS_PROPERTY_ITEM
+	);
+	unsigned int i;
+	const struct lis_wia2lis_property *prop;
+
+	// try first to find an exact match
+	for (i = 0 ; i < LIS_COUNT_OF(g_wia2lis_properties) ; i++) {
+		prop = &g_wia2lis_properties[i];
+		if (prop->item_type == expected_type && prop->wia.id == propid) {
+			return prop;
+		}
+	}
+
+	// in case this is some crappy device with only a root item
+	// implementing both root and children properties
+	for (i = 0 ; i < LIS_COUNT_OF(g_wia2lis_properties) ; i++) {
+		prop = &g_wia2lis_properties[i];
+		if (prop->wia.id == propid) {
+			lis_log_warning(
+				"Found property %lu, but on an unexpected "
+				" node type (%s instead of %s)",
+				propid,
+				(root ? "child" : "root"),
+				(root ? "root" : "child")
+			);
+			return prop;
+		}
+	}
+
+	lis_log_warning(
+		"Unknown property %lu (item_type=%s)",
+		propid, (root ? "root" : "child")
+	);
+	return NULL;
+}
+
+
+enum lis_error lis_wia2lis_get_possibles(
+		const struct lis_wia2lis_property *in_wia2lis,
+		struct lis_value_list *out_list
+	)
+{
+	int i;
+	lis_log_debug("Getting possible values for option '%s'", in_wia2lis->lis.name);
+	assert(in_wia2lis->lis.type == LIS_TYPE_STRING);
+
+	for (i = 0 ; !in_wia2lis->possibles[i].eol ; i++) { }
+
+	out_list->values = calloc(i, sizeof(union lis_value));
+	if (out_list->values == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	out_list->nb_values = i;
+
+	for (i = 0 ; !in_wia2lis->possibles[i].eol ; i++) {
+		out_list->values[i].string = in_wia2lis->possibles[i].lis.string;
+	}
+
+	return LIS_OK;
+}
+
+
+enum lis_error lis_wia2lis_get_range(
+		const struct lis_wia2lis_property *in_wia2lis,
+		PROPVARIANT in_propvariant,
+		struct lis_value_range *out_range
+	)
+{
+	unsigned int i;
+
+	lis_log_debug("Getting range for option '%s'", in_wia2lis->lis.name);
+	switch(in_wia2lis->wia.type) {
+		case VT_I4:
+			if (in_propvariant.cal.cElems == WIA_RANGE_NUM_ELEMS) {
+				out_range->min.integer = in_propvariant.cal.pElems[WIA_RANGE_MIN];
+				out_range->max.integer = in_propvariant.cal.pElems[WIA_RANGE_MAX];
+				out_range->interval.integer = in_propvariant.cal.pElems[WIA_RANGE_STEP];
+				// XXX(Jflesch): WIA_RANGE_NOM ?
+				return LIS_OK;
+			} else {
+				lis_log_error(
+					"Unexpected number of elements in"
+					" constraint range VT_I4: %lu",
+					in_propvariant.cal.cElems
+				);
+				for (i = 0 ; i < in_propvariant.cal.cElems ; i++) {
+					lis_log_debug(
+						"- value: %lu",
+						in_propvariant.cal.pElems[i]
+					);
+				}
+				return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+			}
+			break;
+		default:
+			break;
+	}
+
+	lis_log_error(
+		"Unsupported constraint range type: %d", in_wia2lis->wia.type
+	);
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+enum lis_error lis_wia2lis_get_list(
+		const struct lis_wia2lis_property *in_wia2lis,
+		PROPVARIANT in_propvariant,
+		struct lis_value_list *out_list
+	)
+{
+	unsigned int i;
+
+	lis_log_debug("Getting list for option '%s'", in_wia2lis->lis.name);
+
+	switch(in_wia2lis->wia.type) {
+		case VT_I4:
+			out_list->values = calloc(in_propvariant.cal.cElems, sizeof(union lis_value));
+			if (out_list->values == NULL) {
+				lis_log_error("Out of memory");
+				return LIS_ERR_NO_MEM;
+			}
+			out_list->nb_values = in_propvariant.cal.cElems;
+			for (i = 0 ; i < in_propvariant.cal.cElems ; i++) {
+				out_list->values[i].integer = in_propvariant.cal.pElems[i];
+			}
+			return LIS_OK;
+		case VT_BSTR:
+			out_list->values = calloc(in_propvariant.cabstr.cElems, sizeof(union lis_value));
+			if (out_list->values == NULL) {
+				lis_log_error("Out of memory");
+				return LIS_ERR_NO_MEM;
+			}
+			out_list->nb_values = in_propvariant.cabstr.cElems;
+			for (i = 0 ; i < in_propvariant.cabstr.cElems ; i++) {
+				out_list->values[i].string = lis_bstr2cstr(
+					in_propvariant.cabstr.pElems[i]
+				);
+				// TODO(Jflesch): out of memory
+			}
+			return LIS_OK;
+		default:
+			break;
+	}
+
+	lis_log_error(
+		"Unsupported constraint list type: %d", in_wia2lis->wia.type
+	);
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+/* for tests only */
 
 /* for tests */
 const struct lis_wia2lis_property *lis_get_all_properties(
