@@ -2001,8 +2001,23 @@ enum lis_error lis_wia2lis_get_list(
 				return LIS_ERR_NO_MEM;
 			}
 			out_list->nb_values = in_propvariant.cal.cElems;
-			for (i = 0 ; i < in_propvariant.cal.cElems ; i++) {
-				out_list->values[i].integer = in_propvariant.cal.pElems[i];
+			/*
+			 * XXX(Jflesch):
+			 * Integer lists are prefixed with 2 elements:
+			 * number of elements in the list + default value.
+			 * We need none of them here.
+			 */
+			if (out_list->nb_values <= 2) {
+				lis_log_warning(
+					"Expected at least 3 values in integer list, got %d",
+					out_list->nb_values
+				);
+				out_list->nb_values = 0;
+			} else {
+				out_list->nb_values -= 2;
+			}
+			for (i = 2 ; i < in_propvariant.cal.cElems ; i++) {
+				out_list->values[i - 2].integer = in_propvariant.cal.pElems[i];
 			}
 			return LIS_OK;
 		case VT_BSTR:
