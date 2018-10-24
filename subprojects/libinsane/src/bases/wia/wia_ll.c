@@ -55,6 +55,7 @@ struct wiall_opt_private {
 struct wiall_item_private {
 	struct lis_item parent;
 	LisIWiaItem2 *wia_item;
+	IWiaPropertyStorage *wia_props;
 
 	struct wiall_item_private *children;
 	struct lis_item **children_ptrs;
@@ -458,8 +459,10 @@ static enum lis_error wiall_list_devices(
 		err = get_device_descriptor(props, &private->descs[i]);
 		if (LIS_IS_ERROR(err)) {
 			lis_log_debug("wiall_list_devices() failed");
+			props->lpVtbl->Release(props);
 			return err;
 		}
+		props->lpVtbl->Release(props);
 		if (private->descs[i].dev_id == NULL) {
 			// valid but to ignore (not a scanner)
 			i--;
@@ -510,9 +513,14 @@ static void free_children(struct wiall_item_private *private)
 	if (private->children_ptrs != NULL) {
 		for (i = 0 ; private->children_ptrs[i] != NULL ; i++) {
 			free_opts(&private->children[i]);
+			private->children[i].wia_props->lpVtbl->Release(
+				private->children[i].wia_props
+			);
+			private->children[i].wia_props = NULL;
 			private->children[i].wia_item->lpVtbl->Release(
 				private->children[i].wia_item
 			);
+			private->children[i].wia_item = NULL;
 			FREE(private->children[i].parent.name);
 			free_children(&private->children[i]);
 		}
@@ -538,7 +546,6 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 		}
 	};
 	PROPVARIANT output[LIS_COUNT_OF(input)] = {0};
-	IWiaPropertyStorage *props = NULL;
 
 	memcpy(
 		&private->parent,
@@ -546,11 +553,11 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 		sizeof(private->parent)
 	);
 
-	lis_log_debug("child_item->QueryInterface(IWiaPropertyStorage) ...");
+	lis_log_debug("item->QueryInterface(IWiaPropertyStorage) ...");
 	hr = private->wia_item->lpVtbl->QueryInterface(
 		private->wia_item,
 		&IID_IWiaPropertyStorage,
-		(void **)&props
+		(void **)&private->wia_props
 	);
 	lis_log_debug(
 		"child_item->QueryInterface(IWiaPropertyStorageP): 0x%lX", hr
@@ -565,12 +572,14 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 		goto err;
 	}
 
-	hr = props->lpVtbl->ReadMultiple(
-		props,
+	hr = private->wia_props->lpVtbl->ReadMultiple(
+		private->wia_props,
 		LIS_COUNT_OF(output),
 		input, output
 	);
 	if (FAILED(hr)) {
+		private->wia_props->lpVtbl->Release(private->wia_props);
+		private->wia_props = NULL;
 		err = hresult_to_lis_error(hr);
 		lis_log_error(
 			"child_properties->ReadMultiple()"
@@ -591,6 +600,8 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 			"Unsupported source type for child '%s'",
 			private->parent.name
 		);
+		private->wia_props->lpVtbl->Release(private->wia_props);
+		private->wia_props = NULL;
 		err = LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
 		goto err;
 	} else if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FLATBED)) {
@@ -612,9 +623,6 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 err:
 	for (i = 0 ; i < LIS_COUNT_OF(output) ; i++) {
 		PropVariantClear(&output[i]);
-	}
-	if (props != NULL) {
-		props->lpVtbl->Release(props);
 	}
 	return err;
 }
@@ -746,7 +754,6 @@ static char *get_opt_desc(PROPID propid)
 
 static enum lis_error load_opts(bool root, struct wiall_item_private *private)
 {
-	IWiaPropertyStorage *prop_storage = NULL;
 	IEnumSTATPROPSTG *prop_enum = NULL;
 	STATPROPSTG wia_prop;
 	HRESULT hr;
@@ -757,27 +764,8 @@ static enum lis_error load_opts(bool root, struct wiall_item_private *private)
 
 	free_opts(private);
 
-	lis_log_debug("WiaItem2->QueryInterface(IWiaPropertyStorage) ...");
-	hr = private->wia_item->lpVtbl->QueryInterface(
-		private->wia_item,
-		&IID_IWiaPropertyStorage,
-		(void **)&prop_storage
-	);
-	lis_log_debug(
-		"WiaItem2->QueryInterface(IWiaPropertyStorageP): 0x%lX", hr
-	);
-	if (FAILED(hr)) {
-		err = hresult_to_lis_error(hr);
-		lis_log_error(
-			"WiaItem2->QueryInterface(IWiaPropertyStorage)"
-			" failed: 0x%lX -> 0x%X, %s",
-			hr, err, lis_strerror(err)
-		);
-		return err;
-	}
-
 	lis_log_debug("IWiaPropertyStorage->GetCount() ...");
-	hr = prop_storage->lpVtbl->GetCount(prop_storage, &nb_opts);
+	hr = private->wia_props->lpVtbl->GetCount(private->wia_props, &nb_opts);
 	lis_log_debug("IWiaPropertyStorage->GetCount(): 0x%lX (%lu)", hr, nb_opts);
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
@@ -797,7 +785,6 @@ static enum lis_error load_opts(bool root, struct wiall_item_private *private)
 		nb_opts + 1, sizeof(struct lis_option_descriptor *)
 	);
 	if (nb_opts <= 0) {
-		prop_storage->lpVtbl->Release(prop_storage);
 		return LIS_OK;
 	}
 
@@ -809,7 +796,7 @@ static enum lis_error load_opts(bool root, struct wiall_item_private *private)
 	}
 
 	lis_log_debug("IWiaPropertyStorage->Enum() ...");
-	hr = prop_storage->lpVtbl->Enum(prop_storage, &prop_enum);
+	hr = private->wia_props->lpVtbl->Enum(private->wia_props, &prop_enum);
 	lis_log_debug("IWiaPropertyStorage->Enum(): 0x%lX", hr);
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
@@ -886,7 +873,6 @@ static enum lis_error load_opts(bool root, struct wiall_item_private *private)
 		private->parent.name, opt_idx
 	);
 	prop_enum->lpVtbl->Release(prop_enum);
-	prop_storage->lpVtbl->Release(prop_storage);
 	return LIS_OK;
 
 err:
@@ -894,9 +880,6 @@ err:
 	FREE(private->opts_ptrs);
 	if (prop_enum != NULL) {
 		prop_enum->lpVtbl->Release(prop_enum);
-	}
-	if (prop_storage != NULL) {
-		prop_storage->lpVtbl->Release(prop_storage);
 	}
 	return err;
 }
@@ -974,32 +957,12 @@ static enum lis_error load_opt_constraints(
 
 static enum lis_error load_opt_attributes(struct wiall_item_private *private)
 {
-	IWiaPropertyStorage *prop_storage = NULL;
 	HRESULT hr;
 	enum lis_error err;
 	PROPSPEC *propspecs = NULL;
 	PROPVARIANT *propvariants = NULL;
 	unsigned long *propflags = NULL;
 	int i;
-
-	lis_log_debug("WiaItem2->QueryInterface(IWiaPropertyStorage) ...");
-	hr = private->wia_item->lpVtbl->QueryInterface(
-		private->wia_item,
-		&IID_IWiaPropertyStorage,
-		(void **)&prop_storage
-	);
-	lis_log_debug(
-		"WiaItem2->QueryInterface(IWiaPropertyStorageP): 0x%lX", hr
-	);
-	if (FAILED(hr)) {
-		err = hresult_to_lis_error(hr);
-		lis_log_error(
-			"WiaItem2->QueryInterface(IWiaPropertyStorage)"
-			" failed: 0x%lX -> 0x%X, %s",
-			hr, err, lis_strerror(err)
-		);
-		return err;
-	}
 
 	propspecs = GlobalAlloc(GPTR, sizeof(PROPSPEC) * private->nb_opts);
 	propvariants = GlobalAlloc(GPTR, sizeof(PROPVARIANT) * private->nb_opts);
@@ -1016,8 +979,8 @@ static enum lis_error load_opt_attributes(struct wiall_item_private *private)
 	}
 
 	lis_log_debug("IWiaPropertyStorage->GetPropertyAttribute(all properties) ...");
-	hr = prop_storage->lpVtbl->GetPropertyAttributes(
-		prop_storage, private->nb_opts, propspecs, propflags, propvariants
+	hr = private->wia_props->lpVtbl->GetPropertyAttributes(
+		private->wia_props, private->nb_opts, propspecs, propflags, propvariants
 	);
 	lis_log_debug("IWiaPropertyStorage->GetPropertyAttribute(all properties): 0x%lX", hr);
 	if (FAILED(hr)) {
@@ -1054,9 +1017,6 @@ err:
 			PropVariantClear(&propvariants[i]);
 		}
 		GlobalFree(propvariants);
-	}
-	if (prop_storage != NULL) {
-		prop_storage->lpVtbl->Release(prop_storage);
 	}
 	return err;
 }
@@ -1134,6 +1094,7 @@ static void wiall_item_root_close(struct lis_item *self)
 	free_opts(private);
 	free_children(private);
 	FREE(private->parent.name);
+	private->wia_props->lpVtbl->Release(private->wia_props);
 	private->wia_item->lpVtbl->Release(private->wia_item);
 	FREE(private);
 }
@@ -1204,9 +1165,30 @@ static enum lis_error wiall_get_device(
 	}
 
 	memcpy(&item->parent, &g_item_root_template, sizeof(item->parent));
-	item->parent.name = strdup(in_dev_id);
 	item->parent.type = LIS_ITEM_DEVICE;
 
+	lis_log_debug("root_item->QueryInterface(IWiaPropertyStorage) ...");
+	hr = item->wia_item->lpVtbl->QueryInterface(
+		item->wia_item,
+		&IID_IWiaPropertyStorage,
+		(void **)&item->wia_props
+	);
+	lis_log_debug(
+		"root_item->QueryInterface(IWiaPropertyStorageP): 0x%lX", hr
+	);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_error(
+			"root_item->QueryInterface(WiaPropertyStorage)"
+			" failed: 0X%lX -> 0x%X, %s",
+			hr, err, lis_strerror(err)
+		);
+		item->wia_item->lpVtbl->Release(item->wia_item);
+		FREE(item);
+		return err;
+	}
+
+	item->parent.name = strdup(in_dev_id);
 	*out_item = &item->parent;
 	lis_log_debug("wiall_get_device(%s) done", in_dev_id);
 	return LIS_OK;
@@ -1217,9 +1199,9 @@ static enum lis_error wiall_opt_get_value(
 		struct lis_option_descriptor *self, union lis_value *value
 	)
 {
+	//struct wiall_opt_private *private = WIALL_OPT_PRIVATE(self);
 	LIS_UNUSED(self);
 	LIS_UNUSED(value);
-	// TODO
 	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
 }
 
