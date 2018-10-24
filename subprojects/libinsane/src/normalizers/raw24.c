@@ -155,10 +155,7 @@ static enum lis_error lis_raw24_get_scan_parameters(
 				private->params.image_size *= 3;
 			}
 			return LIS_OK;
-		case LIS_IMG_FORMAT_BMP:
-		case LIS_IMG_FORMAT_GIF:
-		case LIS_IMG_FORMAT_JPEG:
-		case LIS_IMG_FORMAT_PNG:
+		default:
 			break;
 	}
 
@@ -366,10 +363,7 @@ static enum lis_error lis_raw24_scan_read(
 			return raw1_scan_read(
 				private, out_buffer, buffer_size
 			);
-		case LIS_IMG_FORMAT_BMP:
-		case LIS_IMG_FORMAT_GIF:
-		case LIS_IMG_FORMAT_JPEG:
-		case LIS_IMG_FORMAT_PNG:
+		default:
 			break;
 	}
 

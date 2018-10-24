@@ -15,27 +15,27 @@
 static const struct lis_wia2lis_possibles g_possible_formats[] = {
 	{
 		.wia.clsid = &WiaImgFmt_BMP,
-		.lis.string = "bmp",
+		.lis.format = LIS_IMG_FORMAT_BMP,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_CIFF,
-		.lis.string = "ciff",
+		.lis.format = LIS_IMG_FORMAT_CIFF,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_EXIF,
-		.lis.string = "exif",
+		.lis.format = LIS_IMG_FORMAT_EXIF,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_FLASHPIX,
-		.lis.string = "flashpix",
+		.lis.format = LIS_IMG_FORMAT_FLASHPIX,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_GIF,
-		.lis.string = "gif",
+		.lis.format = LIS_IMG_FORMAT_GIF,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_ICO,
-		.lis.string = "ico",
+		.lis.format = LIS_IMG_FORMAT_ICO,
 	},
 	/* TODO
 	{
@@ -45,19 +45,19 @@ static const struct lis_wia2lis_possibles g_possible_formats[] = {
 	*/
 	{
 		.wia.clsid = &WiaImgFmt_JPEG,
-		.lis.string = "jpeg",
+		.lis.format = LIS_IMG_FORMAT_JPEG,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_JPEG2K,
-		.lis.string = "jpeg2k",
+		.lis.format = LIS_IMG_FORMAT_JPEG2K,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_JPEG2KX,
-		.lis.string = "jpeg2kx",
+		.lis.format = LIS_IMG_FORMAT_JPEG2KX,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_MEMORYBMP,
-		.lis.string = "memorybmp",
+		.lis.format = LIS_IMG_FORMAT_MEMORYBMP,
 	},
 	/* TODO
 	{
@@ -67,15 +67,15 @@ static const struct lis_wia2lis_possibles g_possible_formats[] = {
 	*/
 	{
 		.wia.clsid = &WiaImgFmt_PHOTOCD,
-		.lis.string = "photocd",
+		.lis.format = LIS_IMG_FORMAT_PHOTOCD,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_PICT,
-		.lis.string = "pict",
+		.lis.format = LIS_IMG_FORMAT_PICT,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_PNG,
-		.lis.string = "png",
+		.lis.format = LIS_IMG_FORMAT_PNG,
 	},
 	/* TODO
 	{
@@ -85,11 +85,11 @@ static const struct lis_wia2lis_possibles g_possible_formats[] = {
 	*/
 	{
 		.wia.clsid = &WiaImgFmt_RAWRGB,
-		.lis.string = "rawrgb",
+		.lis.format = LIS_IMG_FORMAT_RAW_RGB_24,
 	},
 	{
 		.wia.clsid = &WiaImgFmt_TIFF,
-		.lis.string = "tiff",
+		.lis.format = LIS_IMG_FORMAT_TIFF,
 	},
 	{ .eol = 1 },
 };
@@ -343,16 +343,20 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 				.lis.string = "write",
 			},
 			{
+				.wia.integer = WIA_ITEM_READ | WIA_ITEM_WRITE,
+				.lis.string = "read,write",
+			},
+			{
 				.wia.integer = WIA_ITEM_CAN_BE_DELETED,
 				.lis.string = "can_be_deleted",
 			},
 			{
 				.wia.integer = WIA_ITEM_RD,
-				.lis.string = "read_can_be_deleted",
+				.lis.string = "read,can_be_deleted",
 			},
 			{
 				.wia.integer = WIA_ITEM_RWD,
-				.lis.string = "read_write_can_be_deleted",
+				.lis.string = "read,write,can_be_deleted",
 			},
 			{ .eol = 1 },
 		},
@@ -533,7 +537,7 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 		.line = __LINE__,
 		.item_type = LIS_PROPERTY_ITEM,
 		.wia = { .id = WIA_IPA_FORMAT, .type = VT_CLSID, },
-		.lis = { .name = "format", .type = LIS_TYPE_STRING, },
+		.lis = { .name = "format", .type = LIS_TYPE_IMAGE_FORMAT, },
 		.possibles = g_possible_formats
 	},
 
@@ -541,7 +545,10 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 		.line = __LINE__,
 		.item_type = LIS_PROPERTY_ITEM,
 		.wia = { .id = WIA_IPA_PREFERRED_FORMAT, .type = VT_CLSID, },
-		.lis = { .name = "preferred_format", .type = LIS_TYPE_STRING, },
+		.lis = {
+			.name = "preferred_format",
+			.type = LIS_TYPE_IMAGE_FORMAT,
+		},
 		.possibles = g_possible_formats
 	},
 
@@ -1911,7 +1918,6 @@ enum lis_error lis_wia2lis_get_possibles(
 {
 	int i;
 	lis_log_debug("Getting possible values for option '%s'", in_wia2lis->lis.name);
-	assert(in_wia2lis->lis.type == LIS_TYPE_STRING);
 
 	for (i = 0 ; !in_wia2lis->possibles[i].eol ; i++) { }
 
@@ -1924,7 +1930,10 @@ enum lis_error lis_wia2lis_get_possibles(
 	out_list->nb_values = i;
 
 	for (i = 0 ; !in_wia2lis->possibles[i].eol ; i++) {
-		out_list->values[i].string = in_wia2lis->possibles[i].lis.string;
+		memcpy(
+			&out_list->values[i], &in_wia2lis->possibles[i].lis,
+			sizeof(out_list->values[i])
+		);
 	}
 
 	return LIS_OK;

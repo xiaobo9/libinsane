@@ -71,6 +71,26 @@ LibinsaneImgFormat libinsane_scan_parameters_get_format(LibinsaneScanParameters 
 			return LIBINSANE_IMG_FORMAT_JPEG;
 		case LIS_IMG_FORMAT_PNG:
 			return LIBINSANE_IMG_FORMAT_PNG;
+		case LIS_IMG_FORMAT_CIFF:
+			return LIBINSANE_IMG_FORMAT_CIFF;
+		case LIS_IMG_FORMAT_EXIF:
+			return LIBINSANE_IMG_FORMAT_EXIF;
+		case LIS_IMG_FORMAT_FLASHPIX:
+			return LIBINSANE_IMG_FORMAT_FLASHPIX;
+		case LIS_IMG_FORMAT_ICO:
+			return LIBINSANE_IMG_FORMAT_ICO;
+		case LIS_IMG_FORMAT_JPEG2K:
+			return LIBINSANE_IMG_FORMAT_JPEG2K;
+		case LIS_IMG_FORMAT_JPEG2KX:
+			return LIBINSANE_IMG_FORMAT_JPEG2KX;
+		case LIS_IMG_FORMAT_MEMORYBMP:
+			return LIBINSANE_IMG_FORMAT_MEMORYBMP;
+		case LIS_IMG_FORMAT_PHOTOCD:
+			return LIBINSANE_IMG_FORMAT_PHOTOCD;
+		case LIS_IMG_FORMAT_PICT:
+			return LIBINSANE_IMG_FORMAT_PICT;
+		case LIS_IMG_FORMAT_TIFF:
+			return LIBINSANE_IMG_FORMAT_TIFF;
 	}
 
 	lis_log_warning("Unknown image format: %d", private->parameters.format);

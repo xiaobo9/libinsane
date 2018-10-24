@@ -48,6 +48,8 @@ struct wiall_opt_private {
 	struct wiall_item_private *item;
 
 	const struct lis_wia2lis_property *wia2lis;
+
+	void *last_value;
 };
 #define WIALL_OPT_PRIVATE(impl) ((struct wiall_opt_private *)(impl))
 
@@ -477,7 +479,7 @@ static enum lis_error wiall_list_devices(
 	wia_dev_infos->lpVtbl->Release(wia_dev_infos);
 
 	*lis_dev_infos = private->descs_ptrs;
-	lis_log_debug("wiall_list_devices() done");
+	lis_log_info("wiall_list_devices() successful");
 	return LIS_OK;
 }
 
@@ -553,7 +555,7 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 		sizeof(private->parent)
 	);
 
-	lis_log_debug("item->QueryInterface(IWiaPropertyStorage) ...");
+	lis_log_debug("child_item->QueryInterface(IWiaPropertyStorage) ...");
 	hr = private->wia_item->lpVtbl->QueryInterface(
 		private->wia_item,
 		&IID_IWiaPropertyStorage,
@@ -640,7 +642,10 @@ static enum lis_error wiall_item_get_children(
 	unsigned long tmp;
 	unsigned int i;
 
-	lis_log_debug("wiall_item_get_children() ...");
+	lis_log_debug(
+		"%s->get_children() ...",
+		private->parent.name
+	);
 
 	free_children(private);
 
@@ -733,7 +738,10 @@ static enum lis_error wiall_item_get_children(
 
 	item_enum->lpVtbl->Release(item_enum);
 	*out_children = private->children_ptrs;
-	lis_log_debug("wiall_item_get_children() done");
+	lis_log_info(
+		"%s->get_children() successful",
+		private->parent.name
+	);
 	return LIS_OK;
 }
 
@@ -761,6 +769,11 @@ static enum lis_error load_opts(bool root, struct wiall_item_private *private)
 	unsigned long nb_opts = 0;
 	int opt_idx;
 	unsigned long nb_results;
+
+	lis_log_debug(
+		"%s->get_options() ...",
+		private->parent.name
+	);
 
 	free_opts(private);
 
@@ -863,14 +876,15 @@ static enum lis_error load_opts(bool root, struct wiall_item_private *private)
 			get_opt_desc(private->opts[opt_idx].wia2lis->wia.id);
 		private->opts[opt_idx].parent.value.type = \
 			private->opts[opt_idx].wia2lis->lis.type;
+		private->opts[opt_idx].item = private;
 
 		private->opts_ptrs[opt_idx] = &private->opts[opt_idx].parent;
 	}
 
 	private->nb_opts = opt_idx;
-	lis_log_debug(
-		"%s->get_options(): got %d options",
-		private->parent.name, opt_idx
+	lis_log_info(
+		"%s->get_options(): got %d/%ld options",
+		private->parent.name, opt_idx, nb_opts
 	);
 	prop_enum->lpVtbl->Release(prop_enum);
 	return LIS_OK;
@@ -920,6 +934,7 @@ static enum lis_error load_opt_constraints(
 	for (i = 0 ; i < private->nb_opts ; i++) {
 		private->opts[i].parent.constraint.type = LIS_CONSTRAINT_NONE;
 		if (private->opts[i].wia2lis->possibles != NULL) {
+			// TODO(JFlesch): not all possibles are possibles
 			private->opts[i].parent.constraint.type = LIS_CONSTRAINT_LIST;
 			err = lis_wia2lis_get_possibles(
 				private->opts[i].wia2lis,
@@ -1083,7 +1098,6 @@ static enum lis_error wiall_item_scan_start(
 	LIS_UNUSED(session);
 	// TODO
 	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
-
 }
 
 
@@ -1190,19 +1204,193 @@ static enum lis_error wiall_get_device(
 
 	item->parent.name = strdup(in_dev_id);
 	*out_item = &item->parent;
-	lis_log_debug("wiall_get_device(%s) done", in_dev_id);
+	lis_log_info("wiall_get_device(%s) successful", in_dev_id);
 	return LIS_OK;
 }
 
 
-static enum lis_error wiall_opt_get_value(
-		struct lis_option_descriptor *self, union lis_value *value
+static enum lis_error convert_wia_int2lis(
+		const struct lis_wia2lis_property *wia2lis,
+		long wia_int,
+		union lis_value *value
 	)
 {
-	//struct wiall_opt_private *private = WIALL_OPT_PRIVATE(self);
-	LIS_UNUSED(self);
-	LIS_UNUSED(value);
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	int i;
+
+	if (wia2lis->possibles != NULL) {
+		for (i = 0 ; !wia2lis->possibles[i].eol ; i++) {
+			if (wia2lis->possibles[i].wia.integer == wia_int) {
+				memcpy(value, &wia2lis->possibles[i].lis, sizeof(*value));
+				return LIS_OK;
+			}
+		}
+		lis_log_warning(
+			"Unknown value %ld for option %ld,%s",
+			wia_int, wia2lis->wia.id, wia2lis->lis.name
+		);
+		return LIS_ERR_UNSUPPORTED;
+	}
+
+	if (wia2lis->lis.type != LIS_TYPE_INTEGER) {
+		lis_log_warning(
+			"Don't know how to convert option '%s' value"
+			" from integer to type %d",
+			wia2lis->lis.name, wia2lis->lis.type
+		);
+		return LIS_ERR_UNSUPPORTED;
+	}
+
+	value->integer = wia_int;
+	return LIS_OK;
+}
+
+
+static enum lis_error convert_wia_clsid2lis(
+		const struct lis_wia2lis_property *wia2lis,
+		const CLSID *clsid,
+		union lis_value *value
+	)
+{
+	int i;
+	LPOLESTR str;
+	char *cstr;
+	HRESULT hr;
+
+	if (wia2lis->possibles == NULL) {
+		lis_log_warning(
+			"Don't know how to convert option '%s' value"
+			" from clsid to type %d",
+			wia2lis->lis.name, wia2lis->lis.type
+		);
+		return LIS_ERR_UNSUPPORTED;
+	}
+
+	for (i = 0 ; !wia2lis->possibles[i].eol ; i++) {
+		if (memcmp(wia2lis->possibles[i].wia.clsid, clsid, sizeof(*clsid)) == 0) {
+			memcpy(value, &wia2lis->possibles[i].lis, sizeof(*value));
+			return LIS_OK;
+		}
+	}
+
+	hr = StringFromCLSID(clsid, &str);
+	if (FAILED(hr)) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	cstr = lis_bstr2cstr(str);
+	CoTaskMemFree(str);
+	if (cstr == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	lis_log_warning(
+		"Unknown value CLSID %s for option %ld,%s",
+		cstr, wia2lis->wia.id, wia2lis->lis.name
+	);
+	FREE(cstr);
+	return LIS_ERR_UNSUPPORTED;
+}
+
+
+static enum lis_error convert_wia2lis(
+		struct wiall_opt_private *private,
+		const PROPVARIANT *propvariant,
+		union lis_value *value
+	)
+{
+	switch(private->wia2lis->wia.type) {
+		case VT_I4:
+			return convert_wia_int2lis(
+				private->wia2lis, propvariant->lVal, value
+			);
+		case VT_CLSID:
+			return convert_wia_clsid2lis(
+				private->wia2lis, propvariant->puuid, value
+			);
+		case VT_BSTR:
+			value->string = private->last_value = lis_bstr2cstr(propvariant->bstrVal);
+			if (value->string == NULL) {
+				lis_log_error("Out of memory");
+				return LIS_ERR_NO_MEM;
+			}
+			return LIS_OK;
+	}
+
+	lis_log_warning(
+		"Failed to convert from WIA type %d to Libinsane type %d",
+		private->wia2lis->wia.type, private->wia2lis->lis.type
+	);
+	return LIS_ERR_UNSUPPORTED;
+}
+
+
+static enum lis_error wiall_opt_get_value(
+		struct lis_option_descriptor *self, union lis_value *out_value
+	)
+{
+	struct wiall_opt_private *private = WIALL_OPT_PRIVATE(self);
+	HRESULT hr;
+	enum lis_error err;
+	PROPSPEC propspec = {
+		.ulKind = PRSPEC_PROPID,
+		.propid = private->wia2lis->wia.id,
+	};
+	PROPVARIANT propvariant;
+
+	FREE(private->last_value);
+
+	lis_log_debug(
+		"%s->%s->get_value() ...",
+		private->item->parent.name,
+		private->wia2lis->lis.name
+	);
+	lis_log_debug(
+		"%s->ReadMultiple(%lu (%s)) ...",
+		private->item->parent.name, private->wia2lis->wia.id,
+		private->wia2lis->lis.name
+	);
+	hr = private->item->wia_props->lpVtbl->ReadMultiple(
+		private->item->wia_props,
+		1 /* cpspec */, &propspec, &propvariant
+	);
+	lis_log_debug(
+		"%s->ReadMultiple(%lu (%s)): 0x%lX",
+		private->item->parent.name, private->wia2lis->wia.id,
+		private->wia2lis->lis.name, hr
+	);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_warning(
+			"Failed to read property %lu, %s from item %s:"
+			" 0x%lX -> 0x%X (%s)",
+			private->wia2lis->wia.id, private->wia2lis->lis.name,
+			private->item->parent.name,
+			hr, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	err = convert_wia2lis(private, &propvariant, out_value);
+	PropVariantClear(&propvariant);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_warning(
+			"Failed to convert property value %lu, %s from item %s:"
+			" 0x%X (%s)",
+			private->wia2lis->wia.id, private->wia2lis->lis.name,
+			private->item->parent.name,
+			err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	lis_log_info(
+		"%s->%s->get_value() successful",
+		private->item->parent.name,
+		private->wia2lis->lis.name
+	);
+	return LIS_OK;
 }
 
 
