@@ -268,6 +268,7 @@ static enum lis_error get_device_descriptor(
 {
 	enum lis_error err;
 	HRESULT hr;
+	unsigned int i;
 	static const PROPSPEC input[] = {
 		{
 			.ulKind = PRSPEC_PROPID,
@@ -323,13 +324,20 @@ static enum lis_error get_device_descriptor(
 				out_props->model
 			);
 			FREE(out_props->model);
-			return LIS_OK;
+			err = LIS_OK;
+			goto err;
 	}
 
 	out_props->dev_id = lis_propvariant2char(&output[0]);
 	out_props->vendor = lis_propvariant2char(&output[1]);
 
-	return LIS_OK;
+	err = LIS_OK;
+
+err:
+	for (i = 0 ; i < LIS_COUNT_OF(output) ; i++) {
+		PropVariantClear(&output[i]);
+	}
+	return err;
 }
 
 
@@ -473,12 +481,22 @@ static enum lis_error wiall_list_devices(
 
 static void free_opts(struct wiall_item_private *private)
 {
-	int i;
+	int i, j;
+
 	if (private->opts_ptrs != NULL) {
 		for (i = 0 ; private->opts_ptrs[i] != NULL ; i++) {
+			if (private->opts_ptrs[i]->constraint.type == LIS_CONSTRAINT_LIST) {
+				if (private->opts_ptrs[i]->value.type == LIS_TYPE_STRING) {
+					for (j = 0 ; j < private->opts_ptrs[i]->constraint.possible.list.nb_values ; j++) {
+						FREE(private->opts_ptrs[i]->constraint.possible.list.values[j].string);
+					}
+				}
+				FREE(private->opts_ptrs[i]->constraint.possible.list.values);
+				private->opts_ptrs[i]->constraint.possible.list.nb_values = 0;
+			}
 			FREE(private->opts_ptrs[i]->desc);
-			// TODO
 		}
+
 		FREE(private->opts_ptrs);
 	}
 	FREE(private->opts);
@@ -504,10 +522,11 @@ static void free_children(struct wiall_item_private *private)
 }
 
 
-static enum lis_error fill_in_item(struct wiall_item_private *private)
+static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 {
 	HRESULT hr;
 	enum lis_error err;
+	unsigned int i;
 	static const PROPSPEC input[] = {
 		{
 			.ulKind = PRSPEC_PROPID,
@@ -519,7 +538,7 @@ static enum lis_error fill_in_item(struct wiall_item_private *private)
 		}
 	};
 	PROPVARIANT output[LIS_COUNT_OF(input)] = {0};
-	IWiaPropertyStorage *props;
+	IWiaPropertyStorage *props = NULL;
 
 	memcpy(
 		&private->parent,
@@ -543,7 +562,7 @@ static enum lis_error fill_in_item(struct wiall_item_private *private)
 			" failed: 0X%lX -> 0x%X, %s",
 			hr, err, lis_strerror(err)
 		);
-		return err;
+		goto err;
 	}
 
 	hr = props->lpVtbl->ReadMultiple(
@@ -558,7 +577,7 @@ static enum lis_error fill_in_item(struct wiall_item_private *private)
 			" failed: 0X%lX -> 0x%X, %s",
 			hr, err, lis_strerror(err)
 		);
-		return err;
+		goto err;
 	}
 
 	assert(output[0].vt == VT_BSTR);
@@ -572,8 +591,8 @@ static enum lis_error fill_in_item(struct wiall_item_private *private)
 			"Unsupported source type for child '%s'",
 			private->parent.name
 		);
-		props->lpVtbl->Release(props);
-		return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+		err = LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+		goto err;
 	} else if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FLATBED)) {
 		private->parent.type = LIS_ITEM_FLATBED;
 	} else if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER)
@@ -588,8 +607,16 @@ static enum lis_error fill_in_item(struct wiall_item_private *private)
 		);
 	}
 
-	props->lpVtbl->Release(props);
-	return LIS_OK;
+	err = LIS_OK;
+
+err:
+	for (i = 0 ; i < LIS_COUNT_OF(output) ; i++) {
+		PropVariantClear(&output[i]);
+	}
+	if (props != NULL) {
+		props->lpVtbl->Release(props);
+	}
+	return err;
 }
 
 
@@ -683,7 +710,7 @@ static enum lis_error wiall_item_get_children(
 			return err;
 		}
 
-		err = fill_in_item(&private->children[i]);
+		err = fill_in_item_infos(&private->children[i]);
 		if (LIS_IS_ERROR(err)) {
 			// skipping this one
 			private->children[i].wia_item->lpVtbl->Release(
@@ -930,7 +957,6 @@ static enum lis_error load_opt_constraints(
 				&private->opts[i].parent.constraint.possible.list
 			);
 		}
-
 		if (LIS_IS_ERROR(err)) {
 			lis_log_error(
 				"Failed to parse constraint for option '%s':"
@@ -1014,10 +1040,7 @@ static enum lis_error load_opt_attributes(struct wiall_item_private *private)
 		return err;
 	}
 
-	GlobalFree(propspecs);
-	GlobalFree(propflags);
-	GlobalFree(propvariants);
-	return LIS_OK;
+	err = LIS_OK;
 
 err:
 	if (propflags != NULL) {
@@ -1027,6 +1050,9 @@ err:
 		GlobalFree(propspecs);
 	}
 	if (propvariants != NULL) {
+		for (i = 0 ; i < private->nb_opts ; i++) {
+			PropVariantClear(&propvariants[i]);
+		}
 		GlobalFree(propvariants);
 	}
 	if (prop_storage != NULL) {
