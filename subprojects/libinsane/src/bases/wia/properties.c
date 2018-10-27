@@ -2177,3 +2177,102 @@ enum lis_error lis_convert_wia2lis(
 }
 
 
+static enum lis_error convert_lis_str2wia(
+		const struct lis_wia2lis_property *wia2lis,
+		const char *in_value,
+		PROPVARIANT *out_propvariant
+	)
+{
+	int i;
+
+	if (wia2lis->possibles != NULL) {
+		for (i = 0 ; !wia2lis->possibles[i].eol ; i++) {
+			if (strcasecmp(
+						wia2lis->possibles[i].lis.string,
+						in_value
+					) == 0) {
+	
+				switch (wia2lis->wia.type) {
+					case VT_I4:
+						PropVariantInit(out_propvariant);
+						out_propvariant->vt = VT_I4;
+						out_propvariant->lVal = wia2lis->possibles[i].wia.integer;
+						return LIS_OK;
+					case VT_CLSID:
+						PropVariantInit(out_propvariant);
+						out_propvariant->vt = VT_CLSID;
+						out_propvariant->puuid = CoTaskMemAlloc(
+							sizeof(CLSID)
+						);
+						if (out_propvariant->puuid == NULL) {
+							lis_log_error("Out of memory");
+							return LIS_ERR_NO_MEM;
+						}
+						memcpy(
+							out_propvariant->puuid,
+							wia2lis->possibles[i].wia.clsid,
+							sizeof(CLSID)
+						);
+						return LIS_OK;
+					default:
+						lis_log_warning(
+							"Don't know how to convert from Libinsane string"
+							" to WIA type %d (possibles)",
+							wia2lis->wia.type
+						);
+						return LIS_ERR_UNSUPPORTED;
+				}
+			}
+		}
+		return LIS_ERR_INVALID_VALUE;
+	}
+	
+	PropVariantInit(out_propvariant);
+	out_propvariant->vt = VT_BSTR;
+	out_propvariant->bstrVal = lis_cstr2bstr(in_value);
+	if (out_propvariant->bstrVal == NULL) {
+		return LIS_ERR_NO_MEM;
+	}
+	return LIS_OK;
+}
+
+
+static enum lis_error convert_lis_int2wia(
+		const struct lis_wia2lis_property *wia2lis,
+		int in_value,
+		PROPVARIANT *out_propvariant
+	)
+{
+	LIS_UNUSED(wia2lis);
+
+	PropVariantInit(out_propvariant);
+	out_propvariant->vt = VT_I4;
+	out_propvariant->lVal = in_value;
+	return LIS_OK;
+}
+
+
+enum lis_error lis_convert_lis2wia(
+		const struct lis_wia2lis_property *wia2lis,
+		union lis_value in_value,
+		PROPVARIANT *out_propvariant
+	)
+{
+	switch(wia2lis->lis.type) {
+		case LIS_TYPE_STRING:
+			return convert_lis_str2wia(wia2lis, in_value.string, out_propvariant);
+		case LIS_TYPE_INTEGER:
+			return convert_lis_int2wia(wia2lis, in_value.integer, out_propvariant);
+		case LIS_TYPE_BOOL:
+		case LIS_TYPE_DOUBLE:
+		case LIS_TYPE_IMAGE_FORMAT:
+			break;
+	}
+	
+	lis_log_warning(
+		"Failed to convert from Libinsane type %d to WIA type %d",
+		wia2lis->lis.type, wia2lis->wia.type
+	);
+	return LIS_ERR_UNSUPPORTED;
+}
+

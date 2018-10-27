@@ -1090,17 +1090,6 @@ static enum lis_error wiall_item_child_get_options(
 }
 
 
-static enum lis_error wiall_item_scan_start(
-		struct lis_item *self, struct lis_scan_session **session
-	)
-{
-	LIS_UNUSED(self);
-	LIS_UNUSED(session);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
-}
-
-
 static void wiall_item_root_close(struct lis_item *self)
 {
 	struct wiall_item_private *private = WIALL_ITEM_PRIVATE(self);
@@ -1284,9 +1273,84 @@ static enum lis_error wiall_opt_set_value(
 		int *set_flags
 	)
 {
+	struct wiall_opt_private *private = WIALL_OPT_PRIVATE(self);
+	HRESULT hr;
+	enum lis_error err;
+	PROPSPEC propspec = {
+		.ulKind = PRSPEC_PROPID,
+		.propid = private->wia2lis->wia.id,
+	};
+	PROPVARIANT propvariant;
+
+	*set_flags = 0;
+	
+	lis_log_debug(
+		"%s->%s->set_value() ...",
+		private->item->parent.name,
+		private->wia2lis->lis.name
+	);
+	
+	err = lis_convert_lis2wia(
+		private->wia2lis,
+		value,
+		&propvariant
+	);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_info(
+			"%s->%s->set_value() failed: 0x%X, %s",
+			private->item->parent.name,
+			private->wia2lis->lis.name,
+			err, lis_strerror(err)
+		);	
+		return err;
+	}
+	
+	lis_log_debug(
+		"%s->WriteMultiple(%lu (%s)) ...",
+		private->item->parent.name, private->wia2lis->wia.id,
+		private->wia2lis->lis.name
+	);
+	hr = private->item->wia_props->lpVtbl->WriteMultiple(
+		private->item->wia_props,
+		1 /* cpspec */,
+		&propspec,
+		&propvariant,
+		WIA_IPA_FIRST
+	);
+	PropVariantClear(&propvariant);
+	lis_log_debug(
+		"%s->WriteMultiple(%lu (%s)): 0x%lX",
+		private->item->parent.name, private->wia2lis->wia.id,
+		private->wia2lis->lis.name, hr
+	);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
+		lis_log_warning(
+			"Failed to read property %lu, %s from item %s:"
+			" 0x%lX -> 0x%X (%s)",
+			private->wia2lis->wia.id, private->wia2lis->lis.name,
+			private->item->parent.name,
+			hr, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	lis_log_info(
+		"%s->%s->set_value() successful",
+		private->item->parent.name,
+		private->wia2lis->lis.name
+	);
+	return LIS_OK;
+
+}
+
+
+static enum lis_error wiall_item_scan_start(
+		struct lis_item *self, struct lis_scan_session **session
+	)
+{
 	LIS_UNUSED(self);
-	LIS_UNUSED(value);
-	LIS_UNUSED(set_flags);
+	LIS_UNUSED(session);
 	// TODO
 	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
 }
