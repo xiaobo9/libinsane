@@ -49,7 +49,7 @@ struct wiall_opt_private {
 
 	const struct lis_wia2lis_property *wia2lis;
 
-	void *last_value;
+	char *last_value;
 };
 #define WIALL_OPT_PRIVATE(impl) ((struct wiall_opt_private *)(impl))
 
@@ -1209,123 +1209,6 @@ static enum lis_error wiall_get_device(
 }
 
 
-static enum lis_error convert_wia_int2lis(
-		const struct lis_wia2lis_property *wia2lis,
-		long wia_int,
-		union lis_value *value
-	)
-{
-	int i;
-
-	if (wia2lis->possibles != NULL) {
-		for (i = 0 ; !wia2lis->possibles[i].eol ; i++) {
-			if (wia2lis->possibles[i].wia.integer == wia_int) {
-				memcpy(value, &wia2lis->possibles[i].lis, sizeof(*value));
-				return LIS_OK;
-			}
-		}
-		lis_log_warning(
-			"Unknown value %ld for option %ld,%s",
-			wia_int, wia2lis->wia.id, wia2lis->lis.name
-		);
-		return LIS_ERR_UNSUPPORTED;
-	}
-
-	if (wia2lis->lis.type != LIS_TYPE_INTEGER) {
-		lis_log_warning(
-			"Don't know how to convert option '%s' value"
-			" from integer to type %d",
-			wia2lis->lis.name, wia2lis->lis.type
-		);
-		return LIS_ERR_UNSUPPORTED;
-	}
-
-	value->integer = wia_int;
-	return LIS_OK;
-}
-
-
-static enum lis_error convert_wia_clsid2lis(
-		const struct lis_wia2lis_property *wia2lis,
-		const CLSID *clsid,
-		union lis_value *value
-	)
-{
-	int i;
-	LPOLESTR str;
-	char *cstr;
-	HRESULT hr;
-
-	if (wia2lis->possibles == NULL) {
-		lis_log_warning(
-			"Don't know how to convert option '%s' value"
-			" from clsid to type %d",
-			wia2lis->lis.name, wia2lis->lis.type
-		);
-		return LIS_ERR_UNSUPPORTED;
-	}
-
-	for (i = 0 ; !wia2lis->possibles[i].eol ; i++) {
-		if (memcmp(wia2lis->possibles[i].wia.clsid, clsid, sizeof(*clsid)) == 0) {
-			memcpy(value, &wia2lis->possibles[i].lis, sizeof(*value));
-			return LIS_OK;
-		}
-	}
-
-	hr = StringFromCLSID(clsid, &str);
-	if (FAILED(hr)) {
-		lis_log_error("Out of memory");
-		return LIS_ERR_NO_MEM;
-	}
-
-	cstr = lis_bstr2cstr(str);
-	CoTaskMemFree(str);
-	if (cstr == NULL) {
-		lis_log_error("Out of memory");
-		return LIS_ERR_NO_MEM;
-	}
-
-	lis_log_warning(
-		"Unknown value CLSID %s for option %ld,%s",
-		cstr, wia2lis->wia.id, wia2lis->lis.name
-	);
-	FREE(cstr);
-	return LIS_ERR_UNSUPPORTED;
-}
-
-
-static enum lis_error convert_wia2lis(
-		struct wiall_opt_private *private,
-		const PROPVARIANT *propvariant,
-		union lis_value *value
-	)
-{
-	switch(private->wia2lis->wia.type) {
-		case VT_I4:
-			return convert_wia_int2lis(
-				private->wia2lis, propvariant->lVal, value
-			);
-		case VT_CLSID:
-			return convert_wia_clsid2lis(
-				private->wia2lis, propvariant->puuid, value
-			);
-		case VT_BSTR:
-			value->string = private->last_value = lis_bstr2cstr(propvariant->bstrVal);
-			if (value->string == NULL) {
-				lis_log_error("Out of memory");
-				return LIS_ERR_NO_MEM;
-			}
-			return LIS_OK;
-	}
-
-	lis_log_warning(
-		"Failed to convert from WIA type %d to Libinsane type %d",
-		private->wia2lis->wia.type, private->wia2lis->lis.type
-	);
-	return LIS_ERR_UNSUPPORTED;
-}
-
-
 static enum lis_error wiall_opt_get_value(
 		struct lis_option_descriptor *self, union lis_value *out_value
 	)
@@ -1372,7 +1255,9 @@ static enum lis_error wiall_opt_get_value(
 		return err;
 	}
 
-	err = convert_wia2lis(private, &propvariant, out_value);
+	err = lis_convert_wia2lis(
+		private->wia2lis, &propvariant, out_value, &private->last_value
+	);
 	PropVariantClear(&propvariant);
 	if (LIS_IS_ERROR(err)) {
 		lis_log_warning(

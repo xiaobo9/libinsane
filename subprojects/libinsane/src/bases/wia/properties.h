@@ -68,6 +68,14 @@ enum lis_error lis_wia2lis_get_list(
 );
 
 
+enum lis_error lis_convert_wia2lis(
+	const struct lis_wia2lis_property *wia2lis,
+	const PROPVARIANT *propvariant,
+	union lis_value *value,
+	char **allocated
+);
+
+
 /* for tests only */
 const struct lis_wia2lis_property *lis_get_all_properties(
 	size_t *nb_properties
