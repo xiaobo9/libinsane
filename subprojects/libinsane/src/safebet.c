@@ -59,6 +59,16 @@ static const struct {
 		.enabled_by_default = 1,
 	},
 	{
+		.name = "normalizer_opt_aliases",
+		.env = "LIBINSANE_NORMALIZER_OPT_ALIASES",
+		.wrap_cb = lis_api_normalizer_opt_aliases,
+#ifdef OS_WINDOWS
+		.enabled_by_default = 1,
+#else
+		.enabled_by_default = 0,
+#endif
+	},
+	{
 		.name = "workaround_opt_values",
 		.env = "LIBINSANE_WORKAROUND_OPT_VALUES",
 		.wrap_cb = lis_api_workaround_opt_values,

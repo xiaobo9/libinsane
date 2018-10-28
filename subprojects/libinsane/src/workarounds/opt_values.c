@@ -100,8 +100,6 @@ const struct opt_value_mapping *get_opt_original_value_mapping(const char *opt_n
 			return v_mapping;
 		}
 	}
-	lis_log_debug("No mapping found for option '%s' + value '%s'",
-			opt_name, opt_value);
 	return NULL;
 }
 

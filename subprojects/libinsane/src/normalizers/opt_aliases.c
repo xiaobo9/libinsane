@@ -422,6 +422,7 @@ static enum lis_error aliases_get_options(
 				break;
 		}
 
+		lis_log_info("Adding alias option '%s'", g_aliases[alias_idx].opt_name);
 		private->opts_ptr[nb_opts] = &private->opts[alias_idx].parent;
 		nb_opts++;
 	}

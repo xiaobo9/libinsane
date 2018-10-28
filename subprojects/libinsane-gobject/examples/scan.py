@@ -18,7 +18,7 @@ from gi.repository import Libinsane  # noqa: E402
 #! [ExampleLogger]
 class ExampleLogger(GObject.GObject, Libinsane.Logger):
     def do_log(self, lvl, msg):
-        if lvl < Libinsane.LogLevel.WARNING:
+        if lvl <= Libinsane.LogLevel.DEBUG:
             return
         print("{}: {}".format(lvl.value_nick, msg))
 #! [ExampleLogger]

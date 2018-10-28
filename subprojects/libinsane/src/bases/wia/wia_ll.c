@@ -487,7 +487,6 @@ static enum lis_error wiall_list_devices(
 static void free_opts(struct wiall_item_private *private)
 {
 	int i, j;
-
 	if (private->opts_ptrs != NULL) {
 		for (i = 0 ; private->opts_ptrs[i] != NULL ; i++) {
 			if (private->opts_ptrs[i]->constraint.type == LIS_CONSTRAINT_LIST) {
