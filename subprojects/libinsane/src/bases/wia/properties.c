@@ -1917,23 +1917,28 @@ enum lis_error lis_wia2lis_get_possibles(
 	)
 {
 	int i;
+	int nb_values;
 	lis_log_debug("Getting possible values for option '%s'", in_wia2lis->lis.name);
 
-	for (i = 0 ; !in_wia2lis->possibles[i].eol ; i++) { }
+	for (nb_values = 0 ; !in_wia2lis->possibles[nb_values].eol ; nb_values++) { }
 
-	out_list->values = calloc(i, sizeof(union lis_value));
+	out_list->values = calloc(nb_values, sizeof(union lis_value));
 	if (out_list->values == NULL) {
 		lis_log_error("Out of memory");
 		return LIS_ERR_NO_MEM;
 	}
 
-	out_list->nb_values = i;
+	out_list->nb_values = nb_values;
 
 	for (i = 0 ; !in_wia2lis->possibles[i].eol ; i++) {
-		memcpy(
-			&out_list->values[i], &in_wia2lis->possibles[i].lis,
-			sizeof(out_list->values[i])
-		);
+		if (in_wia2lis->lis.type == LIS_TYPE_STRING) {
+			out_list->values[i].string = strdup(in_wia2lis->possibles[i].lis.string);
+		} else {
+			memcpy(
+				&out_list->values[i], &in_wia2lis->possibles[i].lis,
+				sizeof(out_list->values[i])
+			);
+		}
 	}
 
 	return LIS_OK;
