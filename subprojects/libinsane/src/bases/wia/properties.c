@@ -140,7 +140,7 @@ static const struct lis_wia2lis_possibles g_possible_document_handling_select[] 
 };
 
 
-static const struct lis_wia2lis_possibles g_possible_previews[] = {
+static const struct lis_wia2lis_possibles g_possible_preview_types[] = {
 	{
 		.wia.integer = LIS_WIA_ADVANCED_PREVIEW,
 		.lis.string = "advanced",
@@ -148,6 +148,19 @@ static const struct lis_wia2lis_possibles g_possible_previews[] = {
 	{
 		.wia.integer = LIS_WIA_BASIC_PREVIEW,
 		.lis.string = "basic",
+	},
+	{ .eol = 1 },
+};
+
+
+static const struct lis_wia2lis_possibles g_possible_previews[] = {
+	{
+		.wia.integer = WIA_FINAL_SCAN,
+		.lis.string = "final",
+	},
+	{
+		.wia.integer = WIA_PREVIEW_SCAN,
+		.lis.string = "preview",
 	},
 	{ .eol = 1 },
 };
@@ -1730,7 +1743,7 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 		.item_type = LIS_PROPERTY_ITEM,
 		.wia = { .id = LIS_WIA_IPS_PREVIEW_TYPE, .type = VT_I4, },
 		.lis = { .name = "preview_type", .type = LIS_TYPE_STRING },
-		.possibles = g_possible_previews,
+		.possibles = g_possible_preview_types,
 	},
 
 	{
