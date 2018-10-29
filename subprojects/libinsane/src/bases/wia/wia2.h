@@ -487,6 +487,103 @@ typedef struct LisIWiaDevMgr2Vtbl {
 } LisIWiaDevMgr2Vtbl;
 
 
+typedef struct LisWiaTransferParams
+{
+    LONG lMessage;
+    LONG lPercentComplete;
+    ULONG64 ulTransferredBytes;
+    HRESULT hrErrorStatus;
+} LisWiaTransferParams;
+
+
+typedef struct LisIWiaTransferCallback {
+	CONST_VTBL struct LisIWiaTransferCallbackVtbl *lpVtbl;
+} LisIWiaTransferCallback;
+
+
+typedef struct LisIWiaTransferCallbackVtbl {
+	BEGIN_INTERFACE
+
+    HRESULT (WINAPI *QueryInterface)(
+        LisIWiaTransferCallback *self,
+        REFIID riid,
+        void **ppvObject
+	);
+
+    ULONG (WINAPI *AddRef)(
+        LisIWiaTransferCallback *self
+	);
+
+    ULONG (WINAPI *Release)(
+        LisIWiaTransferCallback *self
+	);
+
+	HRESULT (WINAPI *TransferCallback)(
+        LisIWiaTransferCallback *self,
+        LONG lFlags,
+        LisWiaTransferParams *pWiaTransferParams
+	);
+
+    HRESULT (WINAPI *GetNextStream )(
+        LisIWiaTransferCallback *self,
+        LONG lFlags,
+        BSTR bstrItemName,
+        BSTR bstrFullItemName,
+        IStream **ppDestination
+	);
+	
+	END_INTERFACE
+} LisIWiaTransferCallbackVtbl;
+
+
+typedef struct LisIWiaTransfer {
+	CONST_VTBL struct LisIWiaTransferVtbl *lpVtbl;
+} LisIWiaTransfer;
+
+
+typedef struct LisIWiaTransferVtbl {
+	BEGIN_INTERFACE
+
+	HRESULT (WINAPI *QueryInterface)(
+        LisIWiaTransfer *self,
+        REFIID riid,
+        void **ppvObject
+	);
+
+    ULONG (WINAPI *AddRef)(
+        LisIWiaTransfer *self
+	);
+
+    ULONG (WINAPI *Release)(
+        LisIWiaTransfer *self
+	);
+
+    HRESULT (WINAPI *Download)(
+        LisIWiaTransfer *self,
+        LONG lFlags,
+        LisIWiaTransferCallback *pIWiaTransferCallback
+	);
+
+    HRESULT (WINAPI *Upload)(
+        LisIWiaTransfer * This,
+        LONG lFlags,
+        IStream *pSource,
+        LisIWiaTransferCallback *pIWiaTransferCallback
+	);
+
+    HRESULT (WINAPI *Cancel)(
+        LisIWiaTransfer *self
+	);
+
+    HRESULT (WINAPI *EnumWIA_FORMAT_INFO)(
+        LisIWiaTransfer *self,
+        IEnumWIA_FORMAT_INFO **ppEnum
+	);
+	
+	END_INTERFACE
+} LisIWiaTransferVtbl;
+
+
 DEFINE_GUID(
 	CLSID_LisWiaDevMgr2,
 	0xB6C292BC,
@@ -503,6 +600,24 @@ DEFINE_GUID(
 	0x41EE,
 	0x8E, 0xC3,
 	0xF0, 0x00, 0x80, 0xCA, 0xDA, 0x7A
+);
+
+DEFINE_GUID(
+	IID_LisWiaTransfer,
+	0xc39d6942,
+	0x2f4e,
+	0x4d04,
+	0x92, 0xfe,
+	0x4e, 0xf4, 0xd3, 0xa1, 0xde, 0x5a
+);
+
+DEFINE_GUID(
+	IID_LisWiaTransferCallback,
+	0x27d4eaaf,
+	0x28a6,
+	0x4ca5,
+	0x9a, 0xab,
+	0xe6, 0x78, 0x16, 0x8b, 0x95, 0x27
 );
 
 #endif
