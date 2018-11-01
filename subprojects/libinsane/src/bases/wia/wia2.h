@@ -489,10 +489,10 @@ typedef struct LisIWiaDevMgr2Vtbl {
 
 typedef struct LisWiaTransferParams
 {
-    LONG lMessage;
-    LONG lPercentComplete;
-    ULONG64 ulTransferredBytes;
-    HRESULT hrErrorStatus;
+	LONG lMessage;
+	LONG lPercentComplete;
+	ULONG64 ulTransferredBytes;
+	HRESULT hrErrorStatus;
 } LisWiaTransferParams;
 
 
@@ -504,34 +504,34 @@ typedef struct LisIWiaTransferCallback {
 typedef struct LisIWiaTransferCallbackVtbl {
 	BEGIN_INTERFACE
 
-    HRESULT (WINAPI *QueryInterface)(
-        LisIWiaTransferCallback *self,
-        REFIID riid,
-        void **ppvObject
+	HRESULT (WINAPI *QueryInterface)(
+		LisIWiaTransferCallback *self,
+		REFIID riid,
+		void **ppvObject
 	);
 
-    ULONG (WINAPI *AddRef)(
-        LisIWiaTransferCallback *self
+	ULONG (WINAPI *AddRef)(
+		LisIWiaTransferCallback *self
 	);
 
-    ULONG (WINAPI *Release)(
-        LisIWiaTransferCallback *self
+	ULONG (WINAPI *Release)(
+		LisIWiaTransferCallback *self
 	);
 
 	HRESULT (WINAPI *TransferCallback)(
-        LisIWiaTransferCallback *self,
-        LONG lFlags,
-        LisWiaTransferParams *pWiaTransferParams
+		LisIWiaTransferCallback *self,
+		LONG lFlags,
+		LisWiaTransferParams *pWiaTransferParams
 	);
 
-    HRESULT (WINAPI *GetNextStream )(
-        LisIWiaTransferCallback *self,
-        LONG lFlags,
-        BSTR bstrItemName,
-        BSTR bstrFullItemName,
-        IStream **ppDestination
+	HRESULT (WINAPI *GetNextStream )(
+		LisIWiaTransferCallback *self,
+		LONG lFlags,
+		BSTR bstrItemName,
+		BSTR bstrFullItemName,
+		IStream **ppDestination
 	);
-	
+
 	END_INTERFACE
 } LisIWiaTransferCallbackVtbl;
 
@@ -545,41 +545,41 @@ typedef struct LisIWiaTransferVtbl {
 	BEGIN_INTERFACE
 
 	HRESULT (WINAPI *QueryInterface)(
-        LisIWiaTransfer *self,
-        REFIID riid,
-        void **ppvObject
+		LisIWiaTransfer *self,
+		REFIID riid,
+		void **ppvObject
 	);
 
-    ULONG (WINAPI *AddRef)(
-        LisIWiaTransfer *self
+	ULONG (WINAPI *AddRef)(
+		LisIWiaTransfer *self
 	);
 
-    ULONG (WINAPI *Release)(
-        LisIWiaTransfer *self
+	ULONG (WINAPI *Release)(
+		LisIWiaTransfer *self
 	);
 
-    HRESULT (WINAPI *Download)(
-        LisIWiaTransfer *self,
-        LONG lFlags,
-        LisIWiaTransferCallback *pIWiaTransferCallback
+	HRESULT (WINAPI *Download)(
+		LisIWiaTransfer *self,
+		LONG lFlags,
+		LisIWiaTransferCallback *pIWiaTransferCallback
 	);
 
-    HRESULT (WINAPI *Upload)(
-        LisIWiaTransfer * This,
-        LONG lFlags,
-        IStream *pSource,
-        LisIWiaTransferCallback *pIWiaTransferCallback
+	HRESULT (WINAPI *Upload)(
+		LisIWiaTransfer * This,
+		LONG lFlags,
+		IStream *pSource,
+		LisIWiaTransferCallback *pIWiaTransferCallback
 	);
 
-    HRESULT (WINAPI *Cancel)(
-        LisIWiaTransfer *self
+	HRESULT (WINAPI *Cancel)(
+		LisIWiaTransfer *self
 	);
 
-    HRESULT (WINAPI *EnumWIA_FORMAT_INFO)(
-        LisIWiaTransfer *self,
-        IEnumWIA_FORMAT_INFO **ppEnum
+	HRESULT (WINAPI *EnumWIA_FORMAT_INFO)(
+		LisIWiaTransfer *self,
+		IEnumWIA_FORMAT_INFO **ppEnum
 	);
-	
+
 	END_INTERFACE
 } LisIWiaTransferVtbl;
 
