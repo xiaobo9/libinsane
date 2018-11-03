@@ -1341,6 +1341,7 @@ static enum lis_error wiall_item_scan_start(
 
 	err = wia_transfer_new(
 		private->wia_item,
+		private->wia_props,
 		&private->scan
 	);
 	if (LIS_IS_ERROR(err)) {

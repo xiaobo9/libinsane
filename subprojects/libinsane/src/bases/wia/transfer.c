@@ -9,6 +9,7 @@
 #include <libinsane/util.h>
 
 #include "../../bmp.h"
+#include "properties.h"
 #include "transfer.h"
 #include "util.h"
 
@@ -42,6 +43,7 @@ struct wia_msg {
 
 struct wia_transfer {
 	LisIWiaItem2 *wia_item;
+	IWiaPropertyStorage *wia_props;
 
 	struct lis_scan_session scan_session;
 
@@ -60,12 +62,6 @@ struct wia_transfer {
 		struct wia_msg *first;
 		struct wia_msg *last;
 	} scan;
-
-	struct {
-		char raw[BMP_HEADER_SIZE];
-		size_t nb_bytes;
-		size_t read;
-	} bmp_header;
 
 	struct {
 		struct wia_msg *msg;
@@ -353,10 +349,6 @@ static int end_of_feed(struct lis_scan_session *_self)
 
 	r = (self->current.msg->type == WIA_MSG_END_OF_FEED);
 	lis_log_debug("end_of_feed() = %d", r);
-	if (r) {
-		self->bmp_header.nb_bytes = 0;
-		self->bmp_header.read = 0;
-	}
 	return r;
 }
 
@@ -382,19 +374,21 @@ static int end_of_page(struct lis_scan_session *_self)
 		|| self->current.msg->type == WIA_MSG_END_OF_PAGE
 	);
 	lis_log_debug("end_of_page() = %d", r);
-	if (r) {
-		self->bmp_header.nb_bytes = 0;
-		self->bmp_header.read = 0;
-	}
 	return r;
 }
 
 
-static enum lis_error _scan_read(
-		struct wia_transfer *self, void *out_buffer,
+static enum lis_error scan_read(
+		struct lis_scan_session *_self, void *out_buffer,
 		size_t *buffer_size
 	)
 {
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, scan_session
+	);
+
+	lis_log_debug("scan_read() ...");
+
 	if (self->end_of_feed || self->scan.thread == NULL) {
 		lis_log_error("scan_read(): End of feed. Shouldn't be called");
 		return LIS_ERR_INVALID_VALUE;
@@ -456,47 +450,6 @@ static enum lis_error _scan_read(
 }
 
 
-static enum lis_error scan_read(
-		struct lis_scan_session *_self, void *out_buffer,
-		size_t *buffer_size
-	)
-{
-	struct wia_transfer *self = container_of(
-		_self, struct wia_transfer, scan_session
-	);
-	enum lis_error err;
-
-	lis_log_debug("scan_read() ...");
-
-	if (self->bmp_header.nb_bytes < BMP_HEADER_SIZE) {
-		err = get_scan_parameters(_self, NULL);
-		if (LIS_IS_ERROR(err)) {
-			lis_log_error(
-				"scan_read(): get_scan_parameters() failed: 0x%X, %s",
-				err, lis_strerror(err)
-			);
-			return err;
-		}
-	}
-
-	if (self->bmp_header.read < self->bmp_header.nb_bytes) {
-		*buffer_size = MIN(
-			*buffer_size,
-			self->bmp_header.nb_bytes - self->bmp_header.read
-		);
-		memcpy(
-			out_buffer,
-			self->bmp_header.raw + self->bmp_header.read,
-			*buffer_size
-		);
-		self->bmp_header.read += *buffer_size;
-		return LIS_OK;
-	}
-
-	return _scan_read(self, out_buffer, buffer_size);
-}
-
-
 static enum lis_error get_scan_parameters(
 		struct lis_scan_session *_self,
 		struct lis_scan_parameters *parameters
@@ -505,55 +458,92 @@ static enum lis_error get_scan_parameters(
 	struct wia_transfer *self = container_of(
 		_self, struct wia_transfer, scan_session
 	);
+	static const PROPSPEC input[] = {
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = WIA_IPS_XPOS,
+		},
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = WIA_IPS_XEXTENT,
+		},
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = WIA_IPS_YPOS,
+		},
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = WIA_IPS_YEXTENT,
+		},
+		{
+			.ulKind = PRSPEC_PROPID,
+			.propid = WIA_IPA_FORMAT,
+		},
+	};
+	PROPVARIANT output[LIS_COUNT_OF(input)] = { 0 };
+	unsigned int i;
+	HRESULT hr;
+	const struct lis_wia2lis_property *img_format_opt;
 	enum lis_error err;
-	size_t read_nb;
+	union lis_value img_format;
+	char *tmp = NULL;
 
 	lis_log_debug("get_scan_parameters() ...");
 
-	while(self->bmp_header.nb_bytes < BMP_HEADER_SIZE) {
-		read_nb = BMP_HEADER_SIZE - self->bmp_header.nb_bytes;
-		lis_log_debug(
-			"get_scan_parameters(): Need %d bytes", (int)read_nb
-		);
-		err = _scan_read(
-			self,
-			self->bmp_header.raw + self->bmp_header.nb_bytes,
-			&read_nb
-		);
-		if (LIS_IS_ERROR(err)) {
-			lis_log_error(
-				"get_scan_parameters() failed: "
-				"scan_read() failed: 0x%X, %s",
-				err, lis_strerror(err)
-			);
-			return err;
-		}
-		self->bmp_header.nb_bytes += read_nb;
-	}
+	memset(parameters, 0, sizeof(struct lis_scan_parameters));
 
-	lis_hexdump(self->bmp_header.raw, self->bmp_header.nb_bytes);
+	img_format_opt = lis_wia2lis_get_property(
+		FALSE /* !root */, WIA_IPA_FORMAT
+	);
+	assert(img_format_opt != NULL);
 
-	if (parameters == NULL) {
-		lis_log_info("get_scan_parameters(): OK");
-		return LIS_OK;
-	}
-
-	err = lis_bmp2scan_params(self->bmp_header.raw, &read_nb, parameters);
-	if (LIS_IS_ERROR(err)) {
+	hr = self->wia_props->lpVtbl->ReadMultiple(
+		self->wia_props,
+		LIS_COUNT_OF(output),
+		input, output
+	);
+	if (FAILED(hr)) {
+		err = hresult_to_lis_error(hr);
 		lis_log_error(
-			"get_scan_parameters() failed: "
-			"Failed to decode BMP header: 0x%x, %s",
-			err, lis_strerror(err)
+			"Failed to get_scan_parameters: 0x%lX -> 0x%X, %s",
+			hr, err, lis_strerror(err)
 		);
-	} else {
-		lis_log_info("get_scan_parameters(): OK");
+		return err;
 	}
 
-	// TODO(Jflesch): return the actual format selected
+	assert(output[0].vt == VT_I4);
+	assert(output[1].vt == VT_I4);
+	assert(output[2].vt == VT_I4);
+	assert(output[3].vt == VT_I4);
+	assert(output[4].vt == VT_CLSID);
 
-	// lis_bmp2scan_params mark the format as RAW, but we won't
-	// do any transformation
-	parameters->format = LIS_IMG_FORMAT_BMP;
+	parameters->width = output[1].lVal - output[0].lVal + 1;
+	parameters->height = output[3].lVal - output[2].lVal + 1;
+
+	err = lis_convert_wia2lis(img_format_opt, &output[4], &img_format, &tmp);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("get_scan_parameters(): Failed to interpret image format");
+		goto end;
+	}
+	FREE(tmp);
+	parameters->format = img_format.format;
+
+	// ASSUMPTION(Jflesch): assuming BMP here:
+	parameters->image_size = BMP_HEADER_SIZE + (
+		parameters->width * parameters->height * 3
+	);
+
+	lis_log_info(
+		"WIA: get_scan_parameters(): %d x %d (format=%d, image_size=%lu)",
+		parameters->width, parameters->height, parameters->format,
+		(long)parameters->image_size
+	);
+
+	err = LIS_OK;
+end:
+	for (i = 0 ; i < LIS_COUNT_OF(output) ; i++) {
+		PropVariantClear(&output[i]);
+	}
 	return err;
 }
 
@@ -570,6 +560,10 @@ static void scan_cancel(struct lis_scan_session *_self)
 		pop_all_msg(self);
 		self->scan.thread = NULL;
 	}
+
+	self->wia_item->lpVtbl->Release(self->wia_item);
+	self->wia_props->lpVtbl->Release(self->wia_props);
+	GlobalFree(self);
 }
 
 
@@ -1095,6 +1089,7 @@ end:
 
 enum lis_error wia_transfer_new(
 		LisIWiaItem2 *in_wia_item,
+		IWiaPropertyStorage *in_wia_props,
 		struct wia_transfer **out_transfer
 	)
 {
@@ -1109,6 +1104,10 @@ enum lis_error wia_transfer_new(
 	}
 
 	self->wia_item = in_wia_item;
+	self->wia_item->lpVtbl->AddRef(self->wia_item);
+	self->wia_props = in_wia_props;
+	self->wia_props->lpVtbl->AddRef(self->wia_props);
+
 	memcpy(
 		&self->scan_session, &g_scan_session_template,
 		sizeof(self->scan_session)
@@ -1141,6 +1140,8 @@ enum lis_error wia_transfer_new(
 
 err:
 	if (self != NULL) {
+		self->wia_item->lpVtbl->Release(self->wia_item);
+		self->wia_props->lpVtbl->Release(self->wia_props);
 		GlobalFree(self);
 	}
 	return err;
@@ -1158,5 +1159,4 @@ struct lis_scan_session *wia_transfer_get_scan_session(
 void wia_transfer_free(struct wia_transfer *self)
 {
 	scan_cancel(&self->scan_session);
-	GlobalFree(self);
 }

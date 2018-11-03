@@ -2063,18 +2063,6 @@ enum lis_error lis_wia2lis_get_list(
 }
 
 
-/* for tests only */
-
-/* for tests */
-const struct lis_wia2lis_property *lis_get_all_properties(
-		size_t *nb_properties
-	)
-{
-	*nb_properties = LIS_COUNT_OF(g_wia2lis_properties);
-	return g_wia2lis_properties;
-}
-
-
 static enum lis_error convert_wia_int2lis(
 		const struct lis_wia2lis_property *wia2lis,
 		long wia_int,
@@ -2209,7 +2197,7 @@ static enum lis_error convert_lis_str2wia(
 						wia2lis->possibles[i].lis.string,
 						in_value
 					) == 0) {
-	
+
 				switch (wia2lis->wia.type) {
 					case VT_I4:
 						PropVariantInit(out_propvariant);
@@ -2244,7 +2232,7 @@ static enum lis_error convert_lis_str2wia(
 		}
 		return LIS_ERR_INVALID_VALUE;
 	}
-	
+
 	PropVariantInit(out_propvariant);
 	out_propvariant->vt = VT_BSTR;
 	out_propvariant->bstrVal = lis_cstr2bstr(in_value);
@@ -2286,7 +2274,7 @@ enum lis_error lis_convert_lis2wia(
 		case LIS_TYPE_IMAGE_FORMAT:
 			break;
 	}
-	
+
 	lis_log_warning(
 		"Failed to convert from Libinsane type %d to WIA type %d",
 		wia2lis->lis.type, wia2lis->wia.type
@@ -2294,3 +2282,12 @@ enum lis_error lis_convert_lis2wia(
 	return LIS_ERR_UNSUPPORTED;
 }
 
+
+/* for tests only */
+const struct lis_wia2lis_property *lis_get_all_properties(
+		size_t *nb_properties
+	)
+{
+	*nb_properties = LIS_COUNT_OF(g_wia2lis_properties);
+	return g_wia2lis_properties;
+}
