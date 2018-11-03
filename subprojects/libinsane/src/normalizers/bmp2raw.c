@@ -36,6 +36,12 @@ struct lis_bmp2raw_scan_session
 	struct lis_scan_parameters parameters_wrapped;
 	struct lis_scan_parameters parameters_out;
 
+	struct {
+		int current; // what has been read in the current line
+		int useful; // useful part of the line
+		int padding; // extra padding at the end of each line
+	} line;
+
 	enum lis_error read_err;
 };
 #define LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session) \
@@ -97,6 +103,10 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 	char buffer[BMP_HEADER_SIZE];
 	size_t h, nb;
 
+	private->line.current = 0;
+	private->line.padding = 0;
+	private->line.useful = 0;
+
 	err = scan_read(private->wrapped, buffer, sizeof(buffer));
 	if (LIS_IS_ERROR(err)) {
 		return err;
@@ -110,6 +120,22 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 		return err;
 	}
 
+	// BMP lines must have a number of bytes multiple of 4
+
+	// line length we want in the output
+	private->line.useful = private->parameters_out.width * 3;
+
+	// line length we have in the BMP
+	private->line.padding = (private->parameters_out.width * 3) % 4; // padding
+	if (private->line.padding != 0) {
+		private->line.padding = 4 - private->line.padding;
+	}
+
+	lis_log_info(
+		"BMP: useful line length = %d B ; padding = %d B",
+		private->line.useful, private->line.padding
+	);
+
 	h -= BMP_HEADER_SIZE;
 
 	if (h > 0) {
@@ -118,7 +144,7 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 
 	while(h > 0) {
 		// drop any extra BMP header
-		nb = MIN(h, BMP_HEADER_SIZE);
+		nb = h;
 		err = private->wrapped->scan_read(private->wrapped, buffer, &nb);
 		if (LIS_IS_ERROR(err)) {
 			lis_log_error(
@@ -273,6 +299,36 @@ static int lis_bmp2raw_end_of_page(struct lis_scan_session *session)
 }
 
 
+static enum lis_error read_padding(struct lis_bmp2raw_scan_session *private)
+{
+	enum lis_error err;
+	char padding[4];
+	size_t r;
+	size_t out;
+
+	r = private->line.padding;
+
+	assert(r <= sizeof(padding));
+
+	lis_log_debug("scan_read(): Reading padding: %ld B", (long)r);
+
+	while (r > 0) {
+		out = r;
+		err = private->wrapped->scan_read(private->wrapped, padding, &out);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_error(
+				"Failed to read BMP padding (%lu B)",
+				(long)r
+			);
+			return err;
+		}
+		r -= out;
+	}
+
+	return LIS_OK;
+}
+
+
 static enum lis_error lis_bmp2raw_scan_read(
 		struct lis_scan_session *session,
 		void *out_buffer, size_t *buffer_size
@@ -280,6 +336,8 @@ static enum lis_error lis_bmp2raw_scan_read(
 {
 	struct lis_bmp2raw_scan_session *private = \
 		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
+	enum lis_error err;
+	size_t initial = *buffer_size;
 
 	if (LIS_IS_ERROR(private->read_err)) {
 		lis_log_warning(
@@ -289,10 +347,38 @@ static enum lis_error lis_bmp2raw_scan_read(
 		return private->read_err;
 	}
 
-	// BMP is basically RAW with an extra annoying header
-	return private->wrapped->scan_read(
+	if (private->line.padding == 0) {
+		return private->wrapped->scan_read(
+			private->wrapped, out_buffer, buffer_size
+		);
+	}
+
+	*buffer_size = MIN(
+		*buffer_size,
+		((size_t)(private->line.useful - private->line.current))
+	);
+	lis_log_debug(
+		"scan_read(): Reducing read from %ld B to %ld B",
+		(long)(*buffer_size), (long)initial
+	);
+	err = private->wrapped->scan_read(
 		private->wrapped, out_buffer, buffer_size
 	);
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
+
+	private->line.current += *buffer_size;
+
+	if (private->line.current >= private->line.useful) {
+		err = read_padding(private);
+		if (LIS_IS_ERROR(err)) {
+			return err;
+		}
+		private->line.current = 0;
+	}
+
+	return LIS_OK;
 }
 
 
