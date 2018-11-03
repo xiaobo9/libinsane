@@ -16,7 +16,6 @@ if host_machine.system() == 'windows'
     LIBINSANE_HEADERS += [
         'libinsane/twain.h',
         'libinsane/wia_ll.h',
-        'libinsane/wia_automation.h',
     ]
 else
     LIBINSANE_HEADERS += [

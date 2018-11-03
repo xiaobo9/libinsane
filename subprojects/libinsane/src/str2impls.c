@@ -16,7 +16,6 @@
 
 #ifdef OS_WINDOWS
 #include <libinsane/twain.h>
-#include <libinsane/wia_automation.h>
 #include <libinsane/wia_ll.h>
 #endif
 
@@ -53,8 +52,6 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 #ifdef OS_WINDOWS
 			} else if (strcmp(tok, "twain") == 0) {
 				err = lis_api_twain(&next);
-			} else if (strcmp(tok, "wia_automation") == 0) {
-				err = lis_api_wia_automation(&next);
 			} else if (strcmp(tok, "wia_ll") == 0) {
 				err = lis_api_wia_ll(&next);
 #endif
