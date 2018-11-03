@@ -8,7 +8,7 @@
 #include <libinsane/util.h>
 
 #include "../basewrapper.h"
-#include "bmp.h"
+#include "../bmp.h"
 
 
 #define NAME "bmp2raw"

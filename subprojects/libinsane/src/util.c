@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <libinsane/capi.h>
@@ -123,4 +124,31 @@ int lis_getenv(const char *var, int default_val)
 const char *lis_get_version(void)
 {
 	return LIBINSANE_VERSION;
+}
+
+
+void lis_hexdump(const void *_data, size_t nb_bytes)
+{
+	const uint8_t *data = _data;
+
+	while(nb_bytes > 0) {
+		lis_log_debug(
+			"[HEX] (%4d) 0x %02X %02X %02X %02X || %02X %02X %02X %02X",
+			(int)nb_bytes,
+			((int)(data[0])) & 0xFF,
+			(nb_bytes >= 2 ? (((int)(data[1])) & 0xFF) : 0x00),
+			(nb_bytes >= 3 ? (((int)(data[2])) & 0xFF) : 0x00),
+			(nb_bytes >= 4 ? (((int)(data[3])) & 0xFF) : 0x00),
+			(nb_bytes >= 5 ? (((int)(data[4])) & 0xFF) : 0x00),
+			(nb_bytes >= 6 ? (((int)(data[5])) & 0xFF) : 0x00),
+			(nb_bytes >= 7 ? (((int)(data[6])) & 0xFF) : 0x00),
+			(nb_bytes >= 8 ? (((int)(data[7])) & 0xFF) : 0x00)
+		);
+		data += 8;
+		if (nb_bytes < 8) {
+			nb_bytes = 0;
+		} else {
+			nb_bytes -= 8;
+		}
+	}
 }

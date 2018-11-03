@@ -8,6 +8,7 @@
 #include <libinsane/log.h>
 #include <libinsane/util.h>
 
+#include "../../bmp.h"
 #include "transfer.h"
 #include "util.h"
 
@@ -47,6 +48,8 @@ struct wia_transfer {
 	LisIWiaTransferCallback transfer_callback;
 	IStream istream;
 
+	int end_of_feed;
+
 	struct {
 		HANDLE thread;
 		long written;
@@ -57,6 +60,17 @@ struct wia_transfer {
 		struct wia_msg *first;
 		struct wia_msg *last;
 	} scan;
+
+	struct {
+		char raw[BMP_HEADER_SIZE];
+		size_t nb_bytes;
+		size_t read;
+	} bmp_header;
+
+	struct {
+		struct wia_msg *msg;
+		size_t already_read;
+	} current;
 };
 
 
@@ -191,65 +205,6 @@ static IStreamVtbl g_wia_stream = {
 };
 
 
-static enum lis_error get_scan_parameters(
-		struct lis_scan_session *self,
-		struct lis_scan_parameters *parameters
-	)
-{
-	LIS_UNUSED(self);
-	LIS_UNUSED(parameters);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
-}
-
-
-static int end_of_feed(struct lis_scan_session *self)
-{
-	LIS_UNUSED(self);
-	// TODO
-	return 1;
-}
-
-
-static int end_of_page(struct lis_scan_session *self)
-{
-	LIS_UNUSED(self);
-	// TODO
-	return 1;
-}
-
-
-static enum lis_error scan_read(
-		struct lis_scan_session *self, void *out_buffer,
-		size_t *buffer_size
-	)
-{
-	LIS_UNUSED(self);
-	LIS_UNUSED(out_buffer);
-	LIS_UNUSED(buffer_size);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
-}
-
-
-static void pop_all_msg(struct wia_transfer *self);
-
-
-static void scan_cancel(struct lis_scan_session *_self)
-{
-	struct wia_transfer *self = container_of(
-		_self, struct wia_transfer, scan_session
-	);
-
-	if (self->scan.thread != NULL) {
-		WaitForSingleObject(self->scan.thread, INFINITE);
-		CloseHandle(self->scan.thread);
-		pop_all_msg(self);
-		self->scan.thread = NULL;
-	}
-}
-
-
 static HRESULT add_msg(
 		struct wia_transfer *self,
 		enum wia_msg_type type,
@@ -325,6 +280,8 @@ static struct wia_msg *pop_msg(struct wia_transfer *self, bool wait)
 {
 	struct wia_msg *msg;
 
+	assert(!wait || !self->end_of_feed);
+
 	EnterCriticalSection(&self->scan.critical_section);
 
 	if (self->scan.first == NULL) {
@@ -350,13 +307,19 @@ static struct wia_msg *pop_msg(struct wia_transfer *self, bool wait)
 
 	LeaveCriticalSection(&self->scan.critical_section);
 
+	if (msg->type == WIA_MSG_END_OF_FEED || msg->type == WIA_MSG_ERROR) {
+		self->end_of_feed = 1;
+	}
+
 	return msg;
 }
 
 
 static void free_msg(struct wia_msg *msg)
 {
-	GlobalFree(msg);
+	if (msg != NULL) {
+		GlobalFree(msg);
+	}
 }
 
 
@@ -366,6 +329,246 @@ static void pop_all_msg(struct wia_transfer *self)
 
 	while ((msg = pop_msg(self, FALSE /* wait */)) != NULL) {
 		free_msg(msg);
+	}
+}
+
+
+static int end_of_feed(struct lis_scan_session *_self)
+{
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, scan_session
+	);
+	int r;
+
+	if (self->end_of_feed || self->scan.thread == NULL) {
+		return 1;
+	}
+
+	while(self->current.msg == NULL
+			|| self->current.msg->type == WIA_MSG_END_OF_PAGE) {
+		free_msg(self->current.msg);
+		self->current.msg = pop_msg(self, TRUE /* wait */);
+		self->current.already_read = 0;
+	}
+
+	r = (self->current.msg->type == WIA_MSG_END_OF_FEED);
+	lis_log_debug("end_of_feed() = %d", r);
+	if (r) {
+		self->bmp_header.nb_bytes = 0;
+		self->bmp_header.read = 0;
+	}
+	return r;
+}
+
+
+static int end_of_page(struct lis_scan_session *_self)
+{
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, scan_session
+	);
+	int r;
+
+	if (self->end_of_feed || self->scan.thread == NULL) {
+		return 1;
+	}
+
+	if (self->current.msg == NULL) {
+		self->current.msg = pop_msg(self, TRUE /* wait */);
+		self->current.already_read = 0;
+	}
+
+	r = (
+		self->current.msg->type == WIA_MSG_END_OF_FEED
+		|| self->current.msg->type == WIA_MSG_END_OF_PAGE
+	);
+	lis_log_debug("end_of_page() = %d", r);
+	if (r) {
+		self->bmp_header.nb_bytes = 0;
+		self->bmp_header.read = 0;
+	}
+	return r;
+}
+
+
+static enum lis_error _scan_read(
+		struct wia_transfer *self, void *out_buffer,
+		size_t *buffer_size
+	)
+{
+	if (self->end_of_feed || self->scan.thread == NULL) {
+		lis_log_error("scan_read(): End of feed. Shouldn't be called");
+		return LIS_ERR_INVALID_VALUE;
+	}
+
+	while (self->current.msg == NULL
+			|| self->current.msg->type == WIA_MSG_END_OF_PAGE) {
+		free_msg(self->current.msg);
+		self->current.already_read = 0;
+		self->current.msg = pop_msg(self, TRUE /* wait */);
+	}
+
+	switch(self->current.msg->type) {
+
+		case WIA_MSG_DATA:
+			assert(self->current.msg->content.length > self->current.already_read);
+			*buffer_size = MIN(
+				*buffer_size,
+				self->current.msg->content.length - self->current.already_read
+			);
+			memcpy(
+				out_buffer,
+				self->current.msg->data + self->current.already_read,
+				*buffer_size
+			);
+			self->current.already_read += *buffer_size;
+			if (self->current.already_read >= self->current.msg->content.length) {
+				free_msg(self->current.msg);
+				self->current.msg = NULL;
+				self->current.already_read = 0;
+			};
+			lis_log_info("scan_read(): Got %ld bytes", (long)(*buffer_size));
+			return LIS_OK;
+
+		case WIA_MSG_END_OF_PAGE:
+			assert(FALSE); // can't / mustn't happen
+			break;
+
+		case WIA_MSG_END_OF_FEED:
+			self->end_of_feed = 1;
+			lis_log_error("scan_read(): Unexpected end of feed");
+			return LIS_ERR_INVALID_VALUE;
+
+		case WIA_MSG_ERROR:
+			lis_log_error(
+				"scan_read(): Remote error: 0x%X, %s",
+				self->current.msg->content.error,
+				lis_strerror(self->current.msg->content.error)
+			);
+			return self->current.msg->content.error;
+
+	}
+
+	lis_log_error(
+		"scan_read(): Unknown message type: %d",
+		self->current.msg->type
+	);
+	return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+}
+
+
+static enum lis_error scan_read(
+		struct lis_scan_session *_self, void *out_buffer,
+		size_t *buffer_size
+	)
+{
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, scan_session
+	);
+	enum lis_error err;
+
+	lis_log_debug("scan_read() ...");
+
+	if (self->bmp_header.nb_bytes < BMP_HEADER_SIZE) {
+		err = get_scan_parameters(_self, NULL);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_error(
+				"scan_read(): get_scan_parameters() failed: 0x%X, %s",
+				err, lis_strerror(err)
+			);
+			return err;
+		}
+	}
+
+	if (self->bmp_header.read < self->bmp_header.nb_bytes) {
+		*buffer_size = MIN(
+			*buffer_size,
+			self->bmp_header.nb_bytes - self->bmp_header.read
+		);
+		memcpy(
+			out_buffer,
+			self->bmp_header.raw + self->bmp_header.read,
+			*buffer_size
+		);
+		self->bmp_header.read += *buffer_size;
+		return LIS_OK;
+	}
+
+	return _scan_read(self, out_buffer, buffer_size);
+}
+
+
+static enum lis_error get_scan_parameters(
+		struct lis_scan_session *_self,
+		struct lis_scan_parameters *parameters
+	)
+{
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, scan_session
+	);
+	enum lis_error err;
+	size_t read_nb;
+
+	lis_log_debug("get_scan_parameters() ...");
+
+	while(self->bmp_header.nb_bytes < BMP_HEADER_SIZE) {
+		read_nb = BMP_HEADER_SIZE - self->bmp_header.nb_bytes;
+		lis_log_debug(
+			"get_scan_parameters(): Need %d bytes", (int)read_nb
+		);
+		err = _scan_read(
+			self,
+			self->bmp_header.raw + self->bmp_header.nb_bytes,
+			&read_nb
+		);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_error(
+				"get_scan_parameters() failed: "
+				"scan_read() failed: 0x%X, %s",
+				err, lis_strerror(err)
+			);
+			return err;
+		}
+		self->bmp_header.nb_bytes += read_nb;
+	}
+
+	lis_hexdump(self->bmp_header.raw, self->bmp_header.nb_bytes);
+
+	if (parameters == NULL) {
+		lis_log_info("get_scan_parameters(): OK");
+		return LIS_OK;
+	}
+
+	err = lis_bmp2scan_params(self->bmp_header.raw, &read_nb, parameters);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error(
+			"get_scan_parameters() failed: "
+			"Failed to decode BMP header: 0x%x, %s",
+			err, lis_strerror(err)
+		);
+	} else {
+		lis_log_info("get_scan_parameters(): OK");
+	}
+
+	// TODO(Jflesch): return the actual format selected
+
+	// lis_bmp2scan_params mark the format as RAW, but we won't
+	// do any transformation
+	parameters->format = LIS_IMG_FORMAT_BMP;
+	return err;
+}
+
+
+static void scan_cancel(struct lis_scan_session *_self)
+{
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, scan_session
+	);
+
+	if (self->scan.thread != NULL) {
+		WaitForSingleObject(self->scan.thread, INFINITE);
+		CloseHandle(self->scan.thread);
+		pop_all_msg(self);
+		self->scan.thread = NULL;
 	}
 }
 
@@ -527,7 +730,7 @@ static HRESULT WINAPI wia_stream_query_interface(
 		*ppvObject = self;
 		return S_OK;
 	} else if (IsEqualIID(riid, &IID_IStream)) {
-		lis_log_info("IStream->QueryInterface(IStrean)");
+		lis_log_info("IStream->QueryInterface(IStream)");
 		*ppvObject = self;
 		return S_OK;
 	} else if (IsEqualIID(riid, &IID_IAgileObject)) {
@@ -598,12 +801,18 @@ static HRESULT WINAPI wia_stream_write(
 	struct wia_transfer *self = container_of(
 		_self, struct wia_transfer, istream
 	);
-	LIS_UNUSED(pv);
 
-	lis_log_info("IStream->Write(%lu B)", cb);
+	lis_log_info(
+		"IStream->Write(%lu B) (total: %ld B)",
+		cb, self->scan.written
+	);
 
 	*pcbWritten = cb;
 	self->scan.written += cb;
+
+	if (cb <= 0) {
+		return S_OK;
+	}
 
 	return add_msg(self, WIA_MSG_DATA, pv, cb);
 }
@@ -634,7 +843,7 @@ static HRESULT WINAPI wia_stream_seek(
 	}
 
 	lis_log_info(
-		"IStream->Seek(%ld, %s, %lu) (written=%ld)",
+		"IStream->Seek(%ld, %s, %lu) (written=%ld B)",
 		(long)dlibMove.QuadPart, origin,
 		(long)plibNewPosition->QuadPart,
 		self->scan.written
@@ -650,7 +859,7 @@ static HRESULT WINAPI wia_stream_seek(
 			break;
 		case STREAM_SEEK_END:
 			if (dlibMove.QuadPart == 0) {
-				plibNewPosition->QuadPart = self->scan.written = 0;
+				plibNewPosition->QuadPart = self->scan.written;
 				return S_OK;
 			}
 			break;
