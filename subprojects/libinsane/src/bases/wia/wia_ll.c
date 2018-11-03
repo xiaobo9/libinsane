@@ -1262,14 +1262,21 @@ static enum lis_error wiall_opt_set_value(
 	};
 	PROPVARIANT propvariant;
 
-	*set_flags = 0;
-	
+	/* JFlesch> We don't get any feedback from WriteMultiple()
+	 * --> we assume the worst case possible here
+	 */
+	*set_flags = (
+		LIS_SET_FLAG_INEXACT
+		| LIS_SET_FLAG_MUST_RELOAD_OPTIONS
+		| LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
+
 	lis_log_debug(
 		"%s->%s->set_value() ...",
 		private->item->parent.name,
 		private->wia2lis->lis.name
 	);
-	
+
 	err = lis_convert_lis2wia(
 		private->wia2lis,
 		value,
@@ -1281,10 +1288,10 @@ static enum lis_error wiall_opt_set_value(
 			private->item->parent.name,
 			private->wia2lis->lis.name,
 			err, lis_strerror(err)
-		);	
+		);
 		return err;
 	}
-	
+
 	lis_log_debug(
 		"%s->WriteMultiple(%lu (%s)) ...",
 		private->item->parent.name, private->wia2lis->wia.id,

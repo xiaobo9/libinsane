@@ -534,6 +534,11 @@ static enum lis_error get_scan_parameters(
 	);
 
 	lis_log_info(
+		"WIA: get_scan_parameters(): %ld x %ld + %ld + %ld",
+		output[0].lVal, output[2].lVal,
+		output[1].lVal, output[3].lVal
+	);
+	lis_log_info(
 		"WIA: get_scan_parameters(): %d x %d (format=%d, image_size=%lu)",
 		parameters->width, parameters->height, parameters->format,
 		(long)parameters->image_size
