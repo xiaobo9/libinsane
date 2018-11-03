@@ -524,7 +524,7 @@ typedef struct LisIWiaTransferCallbackVtbl {
 		LisWiaTransferParams *pWiaTransferParams
 	);
 
-	HRESULT (WINAPI *GetNextStream )(
+	HRESULT (WINAPI *GetNextStream)(
 		LisIWiaTransferCallback *self,
 		LONG lFlags,
 		BSTR bstrItemName,
@@ -584,6 +584,55 @@ typedef struct LisIWiaTransferVtbl {
 } LisIWiaTransferVtbl;
 
 
+typedef struct LisIWiaAppErrorHandler {
+	CONST_VTBL struct LisIWiaAppErrorHandlerVtbl *lpVtbl;
+} LisIWiaAppErrorHandler;
+
+
+typedef struct LisIWiaAppErrorHandlerVtbl {
+	BEGIN_INTERFACE
+
+	HRESULT (WINAPI *QueryInterface)(
+		LisIWiaAppErrorHandler *self,
+		REFIID riid,
+		void **ppvObject
+	);
+
+	ULONG (WINAPI *AddRef)(
+		LisIWiaAppErrorHandler *self
+	);
+
+	ULONG (WINAPI *Release)(
+		LisIWiaAppErrorHandler *self
+	);
+
+	HRESULT (WINAPI *GetWindow)(
+		LisIWiaAppErrorHandler * This,
+		HWND *phwnd
+	);
+
+	HRESULT (STDMETHODCALLTYPE *ReportStatus)(
+		LisIWiaAppErrorHandler * This,
+		LONG lFlags,
+		LisIWiaItem2 *pWiaItem2,
+		HRESULT hrStatus,
+		LONG lPercentComplete
+	);
+
+	END_INTERFACE
+} LisIWiaAppErrorHandlerVtbl;
+
+
+DEFINE_GUID(
+	IID_LisWiaAppErrorHandler,
+	0x6C16186C,
+	0xD0A6,
+	0x400C,
+	0x80, 0xF4,
+	0xD2, 0x69, 0x86, 0xA0, 0xE7, 0x34
+);
+
+
 DEFINE_GUID(
 	CLSID_LisWiaDevMgr2,
 	0xB6C292BC,
@@ -619,5 +668,12 @@ DEFINE_GUID(
 	0x9a, 0xab,
 	0xe6, 0x78, 0x16, 0x8b, 0x95, 0x27
 );
+
+
+#define LIS_WIA_TRANSFER_MSG_STATUS 1
+#define LIS_WIA_TRANSFER_MSG_END_OF_STREAM 2
+#define LIS_WIA_TRANSFER_MSG_END_OF_TRANSFER 3
+#define LIS_WIA_TRANSFER_MSG_DEVICE_STATUS 5
+#define LIS_WIA_TRANSFER_MSG_NEW_PAGE 6
 
 #endif

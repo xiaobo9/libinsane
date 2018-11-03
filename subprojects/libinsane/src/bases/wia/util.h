@@ -6,5 +6,6 @@
 BSTR lis_cstr2bstr(const char *s);
 char *lis_bstr2cstr(BSTR bstr);
 char *lis_propvariant2char(PROPVARIANT *prop);
+enum lis_error hresult_to_lis_error(HRESULT hr);
 
 #endif

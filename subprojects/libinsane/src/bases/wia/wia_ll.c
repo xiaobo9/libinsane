@@ -19,6 +19,7 @@
 #include <libinsane/util.h>
 
 #include "properties.h"
+#include "transfer.h"
 #include "util.h"
 #include "wia2.h"
 
@@ -65,6 +66,8 @@ struct wiall_item_private {
 	struct wiall_opt_private *opts;
 	struct lis_option_descriptor **opts_ptrs;
 	int nb_opts;
+
+	struct wia_transfer *scan;
 };
 #define WIALL_ITEM_PRIVATE(impl) ((struct wiall_item_private *)(impl))
 
@@ -132,28 +135,6 @@ static struct lis_option_descriptor g_opt_template = {
 		.set_value = wiall_opt_set_value,
 	},
 };
-
-
-static enum lis_error hresult_to_lis_error(HRESULT hr) {
-	switch (hr) {
-		case S_OK:
-			return LIS_OK;
-		case E_OUTOFMEMORY:
-			return LIS_ERR_NO_MEM;
-		case REGDB_E_CLASSNOTREG:
-			lis_log_warning(
-				"Internal error: Class not registered"
-			);
-			break;
-		default:
-			lis_log_warning(
-				"Unknown Windows error code: 0x%lX", hr
-			);
-			break;
-	}
-
-	return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
-}
 
 
 static enum lis_error wiall_init(struct wiall_impl_private *private)
@@ -1348,10 +1329,36 @@ static enum lis_error wiall_item_scan_start(
 		struct lis_item *self, struct lis_scan_session **session
 	)
 {
-	LIS_UNUSED(self);
-	LIS_UNUSED(session);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	struct wiall_item_private *private = WIALL_ITEM_PRIVATE(self);
+	enum lis_error err;
+
+	lis_log_info("%s->scan_start() ...", private->parent.name);
+
+	if (private->scan != NULL) {
+		wia_transfer_free(private->scan);
+		private->scan = NULL;
+	}
+
+	err = wia_transfer_new(
+		private->wia_item,
+		&private->scan
+	);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error(
+			"%s->scan_start() failed: 0x%X, %s",
+			private->parent.name,
+			err, lis_strerror(err)
+		);
+		private->scan = NULL;
+		return err;
+	}
+	lis_log_info(
+		"%s->scan_start() successful",
+		private->parent.name
+	);
+
+	*session = wia_transfer_get_scan_session(private->scan);
+	return err;
 }
 
 
