@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,13 +21,21 @@ enum wia_msg_type {
 	WIA_MSG_DATA,
 	WIA_MSG_END_OF_PAGE,
 	WIA_MSG_END_OF_FEED,
+	WIA_MSG_ERROR,
 };
 
 
 struct wia_msg {
+	struct wia_msg *next;
+
 	enum wia_msg_type type;
-	size_t length;
-	char data[];
+
+	union {
+		enum lis_error error; // only if WIA_MSG_ERROR
+		size_t length; // only if WIA_MSG_DATA
+	} content;
+
+	char data[]; // only if WIA_MSG_DATA
 };
 
 
@@ -40,8 +49,13 @@ struct wia_transfer {
 
 	struct {
 		HANDLE thread;
-		enum lis_error error;
 		long written;
+
+		CRITICAL_SECTION critical_section;
+		CONDITION_VARIABLE condition_variable;
+
+		struct wia_msg *first;
+		struct wia_msg *last;
 	} scan;
 };
 
@@ -218,6 +232,9 @@ static enum lis_error scan_read(
 }
 
 
+static void pop_all_msg(struct wia_transfer *self);
+
+
 static void scan_cancel(struct lis_scan_session *_self)
 {
 	struct wia_transfer *self = container_of(
@@ -227,7 +244,128 @@ static void scan_cancel(struct lis_scan_session *_self)
 	if (self->scan.thread != NULL) {
 		WaitForSingleObject(self->scan.thread, INFINITE);
 		CloseHandle(self->scan.thread);
+		pop_all_msg(self);
 		self->scan.thread = NULL;
+	}
+}
+
+
+static HRESULT add_msg(
+		struct wia_transfer *self,
+		enum wia_msg_type type,
+		const void *data,
+		size_t msg_length
+	)
+{
+	struct wia_msg *msg;
+
+	if (data == NULL) {
+		msg_length = 0;
+	}
+
+	msg = GlobalAlloc(GPTR, sizeof(struct wia_msg) + msg_length);
+	if (msg == NULL) {
+		lis_log_error("Out of memory");
+		return E_OUTOFMEMORY;
+	}
+
+	msg->type = type;
+	msg->content.length = msg_length;
+	if (msg_length > 0) {
+		memcpy(msg->data, data, msg_length);
+	}
+
+	EnterCriticalSection(&self->scan.critical_section);
+	if (self->scan.last != NULL) {
+		self->scan.last->next = msg;
+	} else {
+		self->scan.first = msg;
+		self->scan.last = msg;
+	}
+	LeaveCriticalSection(&self->scan.critical_section);
+
+	WakeConditionVariable(&self->scan.condition_variable);
+
+	return S_OK;
+}
+
+
+static HRESULT add_error(
+		struct wia_transfer *self,
+		enum lis_error error
+	)
+{
+	struct wia_msg *msg;
+
+	msg = GlobalAlloc(GPTR, sizeof(struct wia_msg));
+	if (msg == NULL) {
+		lis_log_error("Out of memory");
+		return E_OUTOFMEMORY;
+	}
+
+	msg->type = WIA_MSG_ERROR;
+	msg->content.error = error;
+
+	EnterCriticalSection(&self->scan.critical_section);
+	if (self->scan.last != NULL) {
+		self->scan.last->next = msg;
+	} else {
+		self->scan.first = msg;
+		self->scan.last = msg;
+	}
+	LeaveCriticalSection(&self->scan.critical_section);
+
+	WakeConditionVariable(&self->scan.condition_variable);
+
+	return S_OK;
+}
+
+
+static struct wia_msg *pop_msg(struct wia_transfer *self, bool wait)
+{
+	struct wia_msg *msg;
+
+	EnterCriticalSection(&self->scan.critical_section);
+
+	if (self->scan.first == NULL) {
+		if (wait) {
+			SleepConditionVariableCS(
+				&self->scan.condition_variable,
+				&self->scan.critical_section,
+				INFINITE
+			);
+		} else {
+			return NULL;
+		}
+	}
+
+	msg = self->scan.first;
+
+	if (msg->next == NULL) {
+		self->scan.first = NULL;
+		self->scan.last = NULL;
+	} else {
+		self->scan.first = msg->next;
+	}
+
+	LeaveCriticalSection(&self->scan.critical_section);
+
+	return msg;
+}
+
+
+static void free_msg(struct wia_msg *msg)
+{
+	GlobalFree(msg);
+}
+
+
+static void pop_all_msg(struct wia_transfer *self)
+{
+	struct wia_msg *msg;
+
+	while ((msg = pop_msg(self, FALSE /* wait */)) != NULL) {
+		free_msg(msg);
 	}
 }
 
@@ -297,11 +435,9 @@ static HRESULT WINAPI wia_transfer_cb_transfer_callback(
 	)
 {
 	LIS_UNUSED(_self);
-	/*
 	struct wia_transfer *self = container_of(
 		_self, struct wia_transfer, transfer_callback
 	);
-	*/
 
 	const char *msg = "unknown";
 
@@ -312,11 +448,9 @@ static HRESULT WINAPI wia_transfer_cb_transfer_callback(
 			msg = "status";
 			break;
 		case LIS_WIA_TRANSFER_MSG_END_OF_STREAM:
-			// TODO
 			msg = "end_of_stream";
 			break;
 		case LIS_WIA_TRANSFER_MSG_END_OF_TRANSFER:
-			// TODO
 			msg = "end_of_transfer";
 			break;
 		case LIS_WIA_TRANSFER_MSG_DEVICE_STATUS:
@@ -338,6 +472,41 @@ static HRESULT WINAPI wia_transfer_cb_transfer_callback(
 		(long)pWiaTransferParams->ulTransferredBytes,
 		pWiaTransferParams->hrErrorStatus
 	);
+
+	switch(pWiaTransferParams->lMessage) {
+		case LIS_WIA_TRANSFER_MSG_STATUS:
+			break;
+		case LIS_WIA_TRANSFER_MSG_DEVICE_STATUS:
+			break;
+		case LIS_WIA_TRANSFER_MSG_END_OF_STREAM:
+			return add_msg(
+				self, WIA_MSG_END_OF_PAGE,
+				NULL /* data */,  0 /* length */
+			);
+		case LIS_WIA_TRANSFER_MSG_END_OF_TRANSFER:
+			return add_msg(
+				self, WIA_MSG_END_OF_FEED,
+				NULL /* data */,  0 /* length */
+			);
+		case LIS_WIA_TRANSFER_MSG_NEW_PAGE:
+			return add_msg(
+				self, WIA_MSG_END_OF_PAGE,
+				NULL /* data */,  0 /* length */
+			);
+		default:
+			lis_log_warning(
+				"WiaTransfer->TransferCallback("
+				"msg=%s, "
+				"percent=%ld%%, "
+				"transferred=%ld B, "
+				"error=0x%lX"
+				"): Unknown notification",
+				msg, pWiaTransferParams->lPercentComplete,
+				(long)pWiaTransferParams->ulTransferredBytes,
+				pWiaTransferParams->hrErrorStatus
+			);
+			break;
+	}
 
 	return S_OK;
 }
@@ -436,8 +605,7 @@ static HRESULT WINAPI wia_stream_write(
 	*pcbWritten = cb;
 	self->scan.written += cb;
 
-	// TODO
-	return S_OK;
+	return add_msg(self, WIA_MSG_DATA, pv, cb);
 }
 
 
@@ -657,6 +825,7 @@ static DWORD WINAPI thread_download(void *_self)
 	struct wia_transfer *self = _self;
 	LisIWiaTransfer *wia_transfer = NULL;
 	HRESULT download_hr, hr;
+	enum lis_error err;
 
 	lis_log_info("Starting scan thread ...");
 	lis_log_debug("WiaItem->QueryInterfae(WiaTransfer) ...");
@@ -667,11 +836,11 @@ static DWORD WINAPI thread_download(void *_self)
 	);
 	lis_log_debug("WiaItem->QueryInterface(WiaTransfer): 0x%lX", hr);
 	if (FAILED(hr)) {
-		self->scan.error = hresult_to_lis_error(hr);
+		err = hresult_to_lis_error(hr);
+		add_error(self, err);
 		lis_log_error(
 			"WiaItem->QueryInterface(WiaTransfer): 0x%lX, 0x%X, %s",
-			hr, self->scan.error,
-			lis_strerror(self->scan.error)
+			hr, err, lis_strerror(err)
 		);
 		goto end;
 	}
@@ -695,11 +864,10 @@ static DWORD WINAPI thread_download(void *_self)
 		lis_log_info("WiaItem->Download(): No more paper");
 		// TODO
  	} else {
-		self->scan.error = hresult_to_lis_error(download_hr);
+		err = hresult_to_lis_error(download_hr);
 		lis_log_error(
 			"WiaItem->Download() failed: 0x%lX, 0x%X, %s",
-			download_hr, self->scan.error,
-			lis_strerror(self->scan.error)
+			download_hr, err, lis_strerror(err)
 		);
 		// TODO
 		goto end;
@@ -737,9 +905,11 @@ enum lis_error wia_transfer_new(
 		sizeof(self->scan_session)
 	);
 
-	self->scan.error = LIS_OK;
 	self->transfer_callback.lpVtbl = &g_wia_transfer_callback;
 	self->istream.lpVtbl = &g_wia_stream;
+
+	InitializeConditionVariable(&self->scan.condition_variable);
+	InitializeCriticalSection(&self->scan.critical_section);
 
 	self->scan.thread = CreateThread(
 		NULL, // lpThreadAttributes (non-inheritable)
