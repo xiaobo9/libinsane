@@ -47,8 +47,9 @@ struct wia_transfer {
 
 	struct lis_scan_session scan_session;
 
-	LisIWiaTransferCallback transfer_callback;
 	IStream istream;
+	LisIWiaAppErrorHandler app_error_handler;
+	LisIWiaTransferCallback transfer_callback;
 
 	int end_of_feed;
 
@@ -198,6 +199,35 @@ static IStreamVtbl g_wia_stream = {
 	.UnlockRegion = wia_stream_unlock_region,
 	.Stat = wia_stream_stat,
 	.Clone = wia_stream_clone,
+};
+
+
+static HRESULT WINAPI wia_app_error_handler_query_interface(
+	LisIWiaAppErrorHandler *self,
+	REFIID riid,
+	void **ppvObject
+);
+static ULONG WINAPI wia_app_error_handler_add_ref(LisIWiaAppErrorHandler *self);
+static ULONG WINAPI wia_app_error_handler_release(LisIWiaAppErrorHandler *self);
+static HRESULT WINAPI wia_app_error_handler_get_window(
+	LisIWiaAppErrorHandler *self,
+	HWND *phwnd
+);
+static HRESULT WINAPI wia_app_error_handler_report_status(
+	LisIWiaAppErrorHandler *self,
+	LONG lFlags,
+	LisIWiaItem2 *pWiaItem2,
+	HRESULT hrStatus,
+	LONG lPercentComplete
+);
+
+
+static LisIWiaAppErrorHandlerVtbl g_wia_app_error_handler = {
+	.QueryInterface = wia_app_error_handler_query_interface,
+	.AddRef = wia_app_error_handler_add_ref,
+	.Release = wia_app_error_handler_release,
+	.GetWindow = wia_app_error_handler_get_window,
+	.ReportStatus = wia_app_error_handler_report_status,
 };
 
 
@@ -572,31 +602,133 @@ static void scan_cancel(struct lis_scan_session *_self)
 }
 
 
-static HRESULT WINAPI wia_transfer_cb_query_interface(
-		LisIWiaTransferCallback *self, REFIID riid, void **ppvObject
+static HRESULT WINAPI wia_app_error_handler_query_interface(
+		LisIWiaAppErrorHandler *_self,
+		REFIID riid,
+		void **ppvObject
 	)
 {
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, transfer_callback
+	);
+	HRESULT hr;
+	LPOLESTR str;
+	char *cstr;
+
+	if (IsEqualIID(riid, &IID_IUnknown)) {
+		lis_log_info("WiaAppErrorHandler->QueryInterface(IUnknown)");
+		*ppvObject = _self;
+		return S_OK;
+	} else if (IsEqualIID(riid, &IID_LisWiaAppErrorHandler)) {
+		lis_log_info(
+			"WiaAppErrorHandler->QueryInterface("
+			"IWiaAppErrorHandler)"
+		);
+		*ppvObject = _self;
+		return S_OK;
+	} else if (IsEqualIID(riid, &IID_LisWiaTransferCallback)) {
+		lis_log_info(
+			"WiaAppErrorHandler->QueryInterface("
+			"IWiaTransferCallback)"
+		);
+		*ppvObject = &self->transfer_callback;
+		return S_OK;
+	} else {
+		cstr = NULL;
+		hr = StringFromCLSID(riid, &str);
+		if (!FAILED(hr)) {
+			cstr = lis_bstr2cstr(str);
+			CoTaskMemFree(str);
+		}
+		lis_log_warning(
+			"WiaAppErrorHandler->QueryInterface(%s): Unknown interface",
+			(cstr != NULL) ? cstr : "NULL"
+		);
+		FREE(cstr);
+	}
+
+	return E_NOTIMPL;
+}
+
+
+static ULONG WINAPI wia_app_error_handler_add_ref(LisIWiaAppErrorHandler *self)
+{
+	LIS_UNUSED(self);
+	lis_log_info("WiaAppErrorHandler->AddRef()");
+	return 0;
+}
+
+
+static ULONG WINAPI wia_app_error_handler_release(LisIWiaAppErrorHandler *self)
+{
+	LIS_UNUSED(self);
+	lis_log_info("WiaAppErrorHandler->Release()");
+	return 0;
+}
+
+
+static HRESULT WINAPI wia_app_error_handler_get_window(
+		LisIWiaAppErrorHandler *self,
+		HWND *phwnd
+	)
+{
+	LIS_UNUSED(self);
+
+	lis_log_info("WiaAppErrorHandler->GetWindow()");
+	*phwnd = NULL;
+	return S_OK;
+}
+
+
+static HRESULT WINAPI wia_app_error_handler_report_status(
+		LisIWiaAppErrorHandler *self,
+		LONG lFlags,
+		LisIWiaItem2 *pWiaItem2,
+		HRESULT hrStatus,
+		LONG lPercentComplete
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(lFlags); // unused ; should be 0
+	LIS_UNUSED(pWiaItem2);
+
+	lis_log_info(
+		"WiaAppErrorHandler->ReportStatus(status=0x%lX, percent=%ld%%)",
+		hrStatus, lPercentComplete
+	);
+	return S_OK;
+}
+
+
+static HRESULT WINAPI wia_transfer_cb_query_interface(
+		LisIWiaTransferCallback *_self, REFIID riid, void **ppvObject
+	)
+{
+	struct wia_transfer *self = container_of(
+		_self, struct wia_transfer, transfer_callback
+	);
 	HRESULT hr;
 	LPOLESTR str;
 	char *cstr;
 
 	if (IsEqualIID(riid, &IID_IUnknown)) {
 		lis_log_info("WiaTransferCallback->QueryInterface(IUnknown)");
-		*ppvObject = self;
+		*ppvObject = _self;
 		return S_OK;
 	} else if (IsEqualIID(riid, &IID_LisWiaTransferCallback)) {
 		lis_log_info(
 			"WiaTransferCallback->QueryInterface("
 			"IWiaTransferCallback)"
 		);
-		*ppvObject = self;
+		*ppvObject = _self;
 		return S_OK;
 	} else if (IsEqualIID(riid, &IID_LisWiaAppErrorHandler)) {
 		lis_log_info(
 			"WiaTransferCallback->QueryInterface("
 			"IWiaAppErrorHandler)"
 		);
-		// TODO
+		*ppvObject = &self->app_error_handler;
+		return S_OK;
 	} else {
 		cstr = NULL;
 		hr = StringFromCLSID(riid, &str);
@@ -636,7 +768,6 @@ static HRESULT WINAPI wia_transfer_cb_transfer_callback(
 		LisWiaTransferParams *pWiaTransferParams
 	)
 {
-	LIS_UNUSED(_self);
 	struct wia_transfer *self = container_of(
 		_self, struct wia_transfer, transfer_callback
 	);
@@ -785,7 +916,6 @@ static HRESULT WINAPI wia_stream_read(
 
 	lis_log_warning("IStream->Read(%lu B): Unsupported", cb);
 
-	// TODO
 	return E_NOTIMPL;
 }
 
@@ -1067,17 +1197,25 @@ static DWORD WINAPI thread_download(void *_self)
 
 	if (!FAILED(download_hr)) {
 		lis_log_info("WiaItem->Download(): Done");
-		// TODO
+		add_msg(
+			self, WIA_MSG_END_OF_FEED,
+			NULL /* data */,  0 /* length */
+		);
+		goto end;
 	} else if (download_hr == WIA_ERROR_PAPER_EMPTY) {
 		lis_log_info("WiaItem->Download(): No more paper");
-		// TODO
+		add_msg(
+			self, WIA_MSG_END_OF_FEED,
+			NULL /* data */,  0 /* length */
+		);
+		goto end;
  	} else {
 		err = hresult_to_lis_error(download_hr);
 		lis_log_error(
 			"WiaItem->Download() failed: 0x%lX, 0x%X, %s",
 			download_hr, err, lis_strerror(err)
 		);
-		// TODO
+		add_error(self, err);
 		goto end;
 	}
 
@@ -1118,8 +1256,9 @@ enum lis_error wia_transfer_new(
 		sizeof(self->scan_session)
 	);
 
-	self->transfer_callback.lpVtbl = &g_wia_transfer_callback;
+	self->app_error_handler.lpVtbl = &g_wia_app_error_handler;
 	self->istream.lpVtbl = &g_wia_stream;
+	self->transfer_callback.lpVtbl = &g_wia_transfer_callback;
 
 	InitializeConditionVariable(&self->scan.condition_variable);
 	InitializeCriticalSection(&self->scan.critical_section);

@@ -607,12 +607,12 @@ typedef struct LisIWiaAppErrorHandlerVtbl {
 	);
 
 	HRESULT (WINAPI *GetWindow)(
-		LisIWiaAppErrorHandler * This,
+		LisIWiaAppErrorHandler *self,
 		HWND *phwnd
 	);
 
-	HRESULT (STDMETHODCALLTYPE *ReportStatus)(
-		LisIWiaAppErrorHandler * This,
+	HRESULT (WINAPI *ReportStatus)(
+		LisIWiaAppErrorHandler *self,
 		LONG lFlags,
 		LisIWiaItem2 *pWiaItem2,
 		HRESULT hrStatus,
