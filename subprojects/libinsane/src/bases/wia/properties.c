@@ -1924,12 +1924,74 @@ const struct lis_wia2lis_property *lis_wia2lis_get_property(
 }
 
 
+/* Check that the possible value is actually in the propvariant provided
+ * by the device.
+ */
+static int is_possible(
+		const struct lis_wia2lis_property *in_wia2lis,
+		PROPVARIANT in_propvariant,
+		const struct lis_wia2lis_possibles *possible
+	)
+{
+	unsigned int i;
+
+	switch(in_propvariant.vt) {
+		case (VT_I4 | VT_VECTOR):
+			for (i = 0 ; i < in_propvariant.cal.cElems ; i++) {
+				if (in_propvariant.cal.pElems[i] == possible->wia.integer) {
+					return 1;
+				}
+			}
+			return 0;
+		case (VT_CLSID | VT_VECTOR):
+			for (i = 0 ; i < in_propvariant.cauuid.cElems ; i++) {
+				if (IsEqualIID(&in_propvariant.cauuid.pElems[i], possible->wia.clsid)) {
+					return 1;
+				}
+			}
+			return 0;
+		case VT_I4:
+			return (in_propvariant.lVal == possible->wia.integer);
+		case VT_CLSID:
+#if 0
+			{
+				LPOLESTR str;
+				char *cstr;
+				StringFromCLSID(in_propvariant.puuid, &str);
+				cstr = lis_bstr2cstr(str);
+				CoTaskMemFree(str);
+				lis_log_error(
+					"#### %s->is_possible(%s)",
+					in_wia2lis->lis.name, cstr
+				);
+				FREE(cstr);
+			}
+#endif
+			// XXX(JFlesch): Epson XP-425:
+			// Fun fact, it seems the driver let CLSID pointed by
+			// puuid to {00000000-0000-0000-0000-000000000000}
+			// every time, so this test will always return FALSE.
+			// This is no big deal because if vt==VT_CLSID means
+			// that there is only one value possible anyway.
+			return IsEqualIID(in_propvariant.puuid, possible->wia.clsid);
+		default:
+			lis_log_warning(
+				"Property %s: Don't know how to check type"
+				" 0x%X. Assuming value is possible",
+				in_wia2lis->lis.name, in_propvariant.vt
+			);
+			return 1;
+	}
+}
+
+
 enum lis_error lis_wia2lis_get_possibles(
 		const struct lis_wia2lis_property *in_wia2lis,
+		PROPVARIANT in_propvariant,
 		struct lis_value_list *out_list
 	)
 {
-	int i;
+	int in_idx, out_idx;
 	int nb_values;
 	lis_log_debug("Getting possible values for option '%s'", in_wia2lis->lis.name);
 
@@ -1941,19 +2003,31 @@ enum lis_error lis_wia2lis_get_possibles(
 		return LIS_ERR_NO_MEM;
 	}
 
-	out_list->nb_values = nb_values;
+	out_idx = 0;
+	for (in_idx = 0 ; !in_wia2lis->possibles[in_idx].eol ; in_idx++) {
+		if (!is_possible(
+					in_wia2lis, in_propvariant,
+					&in_wia2lis->possibles[in_idx])
+				) {
+			continue;
+		}
 
-	for (i = 0 ; !in_wia2lis->possibles[i].eol ; i++) {
 		if (in_wia2lis->lis.type == LIS_TYPE_STRING) {
-			out_list->values[i].string = strdup(in_wia2lis->possibles[i].lis.string);
+			out_list->values[out_idx].string = strdup(
+				in_wia2lis->possibles[in_idx].lis.string
+			);
 		} else {
 			memcpy(
-				&out_list->values[i], &in_wia2lis->possibles[i].lis,
-				sizeof(out_list->values[i])
+				&out_list->values[out_idx],
+				&in_wia2lis->possibles[in_idx].lis,
+				sizeof(out_list->values[in_idx])
 			);
 		}
+
+		out_idx++;
 	}
 
+	out_list->nb_values = out_idx;
 	return LIS_OK;
 }
 

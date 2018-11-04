@@ -909,15 +909,13 @@ static enum lis_error load_opt_constraints(
 	int i;
 	enum lis_error err;
 
-	LIS_UNUSED(propvariants);
-
 	for (i = 0 ; i < private->nb_opts ; i++) {
 		private->opts[i].parent.constraint.type = LIS_CONSTRAINT_NONE;
 		if (private->opts[i].wia2lis->possibles != NULL) {
-			// TODO(JFlesch): not all possibles are possibles
 			private->opts[i].parent.constraint.type = LIS_CONSTRAINT_LIST;
 			err = lis_wia2lis_get_possibles(
 				private->opts[i].wia2lis,
+				propvariants[i],
 				&private->opts[i].parent.constraint.possible.list
 			);
 		} else if (propflags[i] & WIA_PROP_RANGE) {

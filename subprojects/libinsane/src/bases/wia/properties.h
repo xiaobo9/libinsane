@@ -52,6 +52,7 @@ const struct lis_wia2lis_property *lis_wia2lis_get_property(
 
 enum lis_error lis_wia2lis_get_possibles(
 	const struct lis_wia2lis_property *in_wia2lis,
+	PROPVARIANT in_propvariants,
 	struct lis_value_list *out_list
 );
 
