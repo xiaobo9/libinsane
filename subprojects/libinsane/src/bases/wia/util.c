@@ -77,17 +77,17 @@ char *lis_propvariant2char(PROPVARIANT *prop)
 
 enum lis_error hresult_to_lis_error(HRESULT hr) {
 	switch (hr) {
-		case S_OK:
-			return LIS_OK;
-		case E_OUTOFMEMORY:
-			return LIS_ERR_NO_MEM;
+		case S_OK: return LIS_OK;
+
+		case E_INVALIDARG: return LIS_ERR_INVALID_VALUE;
+		case E_NOTIMPL: return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+		case E_OUTOFMEMORY: return LIS_ERR_NO_MEM;
+
 		case REGDB_E_CLASSNOTREG:
 			lis_log_warning(
 				"Internal error: Class not registered"
 			);
 			break;
-		case E_NOTIMPL:
-			return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
 		default:
 			lis_log_warning(
 				"Unknown Windows error code: 0x%lX", hr
