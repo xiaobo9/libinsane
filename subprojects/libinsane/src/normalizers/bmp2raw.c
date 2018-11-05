@@ -91,7 +91,7 @@ static enum lis_error scan_read(
 			" (remaining: %lu B",
 			(long unsigned)bufsize
 		);
-		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
+		return LIS_ERR_IO_ERROR;
 	}
 	return LIS_OK;
 }
