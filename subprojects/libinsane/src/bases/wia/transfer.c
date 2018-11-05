@@ -318,6 +318,7 @@ static struct wia_msg *pop_msg(struct wia_transfer *self, bool wait)
 				INFINITE
 			);
 		} else {
+			LeaveCriticalSection(&self->scan.critical_section);
 			return NULL;
 		}
 	}
@@ -343,9 +344,13 @@ static struct wia_msg *pop_msg(struct wia_transfer *self, bool wait)
 
 static void free_msg(struct wia_msg *msg)
 {
+#if 1
 	if (msg != NULL) {
 		GlobalFree(msg);
 	}
+#else
+	LIS_UNUSED(msg);
+#endif
 }
 
 
@@ -589,6 +594,8 @@ static void scan_cancel(struct lis_scan_session *_self)
 		_self, struct wia_transfer, scan_session
 	);
 
+	// TODO(Jflesch): Call IWiaTransfer->Cancel()
+
 	if (self->scan.thread != NULL) {
 		WaitForSingleObject(self->scan.thread, INFINITE);
 		CloseHandle(self->scan.thread);
@@ -794,6 +801,10 @@ static HRESULT WINAPI wia_transfer_cb_transfer_callback(
 			break;
 	}
 
+	/* XXX(Jflesch):
+	 * With Brother MFC-7360N, pWiaTransferParams->hrError appears
+	 * to be garbage.
+	 */
 	lis_log_info(
 		"WiaTransfer->TransferCallback("
 		"msg=%s, "

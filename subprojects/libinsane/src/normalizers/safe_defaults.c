@@ -53,6 +53,9 @@ static const struct safe_setter g_safe_setters[] = {
 	// Sane test backend:
 	{ .opt_name = "test-picture", .cb = set_str, .cb_data = "Color pattern" },
 
+	// WIA2:
+	{ . opt_name = "pages", .cb = set_int, .cb_data = &g_numbers[2] /* 0 = infinite */ },
+
 	{ .opt_name = NULL },
 };
 

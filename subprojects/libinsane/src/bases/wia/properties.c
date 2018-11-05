@@ -1389,6 +1389,14 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 	{
 		.line = __LINE__,
 		.item_type = LIS_PROPERTY_DEVICE,
+		.wia = { .id = WIA_DPS_PAGES, .type = VT_I4 },
+		.lis = { .name = "pages", .type = LIS_TYPE_INTEGER },
+		.possibles = NULL,
+	},
+
+	{
+		.line = __LINE__,
+		.item_type = LIS_PROPERTY_DEVICE,
 		.wia = { .id = LIS_WIA_DPS_SCAN_AVAILABLE_ITEM, .type = VT_I4 },
 		.lis = { .name = "dps_scan_available_item", .type = LIS_TYPE_INTEGER },
 		.possibles = NULL,
