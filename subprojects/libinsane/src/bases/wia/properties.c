@@ -1900,6 +1900,14 @@ const struct lis_wia2lis_property *lis_wia2lis_get_property(
 		}
 	}
 
+	// root can also be item
+	for (i = 0 ; i < LIS_COUNT_OF(g_wia2lis_properties) ; i++) {
+		prop = &g_wia2lis_properties[i];
+		if (prop->item_type == LIS_PROPERTY_ITEM && prop->wia.id == propid) {
+			return prop;
+		}
+	}
+
 	// in case this is some crappy device with only a root item
 	// implementing both root and children properties
 	for (i = 0 ; i < LIS_COUNT_OF(g_wia2lis_properties) ; i++) {
