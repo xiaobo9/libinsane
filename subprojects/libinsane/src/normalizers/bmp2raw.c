@@ -359,7 +359,7 @@ static enum lis_error lis_bmp2raw_scan_read(
 	);
 	lis_log_debug(
 		"scan_read(): Reducing read from %ld B to %ld B",
-		(long)(*buffer_size), (long)initial
+		(long)initial, (long)(*buffer_size)
 	);
 	err = private->wrapped->scan_read(
 		private->wrapped, out_buffer, buffer_size
