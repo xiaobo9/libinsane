@@ -67,7 +67,7 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 	value = minmax > 0 ? opt->constraint.possible.range.max : opt->constraint.possible.range.min;
 
 	if (opt->constraint.type != LIS_CONSTRAINT_RANGE) {
-		lis_log_error("Unexpected constraint type for option '%s': %d instead of %d",
+		lis_log_warning("Unexpected constraint type for option '%s': %d instead of %d",
 			opt->name, opt->constraint.type, LIS_CONSTRAINT_RANGE);
 		return LIS_ERR_UNSUPPORTED;
 	}
@@ -79,7 +79,7 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 			opt->name, minmax_str, err, lis_strerror(err), *set_flags);
 	} else {
 		*set_flags = 0;
-		lis_log_error("'%s'=%s: 0x%X, %s",
+		lis_log_warning("'%s'=%s: 0x%X, %s",
 			opt->name, minmax_str, err, lis_strerror(err));
 	}
 	return err;
@@ -95,7 +95,7 @@ static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data, 
 	lis_log_info("Setting option '%s' to '%s'", opt->name, value.string);
 
 	if (opt->value.type != LIS_TYPE_STRING) {
-		lis_log_error("Cannot set option '%s' to '%s': Option doesn't accept string as value (%d)",
+		lis_log_warning("Cannot set option '%s' to '%s': Option doesn't accept string as value (%d)",
 			opt->name, value.string, opt->value.type);
 		return LIS_ERR_UNSUPPORTED;
 	}
@@ -106,7 +106,7 @@ static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data, 
 			opt->name, value.string, err, lis_strerror(err), *set_flags);
 	} else {
 		*set_flags = 0;
-		lis_log_error("'%s'='%s': 0x%X, %s",
+		lis_log_warning("'%s'='%s': 0x%X, %s",
 			opt->name, value.string, err, lis_strerror(err));
 	}
 	return err;
@@ -129,7 +129,7 @@ static enum lis_error set_preview(struct lis_option_descriptor *opt, void *cb_da
 				opt->name, value.boolean, err, lis_strerror(err), *set_flags);
 		} else {
 			*set_flags = 0;
-			lis_log_error("'%s'='%d': 0x%X, %s",
+			lis_log_warning("'%s'='%d': 0x%X, %s",
 				opt->name, value.boolean, err, lis_strerror(err));
 		}
 		return err;
@@ -144,13 +144,13 @@ static enum lis_error set_preview(struct lis_option_descriptor *opt, void *cb_da
 				opt->name, value.boolean, err, lis_strerror(err), *set_flags);
 		} else {
 			*set_flags = 0;
-			lis_log_error("'%s'='%d': 0x%X, %s",
+			lis_log_warning("'%s'='%d': 0x%X, %s",
 				opt->name, value.boolean, err, lis_strerror(err));
 		}
 		return err;
 
 	} else {
-			lis_log_error("Cannot set option '%s' to '%d': Option doesn't accept boolean as value (%d)",
+			lis_log_warning("Cannot set option '%s' to '%d': Option doesn't accept boolean as value (%d)",
 			opt->name, value.boolean, opt->value.type);
 		return LIS_ERR_UNSUPPORTED;
 	}
@@ -167,7 +167,7 @@ static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, 
 	lis_log_info("Setting option '%s' to '%d'", opt->name, value.integer);
 
 	if (opt->value.type != LIS_TYPE_INTEGER) {
-		lis_log_error("Cannot set option '%s' to '%d': Option doesn't accept boolean as value (%d)",
+		lis_log_warning("Cannot set option '%s' to '%d': Option doesn't accept boolean as value (%d)",
 			opt->name, value.integer, opt->value.type);
 		return LIS_ERR_UNSUPPORTED;
 	}
@@ -204,7 +204,7 @@ static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, 
 			opt->name, value.integer, err, lis_strerror(err), *set_flags);
 	} else {
 		*set_flags = 0;
-		lis_log_error("'%s'='%d': 0x%X, %s",
+		lis_log_warning("'%s'='%d': 0x%X, %s",
 			opt->name, value.integer, err, lis_strerror(err));
 	}
 	return err;
@@ -243,12 +243,12 @@ static enum lis_error item_filter(struct lis_item *item, int root, void *user_da
 
 				err = setter->cb(opts[opt_idx], setter->cb_data, &set_flags);
 				if (LIS_IS_ERROR(err)) {
-					lis_log_error(
+					lis_log_warning(
 						NAME "->item_filter(): Failed to set option '%s'"
 						" to safe default: 0x%X, %s",
 						opts[opt_idx]->name, err, lis_strerror(err)
 					);
-					return err;
+					// still worth trying scanning
 				}
 				break;
 			}
