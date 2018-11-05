@@ -13,7 +13,7 @@ from gi.repository import Libinsane  # noqa: E402
 
 class ExampleLogger(GObject.GObject, Libinsane.Logger):
     def do_log(self, lvl, msg):
-        if lvl <= Libinsane.LogLevel.DEBUG:
+        if lvl <= Libinsane.LogLevel.WARNING:
             return
         print("{}: {}".format(lvl.value_nick, msg))
 
@@ -25,8 +25,17 @@ def main():
     print("Looking for devices ...")
     devs = api.list_devices(Libinsane.DeviceLocations.ANY)
     print("Found {} devices".format(len(devs)))
-    for dev in devs:
-        print(dev.to_string())
+    for d in devs:
+        dev = api.get_device(d.get_dev_id())
+        print("|")
+        print("|-- {} ({} ; {})".format(
+            d.get_dev_id(), d.to_string(), dev.get_name()
+        ))
+        try:
+            for child in dev.get_children():
+                print("|   |-- {}".format(child.get_name()))
+        finally:
+            dev.close()
 
 
 if __name__ == "__main__":
