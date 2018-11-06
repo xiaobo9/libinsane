@@ -65,18 +65,23 @@ def list_opts(item):
             ))
 
 
-def set_opt(item, opt_name, opt_value):
-    print("Setting {} to {}".format(opt_name, opt_value))
+def set_opt(item, opt_name, opt_values):
+    print("Setting {} to {}".format(opt_name, opt_values))
     opts = item.get_options()
     opts = {opt.get_name(): opt for opt in opts}
     if opt_name not in opts:
         raise Exception("Option '{}' not found".format(opt_name))
     print("- Old {}: {}".format(opt_name, opts[opt_name].get_value()))
     print("- Allowed values: {}".format(opts[opt_name].get_constraint()))
-    opts[opt_name].set_value(opt_value)
-    opts = item.get_options()
-    opts = {opt.get_name(): opt for opt in opts}
-    print("- New {}: {}".format(opt_name, opts[opt_name].get_value()))
+    for opt_value in opt_values:
+        if opt_value not in opts[opt_name].get_constraint():
+            continue
+        opts[opt_name].set_value(opt_value)
+        opts = item.get_options()
+        opts = {opt.get_name(): opt for opt in opts}
+        print("- New {}: {}".format(opt_name, opts[opt_name].get_value()))
+        return
+    raise Exception("Failed to set option {}: No value match constraint")
 
 
 def raw_to_img(params, img_bytes):
@@ -162,7 +167,7 @@ def main():
             list_opts(src)
 
             # set the options
-            set_opt(src, 'resolution', 150)
+            set_opt(src, 'resolution', [150, 200])
 
             print("Scanning ...")
             scan(src, output_file)
