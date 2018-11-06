@@ -56,6 +56,7 @@ struct wia_transfer {
 	struct {
 		HANDLE thread;
 		long written;
+		long read;
 
 		CRITICAL_SECTION critical_section;
 		CONDITION_VARIABLE condition_variable;
@@ -252,17 +253,20 @@ static HRESULT add_msg(
 
 	msg->type = type;
 	msg->content.length = msg_length;
+	msg->next = NULL;
 	if (msg_length > 0) {
 		memcpy(msg->data, data, msg_length);
 	}
 
 	EnterCriticalSection(&self->scan.critical_section);
 	if (self->scan.last != NULL) {
+		assert(self->scan.first != NULL);
 		self->scan.last->next = msg;
 	} else {
+		assert(self->scan.first == NULL);
 		self->scan.first = msg;
-		self->scan.last = msg;
 	}
+	self->scan.last = msg;
 	LeaveCriticalSection(&self->scan.critical_section);
 
 	WakeConditionVariable(&self->scan.condition_variable);
@@ -289,11 +293,13 @@ static HRESULT add_error(
 
 	EnterCriticalSection(&self->scan.critical_section);
 	if (self->scan.last != NULL) {
+		assert(self->scan.first != NULL);
 		self->scan.last->next = msg;
 	} else {
+		assert(self->scan.first == NULL);
 		self->scan.first = msg;
-		self->scan.last = msg;
 	}
+	self->scan.last = msg;
 	LeaveCriticalSection(&self->scan.critical_section);
 
 	WakeConditionVariable(&self->scan.condition_variable);
@@ -326,9 +332,11 @@ static struct wia_msg *pop_msg(struct wia_transfer *self, bool wait)
 	msg = self->scan.first;
 
 	if (msg->next == NULL) {
+		assert(msg == self->scan.last);
 		self->scan.first = NULL;
 		self->scan.last = NULL;
 	} else {
+		assert(msg != self->scan.last);
 		self->scan.first = msg->next;
 	}
 
@@ -384,6 +392,10 @@ static int end_of_feed(struct lis_scan_session *_self)
 
 	r = (self->current.msg->type == WIA_MSG_END_OF_FEED);
 	lis_log_debug("end_of_feed() = %d", r);
+	if (r) {
+		lis_log_info("Read by app: %ld B", self->scan.read);
+		self->scan.read = 0;
+	}
 	return r;
 }
 
@@ -409,6 +421,10 @@ static int end_of_page(struct lis_scan_session *_self)
 		|| self->current.msg->type == WIA_MSG_END_OF_PAGE
 	);
 	lis_log_debug("end_of_page() = %d", r);
+	if (r) {
+		lis_log_info("Read by app: %ld B", self->scan.read);
+		self->scan.read = 0;
+	}
 	return r;
 }
 
@@ -444,6 +460,7 @@ static enum lis_error scan_read(
 				*buffer_size,
 				self->current.msg->content.length - self->current.already_read
 			);
+			self->scan.read += (*buffer_size);
 			memcpy(
 				out_buffer,
 				self->current.msg->data + self->current.already_read,
@@ -464,6 +481,7 @@ static enum lis_error scan_read(
 
 		case WIA_MSG_END_OF_FEED:
 			self->end_of_feed = 1;
+			self->scan.read = 0;
 			lis_log_error("scan_read(): Unexpected end of feed");
 			return LIS_ERR_INVALID_VALUE;
 
@@ -600,6 +618,9 @@ static void scan_cancel(struct lis_scan_session *_self)
 		WaitForSingleObject(self->scan.thread, INFINITE);
 		CloseHandle(self->scan.thread);
 		pop_all_msg(self);
+		free_msg(self->current.msg);
+		self->current.msg = NULL;
+		self->current.already_read = 0;
 		self->scan.thread = NULL;
 	}
 
@@ -1163,6 +1184,7 @@ static HRESULT WINAPI wia_transfer_cb_get_next_stream(
 	FREE(item_name);
 	FREE(full_item_name);
 
+	lis_log_info("Written by WIA driver: %ld B", self->scan.written);
 	self->scan.written = 0;
 	*ppDestination = &self->istream;
 	return S_OK;
@@ -1196,6 +1218,7 @@ static DWORD WINAPI thread_download(void *_self)
 	lis_log_info("Scan thread running");
 
 	lis_log_debug("WiaTransfer->Download() ...");
+	self->scan.written = 0;
 	download_hr = wia_transfer->lpVtbl->Download(
 		wia_transfer,
 		0, /* unused */
@@ -1205,6 +1228,7 @@ static DWORD WINAPI thread_download(void *_self)
 		"WiaTransfer->Download(): 0x%lX",
 		download_hr
 	);
+	lis_log_info("Written by WIA driver: %ld B", self->scan.written);
 
 	if (!FAILED(download_hr)) {
 		lis_log_info("WiaItem->Download(): Done");

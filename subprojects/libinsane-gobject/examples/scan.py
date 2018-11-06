@@ -3,6 +3,7 @@
 # source ./activate_test_env.sh
 # subprojects/libinsane-gobject/examples/scan.py
 
+import os
 import PIL.Image
 import sys
 import traceback
@@ -18,7 +19,7 @@ from gi.repository import Libinsane  # noqa: E402
 #! [ExampleLogger]
 class ExampleLogger(GObject.GObject, Libinsane.Logger):
     def do_log(self, lvl, msg):
-        if lvl <= Libinsane.LogLevel.DEBUG:
+        if lvl <= Libinsane.LogLevel.INFO:
             return
         print("{}: {}".format(lvl.value_nick, msg))
 #! [ExampleLogger]
@@ -150,10 +151,18 @@ def scan(source, output_file):
                 if session.end_of_page():
                     break
             img = b"".join(img)
-            img = raw_to_img(scan_params, img)
+            print("Got {} bytes".format(len(img)))
             if out is not None:
                 print("Saving page as {} ...".format(out))
-                img.save(out, format="PNG")
+                if scan_params.get_format() == Libinsane.ImgFormat.RAW_RGB_24:
+                    img = raw_to_img(scan_params, img)
+                    img.save(out, format="PNG")
+                else:
+                    print("Warning: output format is {}".format(
+                        scan_params.get_format()
+                    ))
+                    with open(out, 'wb') as fd:
+                        fd.write(img)
             page_nb += 1
             print("Page {} scanned".format(page_nb))
         if page_nb == 0:
@@ -164,6 +173,23 @@ def scan(source, output_file):
 
 
 def main():
+    # os.environ['LIBINSANE_WORKAROUND_CHECK_CAPABILITIES'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_SOURCE_NODES'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_MIN_ONE_SOURCE'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_ALL_OPTS_ON_ALL_SOURCES'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_SOURCE_NAMES'] = "0"
+    # os.environ['LIBINSANE_WORKAROUND_OPT_VALUES'] = "0"
+    # os.environ['LIBINSANE_WORKAROUND_OPT_NAMES'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_OPT_ALIASES'] = "1"
+    # os.environ['LIBINSANE_NORMALIZER_BMP2RAW'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_RAW24'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_RESOLUTION'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_SOURCE_TYPES'] = "0"
+    # os.environ['LIBINSANE_WORKAROUND_ONE_PAGE_FLATBED'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_CLEAN_DEV_DESCS'] = "0"
+    # os.environ['LIBINSANE_NORMALIZER_SAFE_DEFAULTS'] = "1"
+    # os.environ['LIBINSANE_WORKAROUND_DEDICATED_THREAD'] = "0"
+
 #! [ExampleSetLogger]
     Libinsane.register_logger(ExampleLogger())
 #! [ExampleSetLogger]

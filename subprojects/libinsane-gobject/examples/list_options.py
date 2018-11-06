@@ -27,6 +27,7 @@ def main():
     os.environ['LIBINSANE_NORMALIZER_SOURCE_NAMES'] = "0"
     os.environ['LIBINSANE_WORKAROUND_OPT_VALUES'] = "0"
     os.environ['LIBINSANE_WORKAROUND_OPT_NAMES'] = "0"
+    os.environ['LIBINSANE_NORMALIZER_OPT_ALIASES'] = "0"
     os.environ['LIBINSANE_NORMALIZER_BMP2RAW'] = "0"
     os.environ['LIBINSANE_NORMALIZER_RAW24'] = "0"
     os.environ['LIBINSANE_NORMALIZER_RESOLUTION'] = "0"
