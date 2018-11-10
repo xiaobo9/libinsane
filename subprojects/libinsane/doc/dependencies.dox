@@ -22,13 +22,13 @@ sudo apt install \
 ```
 pacman -S \
         make \
-        mingw-w64-x86_64-cunit \
-        mingw-w64-x86_64-doxygen \
-        mingw-w64-x86_64-gcc \
-        mingw-w64-x86_64-gobject-introspection \
-        mingw-w64-x86_64-meson \
-        mingw-w64-x86_64-python3-gobject \
-        mingw-w64-x86_64-vala
+        mingw-w64-i686-cunit \
+        mingw-w64-i686-doxygen \
+        mingw-w64-i686-gcc \
+        mingw-w64-i686-gobject-introspection \
+        mingw-w64-i686-meson \
+        mingw-w64-i686-python3-gobject \
+        mingw-w64-i686-vala
 ```
 
 2018/10/16: User name must not contain any spaces or build will fail.
