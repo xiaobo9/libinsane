@@ -17,7 +17,6 @@
 
 #ifdef OS_WINDOWS
 #include <libinsane/twain.h>
-#include <libinsane/wia_automation.h>
 #include <libinsane/wia_ll.h>
 #endif
 

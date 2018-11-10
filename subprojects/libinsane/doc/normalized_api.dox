@@ -10,7 +10,6 @@ or the TWAIN API without losing too many features.
 This API is implemented by a variety of components:
 - \ref sane.h "Wrapper for libsane API"
 - \ref wia_ll.h "Wrapper for WIA2 low-level API"
-- \ref wia_automation.h "Wrapper for WIA2 automation layer"
 - \ref twain.h "Wrapper for TWAIN API"
 - \ref workarounds.h "Various wrappers that allow working transparently around bugs"
 - \ref normalizers.h "Various wrappers that normalize the behaviors of scanners and drivers from an application standpoint"
