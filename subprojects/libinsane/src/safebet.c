@@ -174,6 +174,14 @@ enum lis_error lis_safebet(struct lis_api **out_impls)
 #endif
 
 #ifdef OS_WINDOWS
+	if (lis_getenv("LIBINSANE_TWAIN", 1)) {
+		err = lis_api_twain(&impls[nb_impls]);
+		if (LIS_IS_ERROR(err)) {
+			goto err_impls;
+		}
+		nb_impls++;
+	}
+
 	if (lis_getenv("LIBINSANE_WIA_LL", 1)) {
 		err = lis_api_wia_ll(&impls[nb_impls]);
 		if (LIS_IS_ERROR(err)) {
