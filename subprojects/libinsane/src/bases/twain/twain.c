@@ -1,7 +1,12 @@
+#include <windows.h>
+
 #include <libinsane/capi.h>
 #include <libinsane/error.h>
 #include <libinsane/twain.h>
 #include <libinsane/util.h>
+
+
+#include "twain.h"
 
 
 enum lis_error lis_api_twain(struct lis_api **impl)
