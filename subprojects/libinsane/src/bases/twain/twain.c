@@ -20,19 +20,12 @@
 #define MAX_ID_LENGTH 64 // is manufacturer name + model. TWAIN limits both to 32
 
 
-struct lis_twain_device {
+struct lis_twain_dev_desc {
 	struct lis_device_descriptor parent;
 	TW_IDENTITY twain_id;
 
-	struct lis_twain_device *next;
+	struct lis_twain_dev_desc *next;
 };
-
-
-static int g_init = 0;
-
-static TW_IDENTITY g_app_id;
-static HMODULE g_twain_dll;
-static DSMENTRYPROC g_dsm_entry_fn;
 
 
 struct lis_twain_private {
@@ -40,10 +33,18 @@ struct lis_twain_private {
 
 	bool init;
 
-	struct lis_twain_device *devices;
+	struct lis_twain_dev_desc *devices;
 	struct lis_device_descriptor **device_ptrs;
 };
 #define LIS_TWAIN_PRIVATE(impl) ((struct lis_twain_private *)(impl))
+
+
+struct lis_twain_item {
+	struct lis_item parent;
+
+	TW_IDENTITY twain_id;
+};
+#define LIS_TWAIN_ITEM_PRIVATE(item) ((struct lis_twain_item *)(item))
 
 
 static const TW_IDENTITY g_libinsane_identity_template = {
@@ -81,6 +82,33 @@ static struct lis_api g_twain_template = {
 	.list_devices = twain_list_devices,
 	.get_device = twain_get_device,
 };
+
+
+static enum lis_error twain_get_children(
+	struct lis_item *self, struct lis_item ***children
+);
+static enum lis_error twain_get_options(
+	struct lis_item *self, struct lis_option_descriptor ***descs
+);
+static enum lis_error twain_scan_start(
+	struct lis_item *self, struct lis_scan_session **session
+);
+static void twain_close(struct lis_item *self);
+
+
+static struct lis_item g_twain_item_template = {
+	.get_children = twain_get_children,
+	.get_options = twain_get_options,
+	.scan_start = twain_scan_start,
+	.close = twain_close,
+};
+
+
+static int g_init = 0;
+
+static TW_IDENTITY g_app_id;
+static HMODULE g_twain_dll;
+static DSMENTRYPROC g_dsm_entry_fn;
 
 
 static enum lis_error twrc_to_lis_error(TW_UINT16 twrc)
@@ -279,7 +307,7 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 
 static void free_devices(struct lis_twain_private *private)
 {
-	struct lis_twain_device *dev, *ndev;
+	struct lis_twain_dev_desc *dev, *ndev;
 
 	for (dev = private->devices, ndev = (dev != NULL) ? dev->next : NULL ;
 			dev != NULL ;
@@ -325,10 +353,9 @@ static enum lis_error twain_list_devices(
 	enum lis_error err;
 	int src_idx;
 	TW_UINT16 twrc;
-	struct lis_twain_device *dev;
+	struct lis_twain_dev_desc *dev;
 
 	LIS_UNUSED(locs);
-	LIS_UNUSED(dev_infos);
 
 	lis_log_info("TWAIN->list_devices()");
 	err = twain_init(private);
@@ -339,7 +366,7 @@ static enum lis_error twain_list_devices(
 	free_devices(private);
 
 	for (src_idx = 0 ; ; src_idx++) {
-		dev = calloc(1, sizeof(struct lis_twain_device));
+		dev = calloc(1, sizeof(struct lis_twain_dev_desc));
 		if (dev == NULL) {
 			lis_log_error("Out of memory");
 			free_devices(private);
@@ -403,9 +430,12 @@ static enum lis_error twain_list_devices(
 
 	lis_log_info("TWAIN->list_devices(): %d devices found", src_idx);
 
-	(*dev_infos) = private->device_ptrs = calloc(
+	private->device_ptrs = calloc(
 		src_idx + 1, sizeof(struct lis_device_descriptor *)
 	);
+	if (dev_infos != NULL) {
+		(*dev_infos) = private->device_ptrs;
+	}
 	if (private->device_ptrs == NULL) {
 		lis_log_error("Out of memory");
 		free_devices(private);
@@ -424,21 +454,101 @@ static enum lis_error twain_list_devices(
 }
 
 
+static void twain_close(struct lis_item *self)
+{
+	FREE(self->name);
+	FREE(self);
+}
+
+
 static enum lis_error twain_get_device(
 		struct lis_api *impl, const char *dev_id,
-		struct lis_item **item
+		struct lis_item **out_item
 	)
 {
 	struct lis_twain_private *private = LIS_TWAIN_PRIVATE(impl);
 	enum lis_error err;
+	struct lis_twain_dev_desc *dev;
+	struct lis_twain_item *item;
+	char other_dev_id[MAX_ID_LENGTH + 1];
 
-	LIS_UNUSED(dev_id);
-	LIS_UNUSED(item);
-
+	lis_log_info("TWAIN->get_device(%s)", dev_id);
 	err = twain_init(private);
 	if (LIS_IS_ERROR(err)) {
 		return err;
 	}
+
+	if (private->devices == NULL) {
+		lis_log_debug("No device list loaded yet. Loading now");
+		err = twain_list_devices(
+			impl, LIS_DEVICE_LOCATIONS_ANY, NULL
+		);
+		if (LIS_IS_ERROR(err)) {
+			return err;
+		}
+	}
+
+	for (dev = private->devices ; dev != NULL ; dev = dev->next) {
+		make_device_id(other_dev_id, &dev->twain_id);
+		if (strcasecmp(other_dev_id, dev_id) == 0) {
+			break;
+		}
+	}
+
+	if (dev == NULL) {
+		lis_log_error(
+			"TWAIN->get_device(%s): Device not found", dev_id
+		);
+		return LIS_ERR_INVALID_VALUE;
+	}
+
+	item = calloc(1, sizeof(struct lis_twain_item));
+	if (item == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	memcpy(&item->parent, &g_twain_item_template, sizeof(item->parent));
+	memcpy(&item->twain_id, &dev->twain_id, sizeof(item->twain_id));
+	item->parent.name = strdup(dev_id);
+	item->parent.type = LIS_ITEM_UNIDENTIFIED; // TODO(Jflesch)
+
+	*out_item = &item->parent;
+
+	return LIS_OK;
+}
+
+
+static enum lis_error twain_get_children(
+		struct lis_item *self, struct lis_item ***children
+	)
+{
+	static struct lis_item *twain_children[] = { NULL };
+
+	LIS_UNUSED(self);
+
+	*children = twain_children;
+	return LIS_OK;
+}
+
+static enum lis_error twain_get_options(
+		struct lis_item *self, struct lis_option_descriptor ***descs
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(descs);
+
+	// TODO
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+static enum lis_error twain_scan_start(
+		struct lis_item *self, struct lis_scan_session **session
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(session);
 
 	// TODO
 	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
