@@ -28,14 +28,17 @@ struct lis_twain_device {
 };
 
 
+static int g_init = 0;
+
+static TW_IDENTITY g_app_id;
+static HMODULE g_twain_dll;
+static DSMENTRYPROC g_dsm_entry_fn;
+
+
 struct lis_twain_private {
 	struct lis_api parent;
 
 	bool init;
-
-	TW_IDENTITY app_id;
-	HMODULE twain_dll;
-	DSMENTRYPROC dsm_entry_fn;
 
 	struct lis_twain_device *devices;
 	struct lis_device_descriptor **device_ptrs;
@@ -134,8 +137,10 @@ static void check_twain_status(struct lis_twain_private *private)
 	enum lis_error err;
 	const char *condition_code_str;
 
-	twrc = private->dsm_entry_fn(
-		&private->app_id, NULL,
+	LIS_UNUSED(private);
+
+	twrc = g_dsm_entry_fn(
+		&g_app_id, NULL,
 		DG_CONTROL, DAT_STATUS, MSG_GET,
 		&twain_status
 	);
@@ -201,9 +206,15 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		return LIS_OK;
 	}
 
+	if (g_init > 0) {
+		private->init = 1;
+		g_init++;
+		return LIS_OK;
+	}
+
 	lis_log_debug("TWAIN init: LoadLibrary(" TWAIN_DSM_DLL ")");
-	private->twain_dll = LoadLibraryA(TWAIN_DSM_DLL);
-	if (private->twain_dll == NULL) {
+	g_twain_dll = LoadLibraryA(TWAIN_DSM_DLL);
+	if (g_twain_dll == NULL) {
 		lis_log_error(
 			"Failed to load Twain DLL: 0x%lX", GetLastError()
 		);
@@ -220,15 +231,15 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 	// to a DSMENTRYPROC. With MSYS2 + GCC 8.2 (64bits), it raises
 	// the warning "error: cast between incompatible function types".
 	// So we have to do a double-cast here.
-	private->dsm_entry_fn = (DSMENTRYPROC)(void (*)(void))GetProcAddress(
-		private->twain_dll, TWAIN_DSM_ENTRY_FN_NAME
+	g_dsm_entry_fn = (DSMENTRYPROC)(void (*)(void))GetProcAddress(
+		g_twain_dll, TWAIN_DSM_ENTRY_FN_NAME
 	);
-	if (private->dsm_entry_fn == NULL) {
+	if (g_dsm_entry_fn == NULL) {
 		lis_log_error(
 			"Failed to load Twain DSM_Entry function: 0x%lX",
 			GetLastError()
 		);
-		FreeLibrary(private->twain_dll);
+		FreeLibrary(g_twain_dll);
 		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
 	}
 	lis_log_debug(
@@ -240,11 +251,11 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		"TWAIN init: DsmEntry(DG_CONTROL, DAT_PARENT, MSG_OPENDSM)"
 	);
 	memcpy(
-		&private->app_id, &g_libinsane_identity_template,
-		sizeof(private->app_id)
+		&g_app_id, &g_libinsane_identity_template,
+		sizeof(g_app_id)
 	);
-	twrc = private->dsm_entry_fn(
-		&private->app_id, NULL,
+	twrc = g_dsm_entry_fn(
+		&g_app_id, NULL,
 		DG_CONTROL, DAT_PARENT, MSG_OPENDSM, NULL
 	);
 	if (twrc != TWRC_SUCCESS) {
@@ -261,7 +272,7 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		" successful"
 	);
 
-	private->init = 1;
+	private->init = TRUE;
 	return LIS_OK;
 }
 
@@ -285,8 +296,11 @@ static void twain_cleanup(struct lis_api *impl)
 	struct lis_twain_private *private = LIS_TWAIN_PRIVATE(impl);
 
 	if (private->init) {
-		FreeLibrary(private->twain_dll);
-		private->init = 0;
+		private->init = FALSE;
+		g_init--;
+		if (g_init <= 0) {
+			FreeLibrary(g_twain_dll);
+		}
 	}
 	free_devices(private);
 	FREE(private);
@@ -333,8 +347,8 @@ static enum lis_error twain_list_devices(
 		}
 
 		lis_log_debug("DsmEntry(DG_CONTROL, DAT_IDENTITY)");
-		twrc = private->dsm_entry_fn(
-			&private->app_id, NULL,
+		twrc = g_dsm_entry_fn(
+			&g_app_id, NULL,
 			DG_CONTROL, DAT_IDENTITY,
 			(src_idx == 0) ? MSG_GETFIRST : MSG_GETNEXT,
 			&dev->twain_id
