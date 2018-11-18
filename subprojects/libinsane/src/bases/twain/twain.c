@@ -158,7 +158,10 @@ static enum lis_error twrc_to_lis_error(TW_UINT16 twrc)
 }
 
 
-static void check_twain_status(void)
+static void check_twain_status(
+		const char *file, int line, const char *func,
+		enum lis_log_level level
+	)
 {
 	TW_UINT16 twrc;
 	TW_STATUS twain_status;
@@ -215,7 +218,8 @@ static void check_twain_status(void)
 			break;
 	}
 
-	lis_log_error(
+	lis_log(
+		level, file, line, func,
 		"TWAIN status: Condition code = %s (0x%X) ; data = 0x%X",
 		condition_code_str, twain_status.ConditionCode,
 		twain_status.Data
@@ -245,6 +249,9 @@ static TW_UINT16 _dsm_entry(
 {
 	enum lis_error err;
 	TW_UINT16 twrc;
+	enum lis_log_level level;
+	int check_status;
+	int error;
 
 	lis_log(
 		LIS_LOG_LVL_DEBUG, file, line, func,
@@ -252,24 +259,45 @@ static TW_UINT16 _dsm_entry(
 		dest_str, dg_str, dat_str, msg_str, data
 	);
 	twrc = g_dsm_entry_fn(&g_app_id, dest, dg, dat, msg, data);
-	if (twrc != TWRC_SUCCESS
-			&& twrc != TWRC_ENDOFLIST) {
+	switch(twrc) {
+		case TWRC_SUCCESS:
+		case TWRC_ENDOFLIST:
+		case TWRC_XFERDONE:
+			level = LIS_LOG_LVL_DEBUG;
+			error = 0;
+			check_status = 0;
+			break;
+		case TWRC_CHECKSTATUS:
+			level = LIS_LOG_LVL_INFO;
+			error = 0;
+			check_status = 1;
+			break;
+		default:
+			level = LIS_LOG_LVL_WARNING;
+			error = 1;
+			check_status = 1;
+			break;
+	}
+
+	if (error) {
 		err = twrc_to_lis_error(twrc);
 		lis_log(
-			LIS_LOG_LVL_WARNING, file, line, func,
+			level, file, line, func,
 			"TWAIN->DSM_Entry(%s, %s, %s, %s, 0x%p) failed:"
 			" 0x%X -> 0x%X, %s",
 			dest_str, dg_str, dat_str, msg_str, data,
 			twrc, err, lis_strerror(err)
 		);
-		check_twain_status();
-		return twrc;
+	} else {
+		lis_log(
+			level, file, line, func,
+			"TWAIN->DSM_Entry(%s, %s, %s, %s, 0x%p): 0x%X",
+			dest_str, dg_str, dat_str, msg_str, data, twrc
+		);
 	}
-	lis_log(
-		LIS_LOG_LVL_DEBUG, file, line, func,
-		"TWAIN->DSM_Entry(%s, %s, %s, %s, 0x%p): %d",
-		dest_str, dg_str, dat_str, msg_str, data, twrc
-	);
+	if (check_status) {
+		check_twain_status(file, line, func, level);
+	}
 	return twrc;
 }
 
