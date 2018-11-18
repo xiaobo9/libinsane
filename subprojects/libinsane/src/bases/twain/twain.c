@@ -33,6 +33,8 @@ struct lis_twain_private {
 
 	bool init;
 
+	TW_ENTRYPOINT entry_points;
+
 	struct lis_twain_dev_desc *devices;
 	struct lis_device_descriptor **device_ptrs;
 };
@@ -41,6 +43,7 @@ struct lis_twain_private {
 
 struct lis_twain_item {
 	struct lis_item parent;
+	struct lis_twain_private *impl;
 
 	TW_IDENTITY twain_id;
 	bool use_callback;
@@ -375,6 +378,23 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		return err;
 	}
 
+	if(g_app_id.SupportedGroups & DF_DSM2) {
+		private->entry_points.Size = sizeof(private->entry_points);
+		twrc = DSM_ENTRY(
+			NULL, DG_CONTROL, DAT_ENTRYPOINT, MSG_GET,
+			&private->entry_points
+		);
+		if (twrc != TWRC_SUCCESS) {
+			err = twrc_to_lis_error(twrc);
+			lis_log_error(
+				"Failed to get TWAIN entry points:"
+				" 0x%X -> 0x%X, %s",
+				twrc, err, lis_strerror(err)
+			);
+			return err;
+		}
+	}
+
 	lis_log_info("TWAIN DSM init successful");
 	private->init = TRUE;
 	return LIS_OK;
@@ -638,6 +658,7 @@ static enum lis_error twain_get_device(
 		return LIS_ERR_NO_MEM;
 	}
 
+	item->impl = private;
 	memcpy(&item->parent, &g_twain_item_template, sizeof(item->parent));
 	memcpy(&item->twain_id, &dev->twain_id, sizeof(item->twain_id));
 	item->parent.name = strdup(dev_id);
