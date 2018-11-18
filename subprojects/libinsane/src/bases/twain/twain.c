@@ -43,6 +43,9 @@ struct lis_twain_item {
 	struct lis_item parent;
 
 	TW_IDENTITY twain_id;
+	bool use_callback;
+
+	struct lis_twain_item *next;
 };
 #define LIS_TWAIN_ITEM_PRIVATE(item) ((struct lis_twain_item *)(item))
 
@@ -109,6 +112,12 @@ static int g_init = 0;
 static TW_IDENTITY g_app_id;
 static HMODULE g_twain_dll;
 static DSMENTRYPROC g_dsm_entry_fn;
+
+/* TWAIN callback is really annoying. It only provides TW_IDENTITY
+ * to find back the item it's talking about (no user pointer).
+ * Which mean we have to keep a global list of all active items ...
+ */
+static struct lis_twain_item *g_items = NULL;
 
 
 static enum lis_error twrc_to_lis_error(TW_UINT16 twrc)
@@ -352,9 +361,6 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		TWAIN_DSM_ENTRY_FN_NAME ") successful"
 	);
 
-	lis_log_debug(
-		"TWAIN init: DsmEntry(DG_CONTROL, DAT_PARENT, MSG_OPENDSM)"
-	);
 	memcpy(
 		&g_app_id, &g_libinsane_identity_template,
 		sizeof(g_app_id)
@@ -368,11 +374,8 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		);
 		return err;
 	}
-	lis_log_debug(
-		"TWAIN init: DsmEntry(DG_CONTROL, DAT_PARENT, MSG_OPENDSM)"
-		" successful"
-	);
 
+	lis_log_info("TWAIN DSM init successful");
 	private->init = TRUE;
 	return LIS_OK;
 }
@@ -446,7 +449,6 @@ static enum lis_error twain_list_devices(
 			return LIS_ERR_NO_MEM;
 		}
 
-		lis_log_debug("DsmEntry(DG_CONTROL, DAT_IDENTITY)");
 		twrc = DSM_ENTRY(
 			NULL, DG_CONTROL, DAT_IDENTITY,
 			(src_idx == 0) ? MSG_GETFIRST : MSG_GETNEXT,
@@ -526,8 +528,59 @@ static enum lis_error twain_list_devices(
 
 static void twain_close(struct lis_item *self)
 {
+	struct lis_twain_item *private = LIS_TWAIN_ITEM_PRIVATE(self);
+	struct lis_twain_item *item, *pitem;
+
+	// unregister item
+	for (pitem = NULL, item = g_items ;
+			item != NULL ;
+			pitem = item, item = item->next) {
+		if (item == private) {
+			if (pitem == NULL) {
+				g_items = item->next;
+			} else {
+				pitem->next = item->next;
+			}
+		}
+	}
+
+	DSM_ENTRY(
+		NULL, DG_CONTROL, DAT_IDENTITY, MSG_CLOSEDS,
+		&private->twain_id
+	);
 	FREE(self->name);
 	FREE(self);
+}
+
+
+static TW_UINT16 twain_dsm_callback(
+		TW_IDENTITY *origin, TW_IDENTITY *dest,
+		TW_UINT32 dg, TW_UINT16 dat, TW_UINT16 msg,
+		void *data
+	)
+{
+	struct lis_twain_item *private;
+
+	LIS_UNUSED(dest);
+
+	for (private = g_items ; private != NULL ; private = private->next) {
+		if (private->twain_id.Id == origin->Id) {
+			break;
+		}
+	}
+
+	if (private == NULL) {
+		lis_log_warning(
+			"DSM Callback(0x%lX, 0x%X, 0x%X, 0x%p) called for"
+			" unknown source id: %ld",
+			dg, dat, msg, data, origin->Id
+		);
+		return TWRC_FAILURE;
+	}
+
+	// TODO
+
+	return TWRC_SUCCESS;
 }
 
 
@@ -541,6 +594,13 @@ static enum lis_error twain_get_device(
 	struct lis_twain_dev_desc *dev;
 	struct lis_twain_item *item;
 	char other_dev_id[MAX_ID_LENGTH + 1];
+	TW_UINT16 twrc;
+	DSMENTRYPROC cb = twain_dsm_callback;
+	TW_CALLBACK callback = {
+		.CallBackProc = *((void **)(&cb)),
+		.RefCon = 0,
+		.Message = 0,
+	};
 
 	lis_log_info("TWAIN->get_device(%s)", dev_id);
 	err = twain_init(private);
@@ -582,6 +642,48 @@ static enum lis_error twain_get_device(
 	memcpy(&item->twain_id, &dev->twain_id, sizeof(item->twain_id));
 	item->parent.name = strdup(dev_id);
 	item->parent.type = LIS_ITEM_UNIDENTIFIED; // TODO(Jflesch)
+
+	twrc = DSM_ENTRY(
+		NULL, DG_CONTROL, DAT_IDENTITY, MSG_OPENDS,
+		&item->twain_id
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"Failed to open datasource '%s':"
+			" 0x%X -> 0x%X, %s",
+			dev_id, twrc, err, lis_strerror(err)
+		);
+		FREE(item);
+		return err;
+	}
+
+	// register item
+	item->next = g_items;
+	g_items = item;
+
+	item->use_callback = (
+		(g_app_id.SupportedGroups & DF_DSM2)
+			&& (g_app_id.SupportedGroups & DF_DS2)
+	);
+	lis_log_info("Twain source: use callback = %d", item->use_callback);
+
+	if (item->use_callback) {
+		twrc = DSM_ENTRY(
+			&item->twain_id, DG_CONTROL, DAT_CALLBACK,
+			MSG_REGISTER_CALLBACK, &callback
+		);
+		if (twrc != TWRC_SUCCESS) {
+			err = twrc_to_lis_error(twrc);
+			lis_log_error(
+				"Failed to register callback for datasource"
+				" '%s': 0x%X -> 0x%X, %s",
+				dev_id, twrc, err, lis_strerror(err)
+			);
+			twain_close(&item->parent);
+			return err;
+		}
+	}
 
 	*out_item = &item->parent;
 
