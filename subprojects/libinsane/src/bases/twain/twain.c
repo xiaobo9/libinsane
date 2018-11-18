@@ -158,14 +158,12 @@ static enum lis_error twrc_to_lis_error(TW_UINT16 twrc)
 }
 
 
-static void check_twain_status(struct lis_twain_private *private)
+static void check_twain_status(void)
 {
 	TW_UINT16 twrc;
 	TW_STATUS twain_status;
 	enum lis_error err;
 	const char *condition_code_str;
-
-	LIS_UNUSED(private);
 
 	twrc = g_dsm_entry_fn(
 		&g_app_id, NULL,
@@ -222,6 +220,57 @@ static void check_twain_status(struct lis_twain_private *private)
 		condition_code_str, twain_status.ConditionCode,
 		twain_status.Data
 	);
+}
+
+
+#define DSM_ENTRY(dest, dg, dat, msg, data) \
+	_dsm_entry( \
+		__FILE__, __LINE__, __func__, \
+		dest, #dest, \
+		dg, #dg, \
+		dat, #dat, \
+		msg, #msg, \
+		data \
+	)
+
+
+static TW_UINT16 _dsm_entry(
+		const char *file, int line, const char *func,
+		TW_IDENTITY *dest, const char *dest_str,
+		TW_UINT32 dg, const char *dg_str,
+		TW_UINT16 dat, const char *dat_str,
+		TW_UINT16 msg, const char *msg_str,
+		void *data
+	)
+{
+	enum lis_error err;
+	TW_UINT16 twrc;
+
+	lis_log(
+		LIS_LOG_LVL_DEBUG, file, line, func,
+		"TWAIN->DSM_Entry(%s, %s, %s, %s, 0x%p) ...",
+		dest_str, dg_str, dat_str, msg_str, data
+	);
+	twrc = g_dsm_entry_fn(&g_app_id, dest, dg, dat, msg, data);
+	if (twrc != TWRC_SUCCESS
+			&& twrc != TWRC_ENDOFLIST) {
+		err = twrc_to_lis_error(twrc);
+		lis_log(
+			LIS_LOG_LVL_WARNING, file, line, func,
+			"TWAIN->DSM_Entry(%s, %s, %s, %s, 0x%p) failed:"
+			" 0x%X -> 0x%X, %s",
+			dest_str, dg_str, dat_str, msg_str, data,
+			twrc, err, lis_strerror(err)
+		);
+		check_twain_status();
+		return twrc;
+	}
+	lis_log(
+		LIS_LOG_LVL_DEBUG, file, line, func,
+		"TWAIN->DSM_Entry(%s, %s, %s, %s, 0x%p): %d",
+		dest_str, dg_str, dat_str, msg_str, data, twrc
+	);
+	return twrc;
 }
 
 
@@ -282,17 +331,13 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		&g_app_id, &g_libinsane_identity_template,
 		sizeof(g_app_id)
 	);
-	twrc = g_dsm_entry_fn(
-		&g_app_id, NULL,
-		DG_CONTROL, DAT_PARENT, MSG_OPENDSM, NULL
-	);
+	twrc = DSM_ENTRY(NULL, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, NULL);
 	if (twrc != TWRC_SUCCESS) {
 		err = twrc_to_lis_error(twrc);
 		lis_log_error(
 			"Failed to open DSM: 0x%X -> 0x%X, %s",
 			twrc, err, lis_strerror(err)
 		);
-		check_twain_status(private);
 		return err;
 	}
 	lis_log_debug(
@@ -374,9 +419,8 @@ static enum lis_error twain_list_devices(
 		}
 
 		lis_log_debug("DsmEntry(DG_CONTROL, DAT_IDENTITY)");
-		twrc = g_dsm_entry_fn(
-			&g_app_id, NULL,
-			DG_CONTROL, DAT_IDENTITY,
+		twrc = DSM_ENTRY(
+			NULL, DG_CONTROL, DAT_IDENTITY,
 			(src_idx == 0) ? MSG_GETFIRST : MSG_GETNEXT,
 			&dev->twain_id
 		);
@@ -395,7 +439,6 @@ static enum lis_error twain_list_devices(
 				" 0x%X -> 0x%X, %s", twrc, err,
 				lis_strerror(err)
 			);
-			check_twain_status(private);
 			FREE(dev);
 			free_devices(private);
 			return err;
@@ -421,8 +464,7 @@ static enum lis_error twain_list_devices(
 
 		dev->parent.vendor = dev->twain_id.Manufacturer;
 		dev->parent.model = dev->twain_id.ProductName;
-		// TODO(Jflesch): Find type
-		dev->parent.type = "unknown";
+		dev->parent.type = LIS_ITEM_DEVICE;
 
 		dev->next = private->devices;
 		private->devices = dev;
