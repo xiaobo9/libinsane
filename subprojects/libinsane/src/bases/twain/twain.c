@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
 
@@ -16,16 +17,48 @@
 #define TWAIN_DSM_DLL "twaindsm.dll"
 #define TWAIN_DSM_ENTRY_FN_NAME "DSM_Entry"
 
+#define MAX_ID_LENGTH 64 // is manufacturer name + model. TWAIN limits both to 32
+
+
+struct lis_twain_device {
+	struct lis_device_descriptor parent;
+	TW_IDENTITY twain_id;
+
+	struct lis_twain_device *next;
+};
+
 
 struct lis_twain_private {
 	struct lis_api parent;
 
 	bool init;
 
+	TW_IDENTITY app_id;
 	HMODULE twain_dll;
 	DSMENTRYPROC dsm_entry_fn;
+
+	struct lis_twain_device *devices;
+	struct lis_device_descriptor **device_ptrs;
 };
 #define LIS_TWAIN_PRIVATE(impl) ((struct lis_twain_private *)(impl))
+
+
+static const TW_IDENTITY g_libinsane_identity_template = {
+	.Id = 0,
+	.Version = {
+		.MajorNum = 1,
+		.MinorNum = 0,
+		.Language = TWLG_USA,
+		.Country = TWCY_USA,
+		.Info = "1.0.0",
+	},
+	.ProtocolMajor = TWON_PROTOCOLMAJOR,
+	.ProtocolMinor = TWON_PROTOCOLMINOR,
+	.SupportedGroups = DF_APP2 | DG_IMAGE | DG_CONTROL,
+	.Manufacturer = "OpenPaper.work",
+	.ProductFamily = "Libinsane",
+	.ProductName = "Libinsane",
+};
 
 
 static void twain_cleanup(struct lis_api *impl);
@@ -47,8 +80,127 @@ static struct lis_api g_twain_template = {
 };
 
 
+static enum lis_error twrc_to_lis_error(TW_UINT16 twrc)
+{
+	const char *name;
+
+	switch(twrc & (~TWRC_CUSTOMBASE)) {
+		case TWRC_SUCCESS:
+			return LIS_OK;
+		case TWRC_FAILURE:
+			name = "TWRC_FAILURE";
+			break;
+		case TWRC_CHECKSTATUS:
+			name = "TWRC_CHECKSTATUS";
+			break;
+		case TWRC_CANCEL:
+			return LIS_ERR_CANCELLED;
+		case TWRC_DSEVENT:
+			name = "TWRC_DSEVENT";
+			break;
+		case TWRC_NOTDSEVENT:
+			name = "TWRC_NOTDSEVENT";
+			break;
+		case TWRC_XFERDONE:
+			name = "TWRC_XFERDONE";
+			break;
+		case TWRC_ENDOFLIST:
+			name = "TWRC_ENDOFLIST";
+			break;
+		case TWRC_INFONOTSUPPORTED:
+			// TODO(Jflesch): need to be checked
+			return LIS_ERR_INVALID_VALUE;
+		case TWRC_DATANOTAVAILABLE:
+			// TODO(Jflesch): need to be checked
+			return LIS_ERR_IO_ERROR;
+		case TWRC_BUSY:
+			return LIS_ERR_DEVICE_BUSY;
+		case TWRC_SCANNERLOCKED:
+			return LIS_ERR_HW_IS_LOCKED;
+		default:
+			name = "N/A";
+			break;
+	}
+
+	lis_log_warning("Unknown/unexpected error: 0x%X (%s)", twrc, name);
+	return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+}
+
+
+static void check_twain_status(struct lis_twain_private *private)
+{
+	TW_UINT16 twrc;
+	TW_STATUS twain_status;
+	enum lis_error err;
+	const char *condition_code_str;
+
+	twrc = private->dsm_entry_fn(
+		&private->app_id, NULL,
+		DG_CONTROL, DAT_STATUS, MSG_GET,
+		&twain_status
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"Failed to get TWAIN status: 0x%X -> 0x%X, %s",
+			twrc, err, lis_strerror(err)
+		);
+		return;
+	}
+
+	switch(twain_status.ConditionCode) {
+#define CC_TO_STR(cc) case cc: condition_code_str = #cc ; break
+		CC_TO_STR(TWCC_SUCCESS);
+		CC_TO_STR(TWCC_BUMMER);
+		CC_TO_STR(TWCC_LOWMEMORY);
+		CC_TO_STR(TWCC_NODS);
+		CC_TO_STR(TWCC_MAXCONNECTIONS);
+		CC_TO_STR(TWCC_OPERATIONERROR);
+		CC_TO_STR(TWCC_BADCAP);
+		CC_TO_STR(TWCC_BADPROTOCOL);
+		CC_TO_STR(TWCC_BADVALUE);
+		CC_TO_STR(TWCC_SEQERROR);
+		CC_TO_STR(TWCC_BADDEST);
+		CC_TO_STR(TWCC_CAPUNSUPPORTED);
+		CC_TO_STR(TWCC_CAPBADOPERATION);
+		CC_TO_STR(TWCC_CAPSEQERROR);
+		CC_TO_STR(TWCC_DENIED);
+		CC_TO_STR(TWCC_FILEEXISTS);
+		CC_TO_STR(TWCC_FILENOTFOUND);
+		CC_TO_STR(TWCC_NOTEMPTY);
+		CC_TO_STR(TWCC_PAPERJAM);
+		CC_TO_STR(TWCC_PAPERDOUBLEFEED);
+		CC_TO_STR(TWCC_FILEWRITEERROR);
+		CC_TO_STR(TWCC_CHECKDEVICEONLINE);
+		CC_TO_STR(TWCC_INTERLOCK);
+		CC_TO_STR(TWCC_DAMAGEDCORNER);
+		CC_TO_STR(TWCC_FOCUSERROR);
+		CC_TO_STR(TWCC_DOCTOOLIGHT);
+		CC_TO_STR(TWCC_DOCTOODARK);
+		CC_TO_STR(TWCC_NOMEDIA);
+#undef CC_TO_STR
+		default:
+			condition_code_str = "unknown";
+			break;
+	}
+
+	lis_log_error(
+		"TWAIN status: Condition code = %s (0x%X) ; data = 0x%X",
+		condition_code_str, twain_status.ConditionCode,
+		twain_status.Data
+	);
+}
+
+
 static enum lis_error twain_init(struct lis_twain_private *private)
 {
+	TW_UINT16 twrc;
+	enum lis_error err;
+
+	if (private->init) {
+		return LIS_OK;
+	}
+
 	lis_log_debug("TWAIN init: LoadLibrary(" TWAIN_DSM_DLL ")");
 	private->twain_dll = LoadLibraryA(TWAIN_DSM_DLL);
 	if (private->twain_dll == NULL) {
@@ -63,7 +215,12 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		"TWAIN init: " TWAIN_DSM_DLL "->GetProcAddress("
 		TWAIN_DSM_ENTRY_FN_NAME ")"
 	);
-	private->dsm_entry_fn = (DSMENTRYPROC)GetProcAddress(
+	// XXX(Jflesch):
+	// GetProcAddress returns a FARPROC, and we need to cast it
+	// to a DSMENTRYPROC. With MSYS2 + GCC 8.2 (64bits), it raises
+	// the warning "error: cast between incompatible function types".
+	// So we have to do a double-cast here.
+	private->dsm_entry_fn = (DSMENTRYPROC)(void (*)(void))GetProcAddress(
 		private->twain_dll, TWAIN_DSM_ENTRY_FN_NAME
 	);
 	if (private->dsm_entry_fn == NULL) {
@@ -79,8 +236,47 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		TWAIN_DSM_ENTRY_FN_NAME ") successful"
 	);
 
+	lis_log_debug(
+		"TWAIN init: DsmEntry(DG_CONTROL, DAT_PARENT, MSG_OPENDSM)"
+	);
+	memcpy(
+		&private->app_id, &g_libinsane_identity_template,
+		sizeof(private->app_id)
+	);
+	twrc = private->dsm_entry_fn(
+		&private->app_id, NULL,
+		DG_CONTROL, DAT_PARENT, MSG_OPENDSM, NULL
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"Failed to open DSM: 0x%X -> 0x%X, %s",
+			twrc, err, lis_strerror(err)
+		);
+		check_twain_status(private);
+		return err;
+	}
+	lis_log_debug(
+		"TWAIN init: DsmEntry(DG_CONTROL, DAT_PARENT, MSG_OPENDSM)"
+		" successful"
+	);
+
 	private->init = 1;
 	return LIS_OK;
+}
+
+
+static void free_devices(struct lis_twain_private *private)
+{
+	struct lis_twain_device *dev, *ndev;
+
+	for (dev = private->devices, ndev = (dev != NULL) ? dev->next : NULL ;
+			dev != NULL ;
+			dev = ndev, ndev = (ndev != NULL) ? ndev->next : NULL) {
+		FREE(dev);
+	}
+	private->devices = NULL;
+	FREE(private->device_ptrs);
 }
 
 
@@ -92,8 +288,19 @@ static void twain_cleanup(struct lis_api *impl)
 		FreeLibrary(private->twain_dll);
 		private->init = 0;
 	}
+	free_devices(private);
 	FREE(private);
 }
+
+
+static void make_device_id(char *out, TW_IDENTITY *twain_id)
+{
+	snprintf(
+		out, MAX_ID_LENGTH + 1, "%s:%s",
+		twain_id->Manufacturer, twain_id->ProductName
+	);
+}
+
 
 static enum lis_error twain_list_devices(
 		struct lis_api *impl, enum lis_device_locations locs,
@@ -102,17 +309,104 @@ static enum lis_error twain_list_devices(
 {
 	struct lis_twain_private *private = LIS_TWAIN_PRIVATE(impl);
 	enum lis_error err;
+	int src_idx;
+	TW_UINT16 twrc;
+	struct lis_twain_device *dev;
 
 	LIS_UNUSED(locs);
 	LIS_UNUSED(dev_infos);
 
+	lis_log_info("TWAIN->list_devices()");
 	err = twain_init(private);
 	if (LIS_IS_ERROR(err)) {
 		return err;
 	}
 
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	free_devices(private);
+
+	for (src_idx = 0 ; ; src_idx++) {
+		dev = calloc(1, sizeof(struct lis_twain_device));
+		if (dev == NULL) {
+			lis_log_error("Out of memory");
+			free_devices(private);
+			return LIS_ERR_NO_MEM;
+		}
+
+		lis_log_debug("DsmEntry(DG_CONTROL, DAT_IDENTITY)");
+		twrc = private->dsm_entry_fn(
+			&private->app_id, NULL,
+			DG_CONTROL, DAT_IDENTITY,
+			(src_idx == 0) ? MSG_GETFIRST : MSG_GETNEXT,
+			&dev->twain_id
+		);
+		if (twrc == TWRC_ENDOFLIST) {
+			FREE(dev);
+			lis_log_debug(
+				"DsmEntry(DG_CONTROL, DAT_IDENTITY):"
+				" end of list"
+			);
+			break;
+		}
+		if (twrc != TWRC_SUCCESS) {
+			err = twrc_to_lis_error(twrc);
+			lis_log_error(
+				"DsmEntry(DG_CONTROL, DAT_IDENTITY) failed:"
+				" 0x%X -> 0x%X, %s", twrc, err,
+				lis_strerror(err)
+			);
+			check_twain_status(private);
+			FREE(dev);
+			free_devices(private);
+			return err;
+		}
+
+		lis_log_info(
+			"DsmEntry(DG_CONTROL, DAT_IDENTITY):"
+			" Found device: %ld, %s %s (%s)",
+			dev->twain_id.Id,
+			dev->twain_id.Manufacturer,
+			dev->twain_id.ProductName,
+			dev->twain_id.ProductFamily
+		);
+
+		dev->parent.dev_id = calloc(MAX_ID_LENGTH + 1, sizeof(char));
+		if (dev->parent.dev_id == NULL) {
+			lis_log_error("Out of memory");
+			FREE(dev);
+			free_devices(private);
+			return LIS_ERR_NO_MEM;
+		}
+		make_device_id(dev->parent.dev_id, &dev->twain_id);
+
+		dev->parent.vendor = dev->twain_id.Manufacturer;
+		dev->parent.model = dev->twain_id.ProductName;
+		// TODO(Jflesch): Find type
+		dev->parent.type = "unknown";
+
+		dev->next = private->devices;
+		private->devices = dev;
+	}
+
+	lis_log_info("TWAIN->list_devices(): %d devices found", src_idx);
+
+	(*dev_infos) = private->device_ptrs = calloc(
+		src_idx + 1, sizeof(struct lis_device_descriptor *)
+	);
+	if (private->device_ptrs == NULL) {
+		lis_log_error("Out of memory");
+		free_devices(private);
+		return LIS_ERR_NO_MEM;
+	}
+
+	for (dev = private->devices, src_idx = 0 ;
+			dev != NULL ;
+			dev = dev->next, src_idx++) {
+		private->device_ptrs[src_idx] = &dev->parent;
+	}
+
+	// TODO(Jflesch): should only report devices that are actually
+	// online.
+	return LIS_OK;
 }
 
 
