@@ -36,6 +36,7 @@ extra_cflags = []
 
 if host_machine.system() == 'windows'
     libinsane_srcs += [
+        'bases/twain/capabilities.c',
         'bases/twain/twain.c',
         'bases/wia/properties.c',
         'bases/wia/transfer.c',
