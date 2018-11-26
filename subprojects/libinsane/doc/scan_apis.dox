@@ -40,7 +40,7 @@ Scanner *-- "Option 'source'"
 @enduml
 
 
-![Sane drivers can implement any options they want](sane.png)
+![Sane drivers can implement any options they want, how they want](sane.png)
 
 [Sane API](http://sane-project.org/html/doc009.html) is a simple and flexible API.
 
