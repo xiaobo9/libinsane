@@ -40,6 +40,8 @@ Scanner *-- "Option 'source'"
 @enduml
 
 
+![Sane drivers can implement any options they want](sane.png)
+
 [Sane API](http://sane-project.org/html/doc009.html) is a simple and flexible API.
 
 Each scanner is always a single scan source.
@@ -47,13 +49,14 @@ For each scanner, there are a list of options that can be set.
 Each option has its constraints. Option names are not hard-coded and may
 differ from one driver to another. There are however some
 [well-known options](http://sane.alioth.debian.org/sane2/0.08/doc014.html)
-that are found on most drivers and scanners (.. but not all).
+that are found on most drivers and scanners .. but not all. Sane specifications
+says drivers *should* implements those option, not that they *must*.
 
-Most features of Sane are supported by LibInsane.
+Most features of Sane are supported by Libinsane.
 
-Sane on Windows is not supported by LibInsane. Contributions are welcome.
+Sane on Windows is not supported by Libinsane. Contributions are welcome.
 
-Sane on MacOSX is not supported by LibInsane. Contributions are welcome.
+Sane on MacOSX is not supported by Libinsane. Contributions are welcome.
 Please note that I (Jerome Flesch) don't own a Mac so if you do add this
 support, you will have to:
 
@@ -76,9 +79,11 @@ Limitations of Libinsane support:
 
 \todo TODO
 
-TWAIN on Linux is not supported by LibInsane. Contributions are welcome.
+![Twain is the oldest of the 3 APIs](twain.png)
 
-Sane on MacOSX is not supported by LibInsane. Contributions are welcome.
+TWAIN on Linux is not supported by Libinsane. Contributions are welcome.
+
+Sane on MacOSX is not supported by Libinsane. Contributions are welcome.
 Please note that I (Jerome Flesch) don't own a Mac so if you do add this
 support, you will have to:
 
@@ -128,6 +133,8 @@ mode2 : constraint
 mode2 : value
 @enduml
 
+![WIA2](wia.png)
+
 [Windows Image Acquisition](https://msdn.microsoft.com/en-us/library/windows/desktop/ms630368(v=vs.85).aspx)
 is a Microsoft API.
 
@@ -141,13 +148,13 @@ There are actually 2 implementations for the WIA API:
 
 - The first one uses the low-level WIA API. It is able to pass it a stream
   object to get the image, and therefore is able to get the image as the
-  scan goes.
+  scan goes. This is the implementation used by Libinsane.
 - The second one uses the WIA automation layer. It can only store the
   scan directly in a file. Therefore displaying the scan as it goes is
   actually a hack reading the file as it is being written.
-  This implementation is only used as a fallback.
+  This implementation is not used by Libinsane.
 
-WIA2 provide also features that LibInsane doesn't support:
+WIA2 provide also features that Libinsane doesn't support:
 
 - Access to devices other than scanners (camera, etc)
 - Access to file storages on devices
@@ -161,7 +168,7 @@ WIA2 provide also features that LibInsane doesn't support:
 - Operating systems:
   - MacOSX (not supported)
 
-Not supported by LibInsane. Contributions are welcome.
+Not supported by Libinsane. Contributions are welcome.
 Please note that I (Jerome Flesch) don't own a Mac so if you do add this
 support, you will have to:
 
