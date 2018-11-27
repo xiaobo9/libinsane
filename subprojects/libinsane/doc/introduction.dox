@@ -1,8 +1,8 @@
 /*!
 
-\page introduction What is LibInsane ?
+\page introduction What is Libinsane ?
 
-LibInsane is a library allowing access to image scanners. It is the successor of
+Libinsane is a library allowing access to image scanners. It is the successor of
 [Pyinsane](https://github.com/openpaperwork/pyinsane/)
 
 Its name is a reference to the library [Sane](http://sane-project.org/).
@@ -36,12 +36,12 @@ other weird thingies that could acquire or generate images.
 
 Let the insanity begin !
 
-The end goal of LibInsane is to have a consistent behavior across
+The end goal of Libinsane is to have a consistent behavior across
 all scan APIs, all scanners, and all drivers. All the workarounds
-and weird quirks should be implemented in LibInsane and not the
+and weird quirks should be implemented in Libinsane and not the
 applications using it.
 
-For that purpose, LibInsane provides a bunch of components, each
+For that purpose, Libinsane provides a bunch of components, each
 solving a specific problem (working around a bug, normalizing
 the behavior of drivers, etc).
 
@@ -59,15 +59,16 @@ changing slightly the behavior of the wrapped component.
   provide themselves an implementation of the normalized API.
 - Behavior normalization components wraps too the normalized API provided
   by others, and provide themselves an implementation of the normalized API.
-- A component to manage access to multiple components at the same time:
-  wraps multiple implementations the normalized API and provides an
-  implem.. well you get the idea ?
-- The GObject Introspection support wraps the normalized API.
+- One of the components manage make it possible to access multiple components
+  at the same time: It wraps multiple implementations of the normalized API
+  and provides a single implem.. well you get the idea ?
+- GObject Introspection support simply wrap any implementation of the
+  normalized API.
 
 Since most of the components wrap other components, they can be stacked easily
 each on top of another and can be enabled or disabled easily.
 
-![Design of LibInsane](design.png)
+![Design of Libinsane](design.png)
 
 While it may sound like a lot of wrapping and layers, this approach allows
 modularity. Any workaround or behavior normalization component can be enabled

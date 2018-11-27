@@ -26,14 +26,15 @@ class ExampleLogger(GObject.GObject, Libinsane.Logger):
 
 
 #! [ExampleListGetDevice]
-def get_device(api, dev_id):
-    print("Looking for scan devices ...")
+def get_device(api, dev_id=None):
     if dev_id is None:
+        print("Looking for scan devices ...")
         devs = api.list_devices(Libinsane.DeviceLocations.ANY)
         print("Found {} devices".format(len(devs)))
         for dev in devs:
             print("[{}] : [{}]".format(dev.get_dev_id(), dev.to_string()))
         dev_id = devs[0].get_dev_id()
+
     print("Will use device {}".format(dev_id))
     dev = api.get_device(dev_id)
     print("Using device {}".format(dev.get_name()))
