@@ -1,14 +1,10 @@
 #include <stdbool.h>
 #include <windows.h>
 
+#include <libinsane/util.h>
+
+#include "capabilities.h"
 #include "twain.h"
-
-
-struct lis_twain_cap_possible {
-	int eol;
-	const char *str;
-	int twain_int;
-};
 
 
 static struct lis_twain_cap_possible g_twain_boolean[] = {
@@ -260,17 +256,8 @@ static struct lis_twain_cap_possible g_twain_possible_orientations[] = {
 	{ .eol = 1 },
 };
 
-/* TODO */ /* static */ const struct lis_twain_cap {
-	const char *name;
-	const char *desc;
 
-	bool readonly;
-
-	TW_UINT16 id;
-	TW_UINT16 type;
-
-	struct lis_twain_cap_possible *possibles;
-} g_twain_caps[] = {
+static const struct lis_twain_cap g_twain_caps[] = {
 	{
 		.name = "transfer_count",
 		.desc = "Number of pages accepted by application (-1 = inf.)",
@@ -2032,3 +2019,9 @@ static struct lis_twain_cap_possible g_twain_possible_orientations[] = {
 	},
 	*/
 };
+
+
+const struct lis_twain_cap *lis_twain_get_all_caps(int *nb_caps) {
+	*nb_caps = LIS_COUNT_OF(g_twain_caps);
+	return g_twain_caps;
+}

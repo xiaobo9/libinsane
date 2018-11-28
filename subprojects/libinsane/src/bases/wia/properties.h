@@ -84,9 +84,10 @@ enum lis_error lis_convert_lis2wia(
 );
 
 
-/* for tests only */
+#ifdef LIS_UNIT_TESTS
 const struct lis_wia2lis_property *lis_get_all_properties(
 	size_t *nb_properties
 );
+#endif
 
 #endif
