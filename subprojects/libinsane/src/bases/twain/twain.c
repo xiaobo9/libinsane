@@ -10,6 +10,7 @@
 #include <libinsane/util.h>
 
 
+#include "capabilities.h"
 #include "twain.h"
 
 
@@ -41,12 +42,22 @@ struct lis_twain_private {
 #define LIS_TWAIN_PRIVATE(impl) ((struct lis_twain_private *)(impl))
 
 
+struct lis_twain_option {
+	struct lis_option_descriptor parent;
+
+	const struct lis_twain_cap *twain_cap;
+};
+
+
 struct lis_twain_item {
 	struct lis_item parent;
 	struct lis_twain_private *impl;
 
 	TW_IDENTITY twain_id;
 	bool use_callback;
+
+	struct lis_twain_option *opts;
+	struct lis_option_descriptor **opts_ptrs;
 
 	struct lis_twain_item *next;
 };
@@ -724,15 +735,161 @@ static enum lis_error twain_get_children(
 	return LIS_OK;
 }
 
-static enum lis_error twain_get_options(
-		struct lis_item *self, struct lis_option_descriptor ***descs
+
+static enum lis_value_type twain_type_to_lis(TW_UINT16 twain_type)
+{
+	switch(twain_type) {
+		case TWTY_INT8:
+		case TWTY_INT16:
+		case TWTY_INT32:
+		case TWTY_UINT8:
+		case TWTY_UINT16:
+		case TWTY_UINT32:
+			return LIS_TYPE_INTEGER;
+		case TWTY_BOOL:
+			return LIS_TYPE_BOOL;
+		case TWTY_FIX32:
+			return LIS_TYPE_DOUBLE;
+		case TWTY_STR32:
+		case TWTY_STR64:
+		case TWTY_STR128:
+		case TWTY_STR255:
+			return LIS_TYPE_STRING;
+		case TWTY_FRAME:
+		case TWTY_HANDLE:
+		default:
+			break;
+	}
+
+	lis_log_warning(
+		"Unknown twain type: %d. Assuming integer", twain_type
+	);
+	return LIS_TYPE_INTEGER;
+}
+
+
+static enum lis_error twain_get_value(
+		struct lis_option_descriptor *self, union lis_value *value
 	)
 {
 	LIS_UNUSED(self);
-	LIS_UNUSED(descs);
-
+	LIS_UNUSED(value);
 	// TODO
 	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+static enum lis_error twain_set_value(
+		struct lis_option_descriptor *self, union lis_value value,
+		int *set_flags
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(value);
+	LIS_UNUSED(set_flags);
+	// TODO
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+static void free_opts(struct lis_twain_item *private)
+{
+	// TODO
+	FREE(private->opts);
+	FREE(private->opts_ptrs);
+}
+
+
+static enum lis_error twain_get_options(
+		struct lis_item *self,
+		struct lis_option_descriptor ***out_descs
+	)
+{
+	struct lis_twain_item *private = LIS_TWAIN_ITEM_PRIVATE(self);
+	const struct lis_twain_cap *all_caps;
+	int nb_caps, cap_idx;
+	int nb_opts = 0, opt_idx;
+	TW_UINT16 twrc;
+	TW_CAPABILITY cap;
+
+	free_opts(private);
+
+	lis_log_info("%s->get_options() ...", self->name);
+
+	/* There is a Twain capabilities to list all supported capapbilities,
+	 * but it's not supported by all data sources. Our safest best here
+	 * is to probe available capabilities ourselves by getting their
+	 * values.
+	 */
+
+	all_caps = lis_twain_get_all_caps(&nb_caps);
+
+	private->opts = calloc(
+		nb_caps, sizeof(struct lis_twain_option)
+	);
+	if (private->opts == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+
+	for (cap_idx = 0 ; cap_idx < nb_caps ; cap_idx++) {
+		memset(&cap, 0, sizeof(cap));
+		cap.Cap = all_caps[cap_idx].id;
+		cap.ConType = all_caps[cap_idx].type;
+		lis_log_debug(
+			"Probing for capability/option '%s' ...",
+			all_caps[cap_idx].name
+		);
+		twrc = g_dsm_entry_fn(
+			&g_app_id, &private->twain_id, DG_CONTROL,
+			DAT_CAPABILITY, MSG_GET, &cap
+		);
+		if (twrc == TWRC_SUCCESS) {
+			lis_log_debug(
+				"Got option '%s'", all_caps[cap_idx].name
+			);
+			private->impl->entry_points.DSM_MemFree(
+				cap.hContainer
+			);
+			if (cap.ConType == TWTY_FRAME) {
+				// TODO(Jflesch): special options Frame
+				continue;
+			}
+			private->opts[nb_opts].twain_cap = &all_caps[cap_idx];
+			private->opts[nb_opts].parent.name = all_caps[cap_idx].name;
+			private->opts[nb_opts].parent.title = all_caps[cap_idx].name;
+			private->opts[nb_opts].parent.capabilities = (
+				all_caps[cap_idx].readonly ? 0 : LIS_CAP_SW_SELECT
+			);
+			private->opts[nb_opts].parent.value.type = twain_type_to_lis(cap.ConType);
+			private->opts[nb_opts].parent.value.unit = LIS_UNIT_NONE; // TODO
+			private->opts[nb_opts].parent.constraint.type = LIS_CONSTRAINT_NONE; // TODO
+			private->opts[nb_opts].parent.fn.get_value = twain_get_value;
+			private->opts[nb_opts].parent.fn.set_value = twain_set_value;
+			nb_opts++;
+		} else {
+			lis_log_debug(
+				"Option '%s' is not available",
+				all_caps[cap_idx].name
+			);
+		}
+	}
+
+	private->opts_ptrs = calloc(
+		nb_opts + 1, sizeof(struct lis_option_descriptor *)
+	);
+	if (private->opts_ptrs == NULL) {
+		FREE(private->opts);
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+	for(opt_idx = 0 ; opt_idx < nb_opts ; opt_idx++) {
+		private->opts_ptrs[opt_idx] = &private->opts[opt_idx].parent;
+	}
+
+	lis_log_info("%s->get_options(): %d options", self->name, nb_opts);
+	*out_descs = private->opts_ptrs;
+	return LIS_OK;
 }
 
 

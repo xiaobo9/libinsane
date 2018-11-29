@@ -25,8 +25,6 @@ struct lis_twain_cap {
 	struct lis_twain_cap_possible *possibles;
 };
 
-#ifdef LIS_UNIT_TESTS
 const struct lis_twain_cap *lis_twain_get_all_caps(int *nb_caps);
-#endif
 
 #endif
