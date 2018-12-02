@@ -193,8 +193,6 @@ extern enum lis_error lis_api_normalizer_raw24(
  * This workaround just make sure the default area is the maximum area.
  * It may be handy if you don't want to scan a specific area.
  *
- * Requires: \ref lis_api_normalizer_scan_area_opts
- *
  * ## Ensure the scan mode by default is 24bits colors.
  *
  * By default, some drivers don't have the mode set to color.

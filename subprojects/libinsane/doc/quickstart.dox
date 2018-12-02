@@ -52,7 +52,7 @@ sudo make uninstall
 The C API is described in `subprojects/libinsane/include/libinsane/capi.h`
 (specifically \ref lis_api "struct lis_api").
 
-\snippet subprojects/libinsane/examples/lis_scan.c ExmapleLisScan
+\snippet subprojects/libinsane/examples/lis_scan.c ExampleLisScan
 
 You can use pkg-config to get the correct compilation flags:
 
