@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <libinsane/capi.h>
@@ -151,4 +152,98 @@ void lis_hexdump(const void *_data, size_t nb_bytes)
 			nb_bytes -= 8;
 		}
 	}
+}
+
+
+enum lis_error lis_set_option(
+		struct lis_item *item, const char *opt_name,
+		const char *opt_value
+	)
+{
+	char *endptr = NULL;
+	struct lis_option_descriptor **opts;
+	enum lis_error err;
+	union lis_value value;
+	int set_flags = -1;
+
+	assert(item != NULL);
+	assert(opt_name != NULL);
+	assert(opt_value != NULL);
+
+	lis_log_info("%s: Setting %s=%s", item->name, opt_name, opt_value);
+
+	err = item->get_options(item, &opts);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error(
+			"%s: Failed to list options: 0x%X, %s",
+			item->name, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	for ( ; (*opts) != NULL ; opts++) {
+		if (strcasecmp(opt_name, (*opts)->name) == 0) {
+			break;
+		}
+	}
+
+	if ((*opts) == NULL) {
+		lis_log_error("%s: Option '%s' not found", item->name, opt_name);
+		return LIS_ERR_INVALID_VALUE;
+	}
+
+	memset(&value, 0, sizeof(value));
+	switch((*opts)->value.type) {
+		case LIS_TYPE_BOOL:
+			if (strcmp(opt_value, "1") == 0
+					|| strcasecmp(opt_value, "true") == 0) {
+				value.boolean = 1;
+			}
+			break;
+		case LIS_TYPE_INTEGER:
+			value.integer = strtol(opt_value, &endptr, 10);
+			if (endptr == NULL || endptr[0] != '\0') {
+				lis_log_error(
+					"Option %s->%s expected an integer"
+					" value ('%s' is not an integer)",
+					item->name, opt_name, opt_value
+				);
+				return LIS_ERR_INVALID_VALUE;
+			}
+			break;
+		case LIS_TYPE_DOUBLE:
+			value.dbl = strtod(opt_value, &endptr);
+			if (endptr == NULL || endptr[0] != '\0') {
+				lis_log_error(
+					"Option %s->%s expected a double"
+					" ('%s' is not an double)",
+					item->name, opt_name, opt_value
+				);
+				return LIS_ERR_INVALID_VALUE;
+			}
+			break;
+		case LIS_TYPE_STRING:
+			value.string = opt_value;
+			break;
+		case LIS_TYPE_IMAGE_FORMAT:
+			lis_log_error(
+				"%s: Setting image format option is not"
+				" supported", item->name
+			);
+			return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	}
+
+	err = (*opts)->fn.set_value(*opts, value, &set_flags);
+	if (LIS_IS_OK(err)) {
+		lis_log_info(
+			"%s: Successfully set %s=%s (flags=0x%X)",
+			item->name, opt_name, opt_value, set_flags
+		);
+	} else {
+		lis_log_error(
+			"%s: Failed to set %s=%s",
+			item->name, opt_name, opt_value
+		);
+	}
+	return err;
 }
