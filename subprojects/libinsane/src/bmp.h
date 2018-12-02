@@ -20,4 +20,10 @@ enum lis_error lis_bmp2scan_params(
 	struct lis_scan_parameters *params
 );
 
+
+void lis_scan_params2bmp(
+	const struct lis_scan_parameters *params,
+	void *header
+);
+
 #endif
