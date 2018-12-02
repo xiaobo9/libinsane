@@ -53,12 +53,6 @@ enum lis_error lis_set_option(struct lis_item *item, const char *opt_name, const
 
 
 /*!
- * \brief set the scan area to the maximum that the device can do
- */
-enum lis_error lis_maximize_scan_area(struct lis_item *item);
-
-
-/*!
  * \brief compare values
  * \retval 1 if values are identical
  * \retval 0 if values are different
