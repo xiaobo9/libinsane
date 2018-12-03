@@ -200,8 +200,9 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 		scan_session, &parameters
 	));
 	printf(
-		"Scan will be: %d px x %d px (%zd bytes)\n",
-		parameters.width, parameters.height, parameters.image_size
+		"Scan will be: %d px x %d px (%ld bytes)\n",
+		parameters.width, parameters.height,
+		(long)parameters.image_size
 	);
 	write_header(out, &parameters);
 
@@ -223,9 +224,9 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 
 			obtained += bufsize;
 			printf(
-				"\r%zd KB / %zd KB",
-				(obtained / 1024),
-				(parameters.image_size / 1024)
+				"\r%ld KB / %ld KB",
+				(long)(obtained / 1024),
+				(long)(parameters.image_size / 1024)
 			);
 			fflush(stdout);
 
