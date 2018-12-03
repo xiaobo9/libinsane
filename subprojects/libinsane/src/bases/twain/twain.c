@@ -46,6 +46,7 @@ struct lis_twain_option {
 	struct lis_option_descriptor parent;
 
 	const struct lis_twain_cap *twain_cap;
+	struct lis_twain_item *item;
 };
 
 
@@ -768,6 +769,39 @@ static enum lis_value_type twain_type_to_lis(TW_UINT16 twain_type)
 }
 
 
+static enum lis_value_type twain_cap_to_lis_type(const TW_CAPABILITY *cap)
+{
+	union {
+		const TW_ARRAY *array;
+		const TW_ENUMERATION *enumeration;
+		const TW_ONEVALUE *one;
+		const TW_RANGE *range;
+	} container;
+
+	switch(cap->ConType) {
+		case TWON_ARRAY:
+			container.array = cap->hContainer;
+			return twain_type_to_lis(container.array->ItemType);
+		case TWON_ENUMERATION:
+			container.enumeration = cap->hContainer;
+			return twain_type_to_lis(
+				container.enumeration->ItemType
+			);
+		case TWON_ONEVALUE:
+			container.one = cap->hContainer;
+			return twain_type_to_lis(container.one->ItemType);
+		case TWON_RANGE:
+			container.range = cap->hContainer;
+			return twain_type_to_lis(container.range->ItemType);
+	}
+
+	lis_log_warning(
+		"Unknown twain container: %d. Assuming integer", cap->ConType
+	);
+	return LIS_TYPE_INTEGER;
+}
+
+
 static enum lis_error twain_get_value(
 		struct lis_option_descriptor *self, union lis_value *value
 	)
@@ -797,6 +831,17 @@ static void free_opts(struct lis_twain_item *private)
 	// TODO
 	FREE(private->opts);
 	FREE(private->opts_ptrs);
+}
+
+
+static enum lis_error get_constraint(
+		struct lis_twain_option *opt, const TW_CAPABILITY *cap
+	)
+{
+	LIS_UNUSED(opt);
+	LIS_UNUSED(cap);
+	// TODO
+	return LIS_OK;
 }
 
 
@@ -846,26 +891,34 @@ static enum lis_error twain_get_options(
 		);
 		if (twrc == TWRC_SUCCESS) {
 			lis_log_debug(
-				"Got option '%s'", all_caps[cap_idx].name
-			);
-			private->impl->entry_points.DSM_MemFree(
-				cap.hContainer
+				"Got option '%s' (type 0x%X)",
+				all_caps[cap_idx].name,
+				cap.ConType
 			);
 			if (cap.ConType == TWTY_FRAME) {
 				// TODO(Jflesch): special options Frame
 				continue;
 			}
+
 			private->opts[nb_opts].twain_cap = &all_caps[cap_idx];
+			private->opts[nb_opts].item = private;
+
 			private->opts[nb_opts].parent.name = all_caps[cap_idx].name;
 			private->opts[nb_opts].parent.title = all_caps[cap_idx].name;
 			private->opts[nb_opts].parent.capabilities = (
 				all_caps[cap_idx].readonly ? 0 : LIS_CAP_SW_SELECT
 			);
-			private->opts[nb_opts].parent.value.type = twain_type_to_lis(cap.ConType);
+			private->opts[nb_opts].parent.value.type = twain_cap_to_lis_type(&cap);
 			private->opts[nb_opts].parent.value.unit = LIS_UNIT_NONE; // TODO
-			private->opts[nb_opts].parent.constraint.type = LIS_CONSTRAINT_NONE; // TODO
 			private->opts[nb_opts].parent.fn.get_value = twain_get_value;
 			private->opts[nb_opts].parent.fn.set_value = twain_set_value;
+
+			get_constraint(&private->opts[nb_opts], &cap);
+
+			private->impl->entry_points.DSM_MemFree(
+				cap.hContainer
+			);
+
 			nb_opts++;
 		} else {
 			lis_log_debug(
