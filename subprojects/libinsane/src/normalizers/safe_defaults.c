@@ -56,6 +56,12 @@ static const struct safe_setter g_safe_setters[] = {
 	// WIA2:
 	{ . opt_name = "pages", .cb = set_int, .cb_data = &g_numbers[2] /* 0 = infinite */ },
 
+	// TWAIN:
+	{ .opt_name = "transfer_count", .cb = set_int, .cb_data = &g_numbers[0] /* -1 */ },
+	{ .opt_name = "compression", .cb = set_str, .cb_data = "none" },
+	{ .opt_name = "transfer_mechanism", .cb = set_str, .cb_data = "native" },
+	{ .opt_name = "image_file_format", .cb = set_str, .cb_data = "bmp" },
+
 	{ .opt_name = NULL },
 };
 
@@ -167,10 +173,10 @@ static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, 
 	int closest, closest_distance, distance, constraint_idx;
 
 	value.integer = *((int *)cb_data);
-	lis_log_info("Setting option '%s' to '%d'", opt->name, value.integer);
+	lis_log_info("Setting option '%s' (%d) to '%d'", opt->name, opt->value.type, value.integer);
 
 	if (opt->value.type != LIS_TYPE_INTEGER) {
-		lis_log_warning("Cannot set option '%s' to '%d': Option doesn't accept boolean as value (%d)",
+		lis_log_warning("Cannot set option '%s' to '%d': Option doesn't accept integer as value (%d)",
 			opt->name, value.integer, opt->value.type);
 		return LIS_ERR_UNSUPPORTED;
 	}
@@ -179,11 +185,12 @@ static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, 
 		lis_log_warning("Unexpected constraint type (%d) for option '%s'. Cannot adjust value.",
 			opt->constraint.type, opt->name);
 	} else {
-		closest = -1;
+		closest = 0;
 		closest_distance = 999999;
 		for (constraint_idx = 0 ;
 				constraint_idx < opt->constraint.possible.list.nb_values ;
 				constraint_idx++) {
+
 			distance = abs(
 				opt->constraint.possible.list.values[constraint_idx].integer
 				- value.integer
@@ -193,7 +200,6 @@ static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, 
 				closest_distance = distance;
 			}
 		}
-		assert(closest >= 0);
 		if (closest != value.integer) {
 			lis_log_info("Value for option '%s' adjusted to match constraint: %d => %d",
 				opt->name, value.integer, closest);

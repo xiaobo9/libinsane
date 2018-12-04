@@ -1176,6 +1176,26 @@ end:
 }
 
 
+static enum lis_error lis_str_to_twain_int(
+		const struct lis_twain_cap *cap, const char *str,
+		int *out
+	)
+{
+	int i;
+
+	*out = 0;
+
+	for (i = 0 ; !cap->possibles[i].eol ; i++) {
+		if (strcasecmp(str, cap->possibles[i].str) == 0) {
+			*out = cap->possibles[i].twain_int;
+			return LIS_OK;
+		}
+	}
+
+	return LIS_ERR_INVALID_VALUE;
+}
+
+
 /* TW_ONEVALUE is so poorly defined ... */
 union lis_one_value {
 	const TW_ONEVALUE twain;
@@ -1203,6 +1223,7 @@ static enum lis_error twain_set_value(
 	TW_CAPABILITY cap;
 	enum lis_error err = LIS_OK;
 	union lis_one_value *value;
+	int intvalue = 0;
 
 	lis_log_info(
 		"%s->set_value(%s) ...",
@@ -1228,20 +1249,44 @@ static enum lis_error twain_set_value(
 	switch(private->twain_cap->type) {
 		case TWTY_INT8:
 		case TWTY_UINT8:
-			// lis type == LIS_TYPE_INTEGER
-			value->lis.value.integer8 = in_value.integer;
+			// lis type == LIS_TYPE_INTEGER || STRING
+			if (private->twain_cap->possibles != NULL) {
+				err = lis_str_to_twain_int(
+					private->twain_cap, in_value.string,
+					&intvalue
+				);
+			} else {
+				intvalue = in_value.integer;
+			}
+			value->lis.value.integer8 = intvalue;
 			break;
 
 		case TWTY_INT16:
 		case TWTY_UINT16:
-			// lis type == LIS_TYPE_INTEGER
-			value->lis.value.integer16 = in_value.integer;
+			// lis type == LIS_TYPE_INTEGER || STRING
+			if (private->twain_cap->possibles != NULL) {
+				err = lis_str_to_twain_int(
+					private->twain_cap, in_value.string,
+					&intvalue
+				);
+			} else {
+				intvalue = in_value.integer;
+			}
+			value->lis.value.integer16 = intvalue;
 			break;
 
 		case TWTY_INT32:
 		case TWTY_UINT32:
-			// lis type == LIS_TYPE_INTEGER
-			value->lis.value.integer32 = in_value.integer;
+			// lis type == LIS_TYPE_INTEGER || STRING
+			if (private->twain_cap->possibles != NULL) {
+				err = lis_str_to_twain_int(
+					private->twain_cap, in_value.string,
+					&intvalue
+				);
+			} else {
+				intvalue = in_value.integer;
+			}
+			value->lis.value.integer32 = intvalue;
 			break;
 
 		case TWTY_BOOL:
@@ -1272,13 +1317,20 @@ static enum lis_error twain_set_value(
 				private->twain_cap->type
 			);
 			err = LIS_ERR_UNSUPPORTED;
-			private->item->impl->entry_points.DSM_MemUnlock(
-				cap.hContainer
-			);
-			goto end;
+			break;
 	}
 
 	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
+
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error(
+			"%s->set_value(%s): value conversion failed:"
+			" 0x%X, %s",
+			private->item->parent.name, self->name,
+			err, lis_strerror(err)
+		);
+		goto end;
+	}
 
 	twrc = DSM_ENTRY(
 		&private->item->twain_id,
