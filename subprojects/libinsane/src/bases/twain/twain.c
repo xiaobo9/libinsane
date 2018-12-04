@@ -142,6 +142,18 @@ static inline double twain_unfix(const TW_FIX32 *fix32)
 }
 
 
+static inline TW_FIX32 twain_fix(double val)
+{
+	TW_FIX32 fix32;
+
+	fix32.Whole = val;
+	val -= fix32.Whole;
+	fix32.Frac = (val * 65536.0);
+
+	return fix32;
+}
+
+
 static enum lis_error twrc_to_lis_error(TW_UINT16 twrc)
 {
 	const char *name;
@@ -533,7 +545,7 @@ static enum lis_error twain_list_devices(
 
 		dev->parent.vendor = dev->twain_id.Manufacturer;
 		dev->parent.model = dev->twain_id.ProductName;
-		dev->parent.type = LIS_ITEM_DEVICE;
+		dev->parent.type = "unknown"; // TODO(Jflesch)
 
 		dev->next = private->devices;
 		private->devices = dev;
@@ -834,8 +846,7 @@ static enum lis_value_type twain_cap_to_lis_type(
 		return LIS_TYPE_INTEGER;
 	}
 
-	if ((type == LIS_TYPE_INTEGER || type == LIS_TYPE_BOOL)
-			&& twain_cap_def->possibles != NULL) {
+	if (type == LIS_TYPE_INTEGER && twain_cap_def->possibles != NULL) {
 		return LIS_TYPE_STRING;
 	}
 
@@ -951,7 +962,7 @@ static enum lis_error twain_cap_to_lis(
 			return LIS_OK;
 		case TWTY_BOOL:
 			value.boolean = in;
-			twain_int_to_str(*(value.int8), twain_cap_def, out);
+			out->boolean = *(value.boolean);
 			return LIS_OK;
 		case TWTY_FIX32:
 			value.fix32 = in;
@@ -989,6 +1000,11 @@ static enum lis_error get_constraint(
 	} container;
 	size_t el_size;
 	unsigned int i;
+
+	if (opt->value.type == LIS_TYPE_BOOL) {
+		opt->constraint.type = LIS_CONSTRAINT_NONE;
+		return LIS_OK;
+	}
 
 	switch(cap->ConType) {
 		case TWON_ARRAY:
@@ -1115,7 +1131,7 @@ static enum lis_error twain_get_value(
 	);
 	if (twrc != TWRC_SUCCESS) {
 		err = twrc_to_lis_error(twrc);
-		lis_log_info(
+		lis_log_error(
 			"%s->get_value(%s): Failed to get value: 0x%X, %s",
 			private->item->parent.name, self->name,
 			err, lis_strerror(err)
@@ -1160,16 +1176,142 @@ end:
 }
 
 
+/* TW_ONEVALUE is so poorly defined ... */
+union lis_one_value {
+	const TW_ONEVALUE twain;
+	struct {
+		TW_UINT16 item_type;
+		union {
+			TW_BOOL boolean;
+			TW_INT8 integer8;
+			TW_INT16 integer16;
+			TW_INT32 integer32;
+			TW_FIX32 dbl;
+			TW_STR255 str;
+		} value;
+	} lis;
+};
+
+
 static enum lis_error twain_set_value(
-		struct lis_option_descriptor *self, union lis_value value,
+		struct lis_option_descriptor *self, union lis_value in_value,
 		int *set_flags
 	)
 {
-	LIS_UNUSED(self);
-	LIS_UNUSED(value);
-	LIS_UNUSED(set_flags);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	struct lis_twain_option *private = LIS_TWAIN_OPT_PRIVATE(self);
+	TW_UINT16 twrc;
+	TW_CAPABILITY cap;
+	enum lis_error err = LIS_OK;
+	union lis_one_value *value;
+
+	lis_log_info(
+		"%s->set_value(%s) ...",
+		private->item->parent.name, self->name
+	);
+
+	// always assume result is inexact (we don't get any feedback)
+	*set_flags = LIS_SET_FLAG_INEXACT;
+
+	memset(&cap, 0, sizeof(cap));
+	cap.Cap = private->twain_cap->id;
+	cap.ConType = TWON_ONEVALUE;
+
+	cap.hContainer = private->item->impl->entry_points.DSM_MemAllocate(
+		sizeof(union lis_one_value)
+	);
+	// TODO(Jflesch): out of mem ?
+
+	value = private->item->impl->entry_points.DSM_MemLock(cap.hContainer);
+
+	memset(value, 0, sizeof(*value));
+	value->lis.item_type = private->twain_cap->type;
+	switch(private->twain_cap->type) {
+		case TWTY_INT8:
+		case TWTY_UINT8:
+			// lis type == LIS_TYPE_INTEGER
+			value->lis.value.integer8 = in_value.integer;
+			break;
+
+		case TWTY_INT16:
+		case TWTY_UINT16:
+			// lis type == LIS_TYPE_INTEGER
+			value->lis.value.integer16 = in_value.integer;
+			break;
+
+		case TWTY_INT32:
+		case TWTY_UINT32:
+			// lis type == LIS_TYPE_INTEGER
+			value->lis.value.integer32 = in_value.integer;
+			break;
+
+		case TWTY_BOOL:
+			// lis type == LIS_TYPE_BOOL
+			value->lis.value.boolean = in_value.boolean;
+			break;
+
+		case TWTY_FIX32:
+			// lis type == LIS_TYPE_DOUBLE
+			value->lis.value.dbl = twain_fix(in_value.dbl);
+			break;
+
+		case TWTY_STR32:
+		case TWTY_STR64:
+		case TWTY_STR128:
+		case TWTY_STR255:
+			// lis type == LIS_TYPE_STRING
+			strncpy(
+				value->lis.value.str, in_value.string,
+				sizeof(value->lis.value.str)
+			);
+			break;
+
+		default:
+			lis_log_error(
+				"%s->set_value(%s): Unsupported TWAIN type 0x%X",
+				private->item->parent.name, self->name,
+				private->twain_cap->type
+			);
+			err = LIS_ERR_UNSUPPORTED;
+			private->item->impl->entry_points.DSM_MemUnlock(
+				cap.hContainer
+			);
+			goto end;
+	}
+
+	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
+
+	twrc = DSM_ENTRY(
+		&private->item->twain_id,
+		DG_CONTROL, DAT_CAPABILITY, MSG_SET,
+		&cap
+	);
+
+	if (twrc == TWRC_CHECKSTATUS) {
+		(*set_flags) |= (
+			LIS_SET_FLAG_MUST_RELOAD_OPTIONS
+			| LIS_SET_FLAG_MUST_RELOAD_PARAMS
+		);
+		twrc = TWRC_SUCCESS;
+	}
+
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"%s->set_value(%s): Failed to get value: 0x%X, %s",
+			private->item->parent.name, self->name,
+			err, lis_strerror(err)
+		);
+		goto end;
+	}
+
+	lis_log_info(
+		"%s->set_value(%s) successful",
+		private->item->parent.name, self->name
+	);
+
+end:
+	private->item->impl->entry_points.DSM_MemFree(cap.hContainer);
+	return err;
 }
 
 
