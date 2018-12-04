@@ -48,6 +48,7 @@ struct lis_twain_option {
 	const struct lis_twain_cap *twain_cap;
 	struct lis_twain_item *item;
 };
+#define LIS_TWAIN_OPT_PRIVATE(opt) ((struct lis_twain_option *)(opt))
 
 
 struct lis_twain_item {
@@ -135,9 +136,9 @@ static DSMENTRYPROC g_dsm_entry_fn;
 static struct lis_twain_item *g_items = NULL;
 
 
-static double twain_unfix(TW_FIX32 fix32)
+static inline double twain_unfix(const TW_FIX32 *fix32)
 {
-	return (double)fix32.Whole + (double)fix32.Frac / 65536.0;
+	return ((double)fix32->Whole) + (((double)fix32->Frac) / 65536.0);
 }
 
 
@@ -779,7 +780,7 @@ static enum lis_value_type twain_type_to_lis(
 
 
 static enum lis_value_type twain_cap_to_lis_type(
-		const char *opt_name, const TW_CAPABILITY *cap,
+		const TW_CAPABILITY *cap,
 		const struct lis_twain_cap *twain_cap_def,
 		const void *twain_container
 	)
@@ -797,28 +798,29 @@ static enum lis_value_type twain_cap_to_lis_type(
 		case TWON_ARRAY:
 			container.array = twain_container;
 			type = twain_type_to_lis(
-				opt_name, container.array->ItemType
+				twain_cap_def->name, container.array->ItemType
 			);
 			valid = 1;
 			break;
 		case TWON_ENUMERATION:
 			container.enumeration = twain_container;
 			type = twain_type_to_lis(
-				opt_name, container.enumeration->ItemType
+				twain_cap_def->name,
+				container.enumeration->ItemType
 			);
 			valid = 1;
 			break;
 		case TWON_ONEVALUE:
 			container.one = twain_container;
 			type = twain_type_to_lis(
-				opt_name, container.one->ItemType
+				twain_cap_def->name, container.one->ItemType
 			);
 			valid = 1;
 			break;
 		case TWON_RANGE:
 			container.range = twain_container;
 			type = twain_type_to_lis(
-				opt_name, container.range->ItemType
+				twain_cap_def->name, container.range->ItemType
 			);
 			valid = 1;
 			break;
@@ -827,7 +829,7 @@ static enum lis_value_type twain_cap_to_lis_type(
 	if (!valid) {
 		lis_log_warning(
 			"Unknown twain container for option '%s': 0x%X."
-			" Assuming integer", opt_name, cap->ConType
+			" Assuming integer", twain_cap_def->name, cap->ConType
 		);
 		return LIS_TYPE_INTEGER;
 	}
@@ -838,52 +840,6 @@ static enum lis_value_type twain_cap_to_lis_type(
 	}
 
 	return type;
-}
-
-
-static enum lis_error twain_get_value(
-		struct lis_option_descriptor *self, union lis_value *value
-	)
-{
-	LIS_UNUSED(self);
-	LIS_UNUSED(value);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
-}
-
-
-static enum lis_error twain_set_value(
-		struct lis_option_descriptor *self, union lis_value value,
-		int *set_flags
-	)
-{
-	LIS_UNUSED(self);
-	LIS_UNUSED(value);
-	LIS_UNUSED(set_flags);
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
-}
-
-
-static void free_opts(struct lis_twain_item *private)
-{
-	int i;
-
-	if (private->opts_ptrs != NULL) {
-		for (i = 0 ; private->opts_ptrs[i] != NULL ; i++) {
-			switch (private->opts_ptrs[i]->constraint.type) {
-				case LIS_CONSTRAINT_NONE:
-				case LIS_CONSTRAINT_RANGE:
-					break;
-				case LIS_CONSTRAINT_LIST:
-					FREE(private->opts_ptrs[i]->constraint.possible.list.values);
-					break;
-			}
-		}
-	}
-
-	FREE(private->opts);
-	FREE(private->opts_ptrs);
 }
 
 
@@ -951,7 +907,7 @@ static enum lis_error twain_int_to_str(
 }
 
 
-static enum lis_error twain_constraint_to_lis(
+static enum lis_error twain_cap_to_lis(
 		TW_UINT16 type, const struct lis_twain_cap *twain_cap_def,
 		const void *in, union lis_value *out
 	)
@@ -999,7 +955,7 @@ static enum lis_error twain_constraint_to_lis(
 			return LIS_OK;
 		case TWTY_FIX32:
 			value.fix32 = in;
-			out->dbl = twain_unfix(*(value.fix32));
+			out->dbl = twain_unfix(value.fix32);
 			return LIS_OK;
 		case TWTY_STR32:
 		case TWTY_STR64:
@@ -1050,7 +1006,7 @@ static enum lis_error get_constraint(
 				container.array->ItemType
 			);
 			for (i = 0 ; i < container.array->NumItems ; i++) {
-				twain_constraint_to_lis(
+				twain_cap_to_lis(
 					container.array->ItemType, twain_cap_def,
 					((char *)(&container.array->ItemList)) + (i * el_size),
 					&(opt->constraint.possible.list.values[i])
@@ -1073,7 +1029,7 @@ static enum lis_error get_constraint(
 				container.enumeration->ItemType
 			);
 			for (i = 0 ; i < container.enumeration->NumItems ; i++) {
-				twain_constraint_to_lis(
+				twain_cap_to_lis(
 					container.enumeration->ItemType, twain_cap_def,
 					((char *)(&container.enumeration->ItemList)) + (i * el_size),
 					&(opt->constraint.possible.list.values[i])
@@ -1088,7 +1044,7 @@ static enum lis_error get_constraint(
 			opt->constraint.possible.list.values =
 				calloc(1, sizeof(union lis_value));
 			// TODO: check calloc
-			twain_constraint_to_lis(
+			twain_cap_to_lis(
 				container.one->ItemType,
 				twain_cap_def,
 				&container.one->Item,
@@ -1099,12 +1055,30 @@ static enum lis_error get_constraint(
 		case TWON_RANGE:
 			container.range = twain_container;
 			opt->constraint.type = LIS_CONSTRAINT_RANGE;
-			opt->constraint.possible.range.min.integer =
-				container.range->MinValue;
-			opt->constraint.possible.range.max.integer =
-				container.range->MaxValue;
-			opt->constraint.possible.range.interval.integer =
-				container.range->StepSize;
+			if (container.range->ItemType == TWTY_FIX32) {
+				opt->constraint.possible.range.min.dbl =
+					twain_unfix(
+						(TW_FIX32 *)
+						(&container.range->MinValue)
+					);
+				opt->constraint.possible.range.max.dbl  =
+					twain_unfix(
+						(TW_FIX32 *)
+						(&container.range->MaxValue)
+					);
+				opt->constraint.possible.range.interval.dbl =
+					twain_unfix(
+						(TW_FIX32 *)
+						(&container.range->StepSize)
+					);
+			} else {
+				opt->constraint.possible.range.min.integer =
+					container.range->MinValue;
+				opt->constraint.possible.range.max.integer =
+					container.range->MaxValue;
+				opt->constraint.possible.range.interval.integer =
+					container.range->StepSize;
+			}
 			return LIS_OK;
 	}
 
@@ -1113,6 +1087,111 @@ static enum lis_error get_constraint(
 		"Unknown twain container: 0x%X. Assuming integer", cap->ConType
 	);
 	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+
+static enum lis_error twain_get_value(
+		struct lis_option_descriptor *self, union lis_value *out
+	)
+{
+	struct lis_twain_option *private = LIS_TWAIN_OPT_PRIVATE(self);
+	TW_UINT16 twrc;
+	TW_CAPABILITY cap;
+	enum lis_error err;
+	const TW_ONEVALUE *container;
+
+	lis_log_info(
+		"%s->get_value(%s) ...",
+		private->item->parent.name, self->name
+	);
+	memset(&cap, 0, sizeof(cap));
+	cap.Cap = private->twain_cap->id;
+	cap.ConType = TWON_DONTCARE16;
+	twrc = DSM_ENTRY(
+		&private->item->twain_id,
+		DG_CONTROL, DAT_CAPABILITY, MSG_GETCURRENT,
+		&cap
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_info(
+			"%s->get_value(%s): Failed to get value: 0x%X, %s",
+			private->item->parent.name, self->name,
+			err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	if (cap.ConType != TWON_ONEVALUE) {
+		lis_log_error(
+			"%s->get_value(%s): Unsupported container type: 0x%X",
+			private->item->parent.name, self->name,
+			cap.ConType
+		);
+		return LIS_ERR_UNSUPPORTED;
+	}
+
+	container = private->item->impl->entry_points.DSM_MemLock(
+		cap.hContainer
+	);
+
+	err = twain_cap_to_lis(
+		container->ItemType, private->twain_cap,
+		&container->Item, out
+	);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error(
+			"%s->get_value(%s): Failed to convert value: 0x%x, %s",
+			private->item->parent.name, self->name,
+			err, lis_strerror(err)
+		);
+		goto end;
+	}
+	lis_log_info(
+		"%s->get_value(%s) successful",
+		private->item->parent.name, self->name
+	);
+
+end:
+	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
+	private->item->impl->entry_points.DSM_MemFree(cap.hContainer);
+	return err;
+}
+
+
+static enum lis_error twain_set_value(
+		struct lis_option_descriptor *self, union lis_value value,
+		int *set_flags
+	)
+{
+	LIS_UNUSED(self);
+	LIS_UNUSED(value);
+	LIS_UNUSED(set_flags);
+	// TODO
+	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+}
+
+
+static void free_opts(struct lis_twain_item *private)
+{
+	int i;
+
+	if (private->opts_ptrs != NULL) {
+		for (i = 0 ; private->opts_ptrs[i] != NULL ; i++) {
+			switch (private->opts_ptrs[i]->constraint.type) {
+				case LIS_CONSTRAINT_NONE:
+				case LIS_CONSTRAINT_RANGE:
+					break;
+				case LIS_CONSTRAINT_LIST:
+					FREE(private->opts_ptrs[i]->constraint.possible.list.values);
+					break;
+			}
+		}
+	}
+
+	FREE(private->opts);
+	FREE(private->opts_ptrs);
 }
 
 
@@ -1152,6 +1231,7 @@ static enum lis_error twain_get_options(
 	for (cap_idx = 0 ; cap_idx < nb_caps ; cap_idx++) {
 		memset(&cap, 0, sizeof(cap));
 		cap.Cap = all_caps[cap_idx].id;
+		cap.ConType = TWON_DONTCARE16;
 		lis_log_debug(
 			"Probing for capability/option '%s' ...",
 			all_caps[cap_idx].name
@@ -1180,7 +1260,7 @@ static enum lis_error twain_get_options(
 				all_caps[cap_idx].readonly ? 0 : LIS_CAP_SW_SELECT
 			);
 			private->opts[nb_opts].parent.value.type = twain_cap_to_lis_type(
-				all_caps[cap_idx].name, &cap, &all_caps[cap_idx], container
+				&cap, &all_caps[cap_idx], container
 			);
 			private->opts[nb_opts].parent.value.unit = LIS_UNIT_NONE; // TODO ?
 			private->opts[nb_opts].parent.fn.get_value = twain_get_value;
