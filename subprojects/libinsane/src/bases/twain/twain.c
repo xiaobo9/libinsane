@@ -867,7 +867,21 @@ static enum lis_error twain_set_value(
 
 static void free_opts(struct lis_twain_item *private)
 {
-	// TODO: free constraints
+	int i;
+
+	if (private->opts_ptrs != NULL) {
+		for (i = 0 ; private->opts_ptrs[i] != NULL ; i++) {
+			switch (private->opts_ptrs[i]->constraint.type) {
+				case LIS_CONSTRAINT_NONE:
+				case LIS_CONSTRAINT_RANGE:
+					break;
+				case LIS_CONSTRAINT_LIST:
+					FREE(private->opts_ptrs[i]->constraint.possible.list.values);
+					break;
+			}
+		}
+	}
+
 	FREE(private->opts);
 	FREE(private->opts_ptrs);
 }
