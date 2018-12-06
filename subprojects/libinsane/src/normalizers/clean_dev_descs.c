@@ -3,6 +3,7 @@
 
 #include <libinsane/capi.h>
 #include <libinsane/log.h>
+#include <libinsane/normalizers.h>
 #include <libinsane/workarounds.h>
 #include <libinsane/util.h>
 

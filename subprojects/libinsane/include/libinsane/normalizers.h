@@ -177,7 +177,6 @@ extern enum lis_error lis_api_normalizer_raw24(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
-
 /*!
  * \brief Set safest default values.
  *

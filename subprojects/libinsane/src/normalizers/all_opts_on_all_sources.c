@@ -109,9 +109,9 @@ static enum lis_error opts_list_devices(
 
 static enum lis_error opts_get_device(struct lis_api *impl, const char *dev_id, struct lis_item **item)
 {
-	struct opts_impl *private = LIS_OPTS_PRIVATE(impl);
 	enum lis_error err;
 	struct opts_item *item_private;
+	struct opts_impl *private = LIS_OPTS_PRIVATE(impl);
 
 	item_private = calloc(1, sizeof(struct opts_item));
 	if (item_private == NULL) {

@@ -22,7 +22,7 @@ struct opt_values_mapping {
 	const struct opt_value_mapping *mapping;
 };
 
-const struct opt_value_mapping g_opt_mode_mapping[] = {
+static const struct opt_value_mapping g_opt_mode_mapping[] = {
 	// Sane + Brother MFC-7360N:
 	// 'Black & White', 'Gray[Error Diffusion]', 'True Gray', '24bit Color', '24bit Color[Fast]'
 	{ .original = "Black & White", .replacement = OPT_VALUE_MODE_BW },
@@ -38,7 +38,7 @@ const struct opt_value_mapping g_opt_mode_mapping[] = {
 };
 
 
-const struct opt_value_mapping g_opt_source_mapping[] = {
+static const struct opt_value_mapping g_opt_source_mapping[] = {
 	// Sane + OKI MC363: translations ...
 	{
 		 .original = (char *) (unsigned char[]) {
@@ -62,14 +62,14 @@ const struct opt_value_mapping g_opt_source_mapping[] = {
 };
 
 
-const struct opt_values_mapping g_opt_values_mapping[] = {
+static const struct opt_values_mapping g_opt_values_mapping[] = {
 	{ .opt_name = OPT_NAME_MODE, .mapping = g_opt_mode_mapping },
 	{ .opt_name = OPT_NAME_SOURCE, .mapping = g_opt_source_mapping },
 	{ .opt_name = NULL, },
 };
 
 
-const struct opt_values_mapping *get_opt_mapping(const char *opt_name)
+static const struct opt_values_mapping *get_opt_mapping(const char *opt_name)
 {
 	int mapping_idx;
 	for (mapping_idx = 0 ; g_opt_values_mapping[mapping_idx].opt_name != NULL ; mapping_idx++) {
@@ -83,7 +83,7 @@ const struct opt_values_mapping *get_opt_mapping(const char *opt_name)
 }
 
 
-const struct opt_value_mapping *get_opt_original_value_mapping(const char *opt_name, const char *opt_value)
+static const struct opt_value_mapping *get_opt_original_value_mapping(const char *opt_name, const char *opt_value)
 {
 	const struct opt_values_mapping *o_mapping;
 	const struct opt_value_mapping *v_mapping;
@@ -104,7 +104,7 @@ const struct opt_value_mapping *get_opt_original_value_mapping(const char *opt_n
 }
 
 
-const struct opt_value_mapping *get_opt_modified_value_mapping(
+static const struct opt_value_mapping *get_opt_modified_value_mapping(
 		const char *opt_name, const char *opt_value, const struct lis_value_list *constraint
 	)
 {
@@ -135,7 +135,7 @@ const struct opt_value_mapping *get_opt_modified_value_mapping(
 }
 
 
-enum lis_error get_value(struct lis_option_descriptor *modified, union lis_value *value)
+static enum lis_error get_value(struct lis_option_descriptor *modified, union lis_value *value)
 {
 	struct lis_option_descriptor *original = lis_bw_get_original_opt(modified);
 	enum lis_error err;
@@ -164,7 +164,7 @@ enum lis_error get_value(struct lis_option_descriptor *modified, union lis_value
 }
 
 
-enum lis_error set_value(struct lis_option_descriptor *modified,
+static enum lis_error set_value(struct lis_option_descriptor *modified,
 		union lis_value value, int *set_flags)
 {
 	struct lis_option_descriptor *original = lis_bw_get_original_opt(modified);

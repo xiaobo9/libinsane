@@ -17,7 +17,7 @@ struct opt_name_mapping {
 };
 
 
-const struct opt_name_mapping g_opt_name_mapping[] = {
+static const struct opt_name_mapping g_opt_name_mapping[] = {
 	{ .original = "scan-resolution", .replacement = OPT_NAME_RESOLUTION }, // Sane + Lexmark
 	{ .original = "doc-source", .replacement = OPT_NAME_SOURCE }, // Sane + Samsung
 	{ .original = NULL, .replacement = NULL },

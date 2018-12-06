@@ -4,6 +4,8 @@
 
 #include <CUnit/Basic.h>
 
+#define LIS_UNIT_TESTS
+
 #include <libinsane/capi.h>
 #include <libinsane/constants.h>
 #include <libinsane/dumb.h>
@@ -11,6 +13,7 @@
 #include <libinsane/normalizers.h>
 #include <libinsane/util.h>
 
+#include "main.h"
 #include "util.h"
 
 #include "../src/normalizers/raw24.h"

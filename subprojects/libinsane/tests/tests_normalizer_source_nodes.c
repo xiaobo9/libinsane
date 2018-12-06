@@ -11,6 +11,7 @@
 #include <libinsane/normalizers.h>
 #include <libinsane/util.h>
 
+#include "main.h"
 #include "util.h"
 
 

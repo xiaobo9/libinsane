@@ -6,16 +6,19 @@
 #include <libinsane/log.h>
 #include <libinsane/util.h>
 
+#include "main.h"
 
-int register_tests(void);
 
 // #define LOG_DEBUG
 
 #ifndef LOG_DEBUG
-static void noop() {}
+static void noop(enum lis_log_level lvl, const char *msg) {
+	LIS_UNUSED(lvl);
+	LIS_UNUSED(msg);
+}
 #endif
 
-const struct lis_log_callbacks g_log_callbacks = {
+static const struct lis_log_callbacks g_log_callbacks = {
 	.callbacks = {
 #ifdef LOG_DEBUG
 		[LIS_LOG_LVL_DEBUG] = lis_log_stdout,
