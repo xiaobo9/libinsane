@@ -26,13 +26,14 @@ if __name__ == "__main__":
             # gobject macros raise many warnings --> do not check
             continue
         cflags += ['-Wsparse-all', '-Wsparse-error']
-        if platform.machine() == "aarch64":  # workaround
-            cflags += ['-D_Float32=float']
-            cflags += ['-D_Float32x=float']
-            cflags += ['-D_Float64=double']
-            cflags += ['-D_Float64x=double']
-            cflags += ['-D_Float128=double']
-            cflags += ['-D_Float128x=double']
+        # WORKAROUND(Jflesch):
+        # TODO(Jflesch): Why do I need to do that ?
+        cflags += ['-D_Float32=float']
+        cflags += ['-D_Float32x=float']
+        cflags += ['-D_Float64=double']
+        cflags += ['-D_Float64x=double']
+        cflags += ['-D_Float128=double']
+        cflags += ['-D_Float128x=double']
         print("Running sparse on {}".format(filepath))
         cmd = ['sparse', filepath] + cflags
         r = subprocess.run(cmd)
