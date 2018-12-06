@@ -37,6 +37,7 @@ doc: build/build.ninja
 	echo "Documentation is available in doc/build/"
 
 check: build_c
+	python3 ./check_sparse.py build/compile_commands.json
 	(cd build ; ! /usr/lib/llvm-4.0/share/clang/run-clang-tidy.py | grep warning 2>&1)
 
 test: build/build.ninja
