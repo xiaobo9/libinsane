@@ -26,16 +26,21 @@ def main():
     devs = api.list_devices(Libinsane.DeviceLocations.ANY)
     print("Found {} devices".format(len(devs)))
     for d in devs:
-        dev = api.get_device(d.get_dev_id())
-        print("|")
-        print("|-- {} ({} ; {})".format(
-            d.get_dev_id(), d.to_string(), dev.get_name()
-        ))
         try:
-            for child in dev.get_children():
-                print("|   |-- {}".format(child.get_name()))
-        finally:
-            dev.close()
+            dev = api.get_device(d.get_dev_id())
+            print("|")
+            print("|-- {} ({} ; {})".format(
+                d.get_dev_id(), d.to_string(), dev.get_name()
+            ))
+            try:
+                for child in dev.get_children():
+                    print("|   |-- {}".format(child.get_name()))
+            finally:
+                dev.close()
+        except Exception as exc:
+            print("ERROR: failed to open device {}: {}".format(
+                d.get_dev_id(), str(exc)
+            ))
 
 
 if __name__ == "__main__":

@@ -35,8 +35,8 @@ struct bmp {
 static struct lis_log_callbacks g_log_callbacks = {
 	.callbacks = {
 		[LIS_LOG_LVL_DEBUG] = noop,
-		[LIS_LOG_LVL_INFO] = noop,
-		[LIS_LOG_LVL_WARNING] = noop,
+		[LIS_LOG_LVL_INFO] = lis_log_stderr,
+		[LIS_LOG_LVL_WARNING] = lis_log_stderr,
 		[LIS_LOG_LVL_ERROR] = lis_log_stderr,
 	},
 };
@@ -134,10 +134,10 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 		err = call; \
 		if (LIS_IS_ERROR(err)) { \
 			fprintf( \
-					stderr, "%s(L%d): ERROR: %X, %s\n", \
-					__FILE__, __LINE__, \
-					err, lis_strerror(err) \
-					); \
+				stderr, "%s(L%d): ERROR: %X, %s\n", \
+				__FILE__, __LINE__, \
+				err, lis_strerror(err) \
+			); \
 			goto end; \
 		} \
 	} while(0)

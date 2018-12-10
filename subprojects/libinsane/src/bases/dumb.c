@@ -60,6 +60,11 @@ struct lis_dumb_private {
 		int is_scanning;
 		struct lis_dumb_scan_session *session;
 	} scan;
+
+	struct {
+		int set;
+		int get;
+	} nb;
 };
 #define LIS_DUMB_PRIVATE(impl) ((struct lis_dumb_private *)(impl))
 
@@ -242,6 +247,7 @@ static enum lis_error dumb_opt_get_value(struct lis_option_descriptor *self, uni
 {
 	struct lis_dumb_option *private = LIS_DUMB_OPTION(self);
 
+	private->impl->nb.get++;
 	if (private->has_value) {
 		memcpy(out_value, &private->value, sizeof(*out_value));
 	} else {
@@ -256,6 +262,7 @@ static enum lis_error dumb_opt_set_value(struct lis_option_descriptor *self,
 {
 	struct lis_dumb_option *private = LIS_DUMB_OPTION(self);
 
+	private->impl->nb.set++;
 	if (private->impl->scan.is_scanning) {
 		return LIS_ERR_DEVICE_BUSY;
 	}
@@ -501,4 +508,18 @@ static void dumb_cancel(struct lis_scan_session *session)
 	private->read_idx = 0xFFFFFFFF;
 	FREE(impl->scan.session);
 	impl->scan.is_scanning = 0;
+}
+
+
+int lis_dumb_get_nb_get(struct lis_api *self)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	return private->nb.get;
+}
+
+
+int lis_dumb_get_nb_set(struct lis_api *self)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	return private->nb.set;
 }
