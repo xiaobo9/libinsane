@@ -76,7 +76,8 @@ def set_opt(item, opt_name, opt_value):
             return
         print("- Old {}: {}".format(opt_name, opts[opt_name].get_value()))
         print("- Allowed values: {}".format(opts[opt_name].get_constraint()))
-        opts[opt_name].set_value(opt_value)
+        set_flags = opts[opt_name].set_value(opt_value)
+        print("- Set flags: {}".format(set_flags))
         opts = item.get_options()
         opts = {opt.get_name(): opt for opt in opts}
         print("- New {}: {}".format(opt_name, opts[opt_name].get_value()))
@@ -181,14 +182,14 @@ def main():
     # os.environ['LIBINSANE_NORMALIZER_SOURCE_NAMES'] = "0"
     # os.environ['LIBINSANE_WORKAROUND_OPT_VALUES'] = "0"
     # os.environ['LIBINSANE_WORKAROUND_OPT_NAMES'] = "0"
-    # os.environ['LIBINSANE_NORMALIZER_OPT_ALIASES'] = "1"
+    # os.environ['LIBINSANE_NORMALIZER_OPT_ALIASES'] = "0"
     # os.environ['LIBINSANE_NORMALIZER_BMP2RAW'] = "0"
     # os.environ['LIBINSANE_NORMALIZER_RAW24'] = "0"
     # os.environ['LIBINSANE_NORMALIZER_RESOLUTION'] = "0"
     # os.environ['LIBINSANE_NORMALIZER_SOURCE_TYPES'] = "0"
     # os.environ['LIBINSANE_WORKAROUND_ONE_PAGE_FLATBED'] = "0"
     # os.environ['LIBINSANE_NORMALIZER_CLEAN_DEV_DESCS'] = "0"
-    # os.environ['LIBINSANE_NORMALIZER_SAFE_DEFAULTS'] = "1"
+    # os.environ['LIBINSANE_NORMALIZER_SAFE_DEFAULTS'] = "0"
     # os.environ['LIBINSANE_WORKAROUND_DEDICATED_THREAD'] = "0"
 
 #! [ExampleSetLogger]
