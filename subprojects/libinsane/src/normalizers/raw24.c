@@ -9,6 +9,7 @@
 #include <libinsane/util.h>
 
 
+#include "raw24.h"
 #include "../basewrapper.h"
 
 

@@ -10,6 +10,7 @@
 #include <libinsane/workarounds.h>
 #include <libinsane/util.h>
 
+#include "main.h"
 #include "util.h"
 
 

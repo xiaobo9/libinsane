@@ -7,7 +7,7 @@
 #include <libinsane/log.h>
 
 
-const struct lis_log_callbacks g_default_callbacks = {
+static const struct lis_log_callbacks g_default_callbacks = {
 	.callbacks = {
 		[LIS_LOG_LVL_DEBUG] = lis_log_stderr,
 		[LIS_LOG_LVL_INFO] = lis_log_stderr,
@@ -17,7 +17,7 @@ const struct lis_log_callbacks g_default_callbacks = {
 };
 
 
-const struct lis_log_callbacks *g_current_callbacks = &g_default_callbacks;
+static const struct lis_log_callbacks *g_current_callbacks = &g_default_callbacks;
 
 
 void lis_set_log_callbacks(const struct lis_log_callbacks *callbacks)

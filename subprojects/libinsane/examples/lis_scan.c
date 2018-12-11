@@ -14,7 +14,10 @@
 #include "../src/bmp.h"
 
 
-static void noop() { }
+static void noop(enum lis_log_level lvl, const char *msg) {
+	LIS_UNUSED(lvl);
+	LIS_UNUSED(msg);
+}
 
 
 struct bmp {

@@ -141,7 +141,7 @@ static const struct {
 enum lis_error lis_safebet(struct lis_api **out_impls)
 {
 	enum lis_error err = LIS_ERR_UNSUPPORTED;
-	struct lis_api *impls[4] = { 0 };
+	struct lis_api *impls[4] = { NULL };
 	int nb_impls = 0;
 	struct lis_api *next;
 	size_t i;

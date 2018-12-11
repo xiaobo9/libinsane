@@ -16,6 +16,12 @@ sudo apt install \
         valac
 ```
 
+For static analysis:
+
+```
+sudo apt install sparse clang-tidy-7
+```
+
 
 # MSYS2 Windows
 

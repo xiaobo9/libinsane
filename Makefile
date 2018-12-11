@@ -37,7 +37,9 @@ doc: build/build.ninja
 	echo "Documentation is available in doc/build/"
 
 check: build_c
-	(cd build ; ! /usr/lib/llvm-4.0/share/clang/run-clang-tidy.py | grep warning 2>&1)
+	! command -v sparse || python3 ./check_sparse.py build/compile_commands.json
+	(cd build ; ! command -v run-clang-tidy-4.0.py || ! (run-clang-tidy-4.0.py | grep warning 2>&1))
+	(cd build ; ! command -v run-clang-tidy-7 || ! (run-clang-tidy-7 | grep warning 2>&1))
 
 test: build/build.ninja
 	(cd build && ninja test)

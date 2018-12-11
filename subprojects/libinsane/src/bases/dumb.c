@@ -191,9 +191,10 @@ static enum lis_error dumb_list_devices(
 		struct lis_device_descriptor ***dev_infos
 	)
 {
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+
 	LIS_UNUSED(locations);
 
-	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
 	if (LIS_IS_OK(private->list_devices_ret)) {
 		*dev_infos = private->descs;
 	} else {
@@ -437,8 +438,10 @@ void lis_dumb_set_scan_result(struct lis_api *self, const struct lis_dumb_read *
 
 static int dumb_end_of_feed(struct lis_scan_session *session)
 {
+	int r;
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
-	int r = (private->read_idx >= private->impl->scan.nb_reads);
+
+	r = (private->read_idx >= private->impl->scan.nb_reads);
 	if (r) {
 		private->impl->scan.is_scanning = 0;
 	}
@@ -490,8 +493,11 @@ static enum lis_error dumb_scan_read(
 
 static void dumb_cancel(struct lis_scan_session *session)
 {
+	struct lis_dumb_private *impl;
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
-	struct lis_dumb_private *impl = private->impl;
+
+	impl = private->impl;
+
 	private->read_idx = 0xFFFFFFFF;
 	FREE(impl->scan.session);
 	impl->scan.is_scanning = 0;

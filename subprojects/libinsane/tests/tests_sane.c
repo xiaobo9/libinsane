@@ -10,6 +10,7 @@
 #include <libinsane/sane.h>
 #include <libinsane/util.h>
 
+#include "main.h"
 #include "util.h"
 
 #define TEST_DEV_ID "test:0"
