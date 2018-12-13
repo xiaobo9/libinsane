@@ -13,6 +13,10 @@ def get_cflags(compile_commands):
         cflags = cflags.split(" ")
         out = []
         for f in cflags:
+            if f == "":
+                continue
+            if f[0] == "'" and f[-1] == "'":
+                f = f[1:-1]
             if f[:2] == "-D" or f[:2] == "-I":
                 out.append(f)
         yield (out, cfile['file'])
