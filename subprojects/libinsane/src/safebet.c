@@ -40,6 +40,12 @@ static const struct {
 		.enabled_by_default = 1,
 	},
 	{
+		.name = "workaround_cache",
+		.env = "LIBINSANE_WORKAROUND_CACHE",
+		.wrap_cb = lis_api_workaround_cache,
+		.enabled_by_default = 1,
+	},
+	{
 		.name = "normalizer_source_nodes",
 		.env = "LIBINSANE_NORMALIZER_SOURCE_NODES",
 		.wrap_cb = lis_api_normalizer_source_nodes,

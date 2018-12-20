@@ -21,6 +21,7 @@ LIBINSANE_VALGRIND_TESTS = [
     'normalizer_source_names',
     'normalizer_source_nodes',
     'normalizer_source_types',
+    'workaround_cache',
     'workaround_check_capabilities',
     'workaround_set_opt_late',
     'workaround_dedicated_thread',

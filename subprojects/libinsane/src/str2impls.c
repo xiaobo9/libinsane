@@ -101,6 +101,8 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 				err = lis_api_workaround_opt_values(*impls, &next);
 			} else if (strcmp(tok, "one_page_flatbed") == 0) {
 				err = lis_api_workaround_one_page_flatbed(*impls, &next);
+			} else if (strcmp(tok, "cache") == 0) {
+				err = lis_api_workaround_cache(*impls, &next);
 			} else {
 				lis_log_error("Unknown API wrapper: %s", tok);
 				err = LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
@@ -109,7 +111,7 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 		}
 
 		if (LIS_IS_ERROR(err)) {
-			lis_log_error("Failed to instanciate API implementation '%s'", tok);
+			lis_log_error("Failed to instantiate API implementation '%s'", tok);
 			goto error;
 		}
 

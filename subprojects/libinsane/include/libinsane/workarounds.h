@@ -172,6 +172,26 @@ extern enum lis_error lis_api_workaround_one_page_flatbed(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 
+
+/*!
+ * \brief Minimize calls to underlying API
+ *
+ * - API: Sane (maybe others)
+ * - Culprit: HP drivers + sane backend 'net' (+ difference of versions
+ *   between servers and clients) (maybe
+ *   others)
+ *
+ * Some drivers or combinations of drivers seem to be very touchy. This
+ * workaround aim to reduce to a strict minimum all the calls to
+ * list_options(), option->fn.set(), option->fn.get().
+ *
+ * Assumes that the 'set_fllags' when calling option->fn.set() is reliable.
+ */
+extern enum lis_error lis_api_workaround_cache(
+	struct lis_api *to_wrap, struct lis_api **out_impl
+);
+
+
 #ifdef __cplusplus
 }
 #endif

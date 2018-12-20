@@ -21,6 +21,7 @@ libinsane_srcs = files(
     'safebet.c',
     'str2impls.c',
     'util.c',
+    'workarounds/cache.c',
     'workarounds/check_capabilities.c',
     'workarounds/dedicated_thread.c',
     'workarounds/one_page_flatbed.c',
