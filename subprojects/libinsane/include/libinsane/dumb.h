@@ -45,6 +45,8 @@ void lis_dumb_set_scan_result(
 );
 int lis_dumb_get_nb_get(struct lis_api *self);
 int lis_dumb_get_nb_set(struct lis_api *self);
+int lis_dumb_get_nb_list_options(struct lis_api *self);
+
 
 #ifdef __cplusplus
 }

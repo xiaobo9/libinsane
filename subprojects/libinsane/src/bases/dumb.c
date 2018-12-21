@@ -63,6 +63,7 @@ struct lis_dumb_private {
 	} scan;
 
 	struct {
+		int list;
 		int set;
 		int get;
 	} nb;
@@ -281,6 +282,7 @@ static enum lis_error dumb_get_options(
 	)
 {
 	struct lis_dumb_item *private = LIS_DUMB_ITEM(self);
+	private->impl->nb.list++;
 	*out_descs = private->impl->opts;
 	return LIS_OK;
 }
@@ -524,4 +526,11 @@ int lis_dumb_get_nb_set(struct lis_api *self)
 {
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
 	return private->nb.set;
+}
+
+
+int lis_dumb_get_nb_list_options(struct lis_api *self)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	return private->nb.list;
 }
