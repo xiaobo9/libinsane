@@ -79,8 +79,14 @@ static int tests_init(void)
 	}
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
-	lis_dumb_add_option(g_dumb, &opt_mode, &opt_mode_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_resolution, &opt_resolution_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
+	lis_dumb_add_option(
+		g_dumb, &opt_mode, &opt_mode_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_min_one_source(g_dumb, &g_src);
 	if (LIS_IS_ERROR(err)) {

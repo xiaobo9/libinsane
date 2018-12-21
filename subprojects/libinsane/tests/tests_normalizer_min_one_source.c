@@ -53,7 +53,10 @@ static int tests_src_init(void)
 	}
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_mode_template, &opt_mode_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_mode_template, &opt_mode_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	return 0;
 }

@@ -56,7 +56,10 @@ static int tests_th_init(void)
 	}
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_source_template, &opt_source_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_source_template, &opt_source_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_source_nodes(g_dumb, &g_sn);
 	if (LIS_IS_ERROR(err)) {

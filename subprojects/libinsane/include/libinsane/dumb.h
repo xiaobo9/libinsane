@@ -29,7 +29,7 @@ void lis_dumb_set_list_devices_return(struct lis_api *self, enum lis_error ret);
 void lis_dumb_set_get_device_return(struct lis_api *self, enum lis_error ret);
 
 void lis_dumb_add_option(struct lis_api *self, const struct lis_option_descriptor *opt,
-	const union lis_value *default_value);
+	const union lis_value *default_value, int set_flags);
 
 struct lis_dumb_read {
 	const void *content;
