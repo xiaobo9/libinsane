@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,6 +10,9 @@
 struct cache_opt_private {
 	struct lis_option_descriptor parent;
 	struct lis_option_descriptor *wrapped;
+
+	bool has_last_value;
+	union lis_value last_value;
 };
 #define CACHE_OPT_PRIVATE(opt) ((struct cache_opt_private *)(opt))
 
@@ -87,15 +91,64 @@ static struct lis_api g_impl_template = {
 };
 
 
+static void free_last_value(struct cache_opt_private *private)
+{
+	if (!private->has_last_value) {
+		return;
+	}
+	private->has_last_value = 0;
+	if (private->parent.value.type != LIS_TYPE_STRING) {
+		return;
+	}
+	FREE(private->last_value.string);
+}
+
+
+
+static void set_last_value(
+		struct cache_opt_private *private, union lis_value value
+	)
+{
+	free_last_value(private);
+
+	memcpy(&private->last_value, &value, sizeof(private->last_value));
+	if (private->parent.value.type == LIS_TYPE_STRING) {
+		private->last_value.string = strdup(value.string);
+		if (private->last_value.string == NULL) {
+			lis_log_error("Out of memory");
+			return;
+		}
+	}
+	private->has_last_value = 1;
+}
+
+
 static enum lis_error cache_get_value(
 		struct lis_option_descriptor *self, union lis_value *value
 	)
 {
 	struct cache_opt_private *private = CACHE_OPT_PRIVATE(self);
-	// TODO
-	return private->wrapped->fn.get_value(
-		private->wrapped, value
-	);
+	enum lis_error err;
+
+	if (private->has_last_value) {
+		lis_log_info(
+			"%s->get_value(): Using cached value",
+			self->name
+		);
+		memcpy(value, &private->last_value, sizeof(*value));
+		return LIS_OK;
+	} else {
+		err = private->wrapped->fn.get_value(private->wrapped, value);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_error(
+				"%s->get_value() failed: 0x%X, %s",
+				self->name, err, lis_strerror(err)
+			);
+			return err;
+		}
+		set_last_value(private, *value);
+		return err;
+	}
 }
 
 
@@ -105,17 +158,43 @@ static enum lis_error cache_set_value(
 	)
 {
 	struct cache_opt_private *private = CACHE_OPT_PRIVATE(self);
-	// TODO
-	return private->wrapped->fn.set_value(
+	enum lis_error err;
+
+	*set_flags = 0;
+
+	err = private->wrapped->fn.set_value(
 		private->wrapped, value, set_flags
 	);
+	free_last_value(private);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_info(
+			"%s->set_value() failed: 0x%X, %s",
+			self->name, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	if (((*set_flags) & (
+				LIS_SET_FLAG_MUST_RELOAD_OPTIONS
+				| LIS_SET_FLAG_INEXACT
+			))) {
+		return err;
+	}
+
+	set_last_value(private, value);
+	return err;
 }
 
 
 static void free_opts(struct cache_item_private *private)
 {
+	int i;
+
 	if (private->opts_ptrs != NULL) {
-		// TODO: free stored values
+		for (i = 0 ; private->opts_ptrs[i] != NULL ; i++) {
+			free_last_value(&private->opts[i]);
+		}
+
 		FREE(private->opts);
 		FREE(private->opts_ptrs);
 	}
@@ -152,6 +231,10 @@ static enum lis_error cache_get_options(
 	for (nb_opts = 0; opts[nb_opts] != NULL ; nb_opts++) {
 	}
 
+	lis_log_debug(
+		"%s->get_options() returned %d options", self->name, nb_opts
+	);
+
 	private->opts_ptrs = calloc(
 		nb_opts + 1, sizeof(struct lis_option_descriptor *)
 	);
@@ -173,7 +256,7 @@ static enum lis_error cache_get_options(
 
 	for (i = 0 ; i < nb_opts ; i++) {
 		memcpy(
-			&private->opts[i].parent, &opts[i],
+			&private->opts[i].parent, opts[i],
 			sizeof(private->opts[i].parent)
 		);
 		private->opts[i].wrapped = opts[i];
@@ -339,6 +422,7 @@ static void cache_cleanup(struct lis_api *impl)
 {
 	struct cache_impl_private *private = CACHE_IMPL_PRIVATE(impl);
 
+	private->wrapped->cleanup(private->wrapped);
 	FREE(private);
 }
 

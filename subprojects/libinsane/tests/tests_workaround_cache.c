@@ -3,6 +3,7 @@
 #include <libinsane/capi.h>
 #include <libinsane/constants.h>
 #include <libinsane/dumb.h>
+#include <libinsane/log.h>
 #include <libinsane/normalizers.h>
 #include <libinsane/util.h>
 #include <libinsane/workarounds.h>
@@ -12,8 +13,10 @@
 
 
 static struct lis_api *g_dumb = NULL;
-static struct lis_api *g_sn = NULL;
+// beware, g_cache is wrapped by g_sn / g_opts in those tests
 static struct lis_api *g_cache = NULL;
+static struct lis_api *g_sn = NULL;
+static struct lis_api *g_opts = NULL;
 
 
 static int tests_cache_init(void)
@@ -67,6 +70,7 @@ static int tests_cache_init(void)
 
 	g_dumb = NULL;
 	g_sn = NULL;
+	g_opts = NULL;
 	g_cache = NULL;
 	err = lis_api_dumb(&g_dumb, "dummy0");
 	if (LIS_IS_ERROR(err)) {
@@ -76,19 +80,26 @@ static int tests_cache_init(void)
 	lis_dumb_set_nb_devices(g_dumb, 2);
 	lis_dumb_add_option(
 		g_dumb, &opt_source_template, &opt_source_default,
-		LIS_SET_FLAG_INEXACT | LIS_SET_FLAG_MUST_RELOAD_PARAMS
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
 	);
 	lis_dumb_add_option(
 		g_dumb, &opt_resolution, &opt_resolution_default,
 		LIS_SET_FLAG_MUST_RELOAD_OPTIONS
 	);
 
-	err = lis_api_normalizer_source_nodes(g_dumb, &g_sn);
+	err = lis_api_workaround_cache(g_dumb, &g_cache);
 	if (LIS_IS_ERROR(err)) {
+		g_dumb->cleanup(g_dumb);
 		return -1;
 	}
 
-	err = lis_api_workaround_cache(g_sn, &g_cache);
+	err = lis_api_normalizer_source_nodes(g_cache, &g_sn);
+	if (LIS_IS_ERROR(err)) {
+		g_cache->cleanup(g_cache);
+		return -1;
+	}
+
+	err = lis_api_normalizer_all_opts_on_all_sources(g_sn, &g_opts);
 	if (LIS_IS_ERROR(err)) {
 		g_sn->cleanup(g_sn);
 		return -1;
@@ -100,18 +111,7 @@ static int tests_cache_init(void)
 
 static int tests_cache_cleanup(void)
 {
-	struct lis_api *api;
-
-	if (g_cache != NULL) {
-		api = g_cache;
-	} else if (g_sn != NULL) {
-		api = g_sn;
-	} else if (g_dumb != NULL) {
-		api = g_dumb;
-	} else {
-		return 0;
-	}
-	api->cleanup(api);
+	g_opts->cleanup(g_opts);
 	return 0;
 }
 
@@ -125,8 +125,8 @@ static void test_cache_list_options(void)
 
 	LIS_ASSERT_EQUAL(tests_cache_init(), 0);
 
-	err = g_cache->get_device(
-		g_cache, LIS_DUMB_DEV_ID_FIRST, &device
+	err = g_opts->get_device(
+		g_opts, LIS_DUMB_DEV_ID_FIRST, &device
 	);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(device, NULL);
@@ -136,7 +136,8 @@ static void test_cache_list_options(void)
 	LIS_ASSERT_NOT_EQUAL(sources, NULL);
 	LIS_ASSERT_NOT_EQUAL(sources[0], NULL);
 
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_list_options(g_dumb), 0);
+	// source normalizer has already requested options once ...
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_list_options(g_dumb), 1);
 	err = sources[0]->get_options(sources[0], &opts);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(opts, NULL);
@@ -162,8 +163,8 @@ static void test_cache_get_value(void)
 
 	LIS_ASSERT_EQUAL(tests_cache_init(), 0);
 
-	err = g_cache->get_device(
-		g_cache, LIS_DUMB_DEV_ID_FIRST, &device
+	err = g_opts->get_device(
+		g_opts, LIS_DUMB_DEV_ID_FIRST, &device
 	);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(device, NULL);
@@ -205,8 +206,8 @@ static void test_cache_set_value(void)
 
 	LIS_ASSERT_EQUAL(tests_cache_init(), 0);
 
-	err = g_cache->get_device(
-		g_cache, LIS_DUMB_DEV_ID_FIRST, &device
+	err = g_opts->get_device(
+		g_opts, LIS_DUMB_DEV_ID_FIRST, &device
 	);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(device, NULL);
@@ -228,7 +229,7 @@ static void test_cache_set_value(void)
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_EQUAL(
 		set_flags,
-		LIS_SET_FLAG_INEXACT | LIS_SET_FLAG_MUST_RELOAD_PARAMS
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
 	);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
@@ -255,8 +256,8 @@ static void test_cache_set_value_2(void)
 
 	LIS_ASSERT_EQUAL(tests_cache_init(), 0);
 
-	err = g_cache->get_device(
-		g_cache, LIS_DUMB_DEV_ID_FIRST, &device
+	err = g_opts->get_device(
+		g_opts, LIS_DUMB_DEV_ID_FIRST, &device
 	);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(device, NULL);
@@ -269,6 +270,7 @@ static void test_cache_set_value_2(void)
 	err = sources[0]->get_options(sources[0], &opts);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(opts, NULL);
+	LIS_ASSERT_NOT_EQUAL(opts[0], NULL);
 	LIS_ASSERT_NOT_EQUAL(opts[1], NULL);
 
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
@@ -285,8 +287,8 @@ static void test_cache_set_value_2(void)
 
 	err = opts[1]->fn.get_value(opts[1], &value);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
-	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_FLATBED), 0);
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
+	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_ADF), 0);
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 
 	device->close(device);
