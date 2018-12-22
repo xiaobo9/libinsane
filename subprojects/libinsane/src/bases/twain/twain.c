@@ -1107,7 +1107,7 @@ static enum lis_error get_constraint(
 
 
 
-static enum lis_error twain_get_value(
+static enum lis_error twain_simple_get_value(
 		struct lis_option_descriptor *self, union lis_value *out
 	)
 {
@@ -1118,7 +1118,7 @@ static enum lis_error twain_get_value(
 	const TW_ONEVALUE *container;
 
 	lis_log_info(
-		"%s->get_value(%s) ...",
+		"%s->simple_get_value(%s) ...",
 		private->item->parent.name, self->name
 	);
 	memset(&cap, 0, sizeof(cap));
@@ -1132,7 +1132,7 @@ static enum lis_error twain_get_value(
 	if (twrc != TWRC_SUCCESS) {
 		err = twrc_to_lis_error(twrc);
 		lis_log_error(
-			"%s->get_value(%s): Failed to get value: 0x%X, %s",
+			"%s->simple_get_value(%s): Failed to get value: 0x%X, %s",
 			private->item->parent.name, self->name,
 			err, lis_strerror(err)
 		);
@@ -1141,7 +1141,7 @@ static enum lis_error twain_get_value(
 
 	if (cap.ConType != TWON_ONEVALUE) {
 		lis_log_error(
-			"%s->get_value(%s): Unsupported container type: 0x%X",
+			"%s->simple_get_value(%s): Unsupported container type: 0x%X",
 			private->item->parent.name, self->name,
 			cap.ConType
 		);
@@ -1158,14 +1158,14 @@ static enum lis_error twain_get_value(
 	);
 	if (LIS_IS_ERROR(err)) {
 		lis_log_error(
-			"%s->get_value(%s): Failed to convert value: 0x%x, %s",
+			"%s->simple_get_value(%s): Failed to convert value: 0x%x, %s",
 			private->item->parent.name, self->name,
 			err, lis_strerror(err)
 		);
 		goto end;
 	}
 	lis_log_info(
-		"%s->get_value(%s) successful",
+		"%s->simple_get_value(%s) successful",
 		private->item->parent.name, self->name
 	);
 
@@ -1213,7 +1213,7 @@ union lis_one_value {
 };
 
 
-static enum lis_error twain_set_value(
+static enum lis_error twain_simple_set_value(
 		struct lis_option_descriptor *self, union lis_value in_value,
 		int *set_flags
 	)
@@ -1226,7 +1226,7 @@ static enum lis_error twain_set_value(
 	int intvalue = 0;
 
 	lis_log_info(
-		"%s->set_value(%s) ...",
+		"%s->simple_set_value(%s) ...",
 		private->item->parent.name, self->name
 	);
 
@@ -1312,7 +1312,7 @@ static enum lis_error twain_set_value(
 
 		default:
 			lis_log_error(
-				"%s->set_value(%s): Unsupported TWAIN type 0x%X",
+				"%s->simple_set_value(%s): Unsupported TWAIN type 0x%X",
 				private->item->parent.name, self->name,
 				private->twain_cap->type
 			);
@@ -1324,7 +1324,7 @@ static enum lis_error twain_set_value(
 
 	if (LIS_IS_ERROR(err)) {
 		lis_log_error(
-			"%s->set_value(%s): value conversion failed:"
+			"%s->simple_set_value(%s): value conversion failed:"
 			" 0x%X, %s",
 			private->item->parent.name, self->name,
 			err, lis_strerror(err)
@@ -1349,7 +1349,7 @@ static enum lis_error twain_set_value(
 	if (twrc != TWRC_SUCCESS) {
 		err = twrc_to_lis_error(twrc);
 		lis_log_error(
-			"%s->set_value(%s): Failed to get value: 0x%X, %s",
+			"%s->simple_set_value(%s): Failed to get value: 0x%X, %s",
 			private->item->parent.name, self->name,
 			err, lis_strerror(err)
 		);
@@ -1357,7 +1357,7 @@ static enum lis_error twain_set_value(
 	}
 
 	lis_log_info(
-		"%s->set_value(%s) successful",
+		"%s->simple_set_value(%s) successful",
 		private->item->parent.name, self->name
 	);
 
@@ -1386,6 +1386,38 @@ static void free_opts(struct lis_twain_item *private)
 
 	FREE(private->opts);
 	FREE(private->opts_ptrs);
+}
+
+
+static enum lis_error make_simple_option(
+		struct lis_twain_item *item,
+		struct lis_twain_option *opt,
+		const struct lis_twain_cap *lis_cap,
+		TW_CAPABILITY *twain_cap,
+		void *container,
+		int *nb_opts
+	)
+{
+	opt->twain_cap = lis_cap;
+	opt->item = item;
+
+	opt->parent.name = lis_cap->name;
+	opt->parent.title = lis_cap->name; // TODO
+	opt->parent.desc = lis_cap->name; // TODO
+	opt->parent.capabilities = (
+		lis_cap->readonly ? 0 : LIS_CAP_SW_SELECT
+	);
+	opt->parent.value.type = twain_cap_to_lis_type(
+		twain_cap, lis_cap, container
+	);
+	opt->parent.value.unit = LIS_UNIT_NONE; // TODO ?
+	opt->parent.fn.get_value = twain_simple_get_value;
+	opt->parent.fn.set_value = twain_simple_set_value;
+
+	get_constraint(&opt->parent, lis_cap, twain_cap, container);
+
+	(*nb_opts)++;
+	return LIS_OK;
 }
 
 
@@ -1445,24 +1477,10 @@ static enum lis_error twain_get_options(
 				cap.hContainer
 			);
 
-			private->opts[nb_opts].twain_cap = &all_caps[cap_idx];
-			private->opts[nb_opts].item = private;
-
-			private->opts[nb_opts].parent.name = all_caps[cap_idx].name;
-			private->opts[nb_opts].parent.title = all_caps[cap_idx].name;
-			private->opts[nb_opts].parent.capabilities = (
-				all_caps[cap_idx].readonly ? 0 : LIS_CAP_SW_SELECT
-			);
-			private->opts[nb_opts].parent.value.type = twain_cap_to_lis_type(
-				&cap, &all_caps[cap_idx], container
-			);
-			private->opts[nb_opts].parent.value.unit = LIS_UNIT_NONE; // TODO ?
-			private->opts[nb_opts].parent.fn.get_value = twain_get_value;
-			private->opts[nb_opts].parent.fn.set_value = twain_set_value;
-
-			get_constraint(
-				&private->opts[nb_opts].parent,
-				&all_caps[cap_idx], &cap, container
+			make_simple_option(
+				private,
+				&private->opts[nb_opts], &all_caps[cap_idx],
+				&cap, container, &nb_opts
 			);
 
 			private->impl->entry_points.DSM_MemUnlock(
@@ -1471,8 +1489,6 @@ static enum lis_error twain_get_options(
 			private->impl->entry_points.DSM_MemFree(
 				cap.hContainer
 			);
-
-			nb_opts++;
 		} else {
 			lis_log_debug(
 				"Option '%s' is not available",
