@@ -209,7 +209,6 @@ static void cleanup_dev_descs(struct wiall_impl_private *private)
 			FREE(private->descs[i].dev_id);
 			FREE(private->descs[i].vendor);
 			FREE(private->descs[i].model);
-			FREE(private->descs[i].type);
 		}
 		FREE(private->descs_ptrs);
 	}
