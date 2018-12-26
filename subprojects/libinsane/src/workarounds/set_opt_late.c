@@ -15,6 +15,7 @@
 
 static const char *g_opt_to_set_late[] = {
 	OPT_NAME_MODE,
+	"bit_depth", // twain only
 	NULL,
 };
 

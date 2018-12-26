@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,16 +10,16 @@
 #include <libinsane/twain.h>
 #include <libinsane/util.h>
 
-
+#include "../../bmp.h"
 #include "capabilities.h"
 #include "twain.h"
-
 
 #define NAME "twain"
 #define TWAIN_DSM_DLL "twaindsm.dll"
 #define TWAIN_DSM_ENTRY_FN_NAME "DSM_Entry"
 
 #define MAX_ID_LENGTH 64 // is manufacturer name + model. TWAIN limits both to 32
+#define MAX_MSG 16
 
 
 struct lis_twain_dev_desc {
@@ -61,9 +62,47 @@ struct lis_twain_item {
 	struct lis_twain_option *opts;
 	struct lis_option_descriptor **opts_ptrs;
 
+	struct lis_twain_session *session;
+
+	struct {
+		TW_UINT16 msgs[MAX_MSG];
+		int write_idx;
+		int read_idx;
+
+		/*!
+		 * DSM callbacks and application thread use this semaphore
+		 * to synchronize.
+		 */
+		HANDLE sem;
+	} dsm2app;
+
 	struct lis_twain_item *next;
 };
 #define LIS_TWAIN_ITEM_PRIVATE(item) ((struct lis_twain_item *)(item))
+
+
+struct lis_twain_session {
+	struct lis_scan_session parent;
+
+	struct lis_twain_item *item;
+
+	bool cancelled;
+	bool xfer_pending;
+
+	struct {
+		TW_IMAGEINFO infos;
+		TW_HANDLE handle;
+		void *mem;
+
+		struct bmp_header header;
+
+		int header_size;
+		int header_read;
+		int img_size;
+		int img_read;
+	} img;
+};
+#define LIS_TWAIN_SESSION_PRIVATE(item) ((struct lis_twain_session *)(item))
 
 
 static const TW_IDENTITY g_libinsane_identity_template = {
@@ -120,6 +159,27 @@ static struct lis_item g_twain_item_template = {
 	.get_options = twain_get_options,
 	.scan_start = twain_scan_start,
 	.close = twain_close,
+};
+
+
+static enum lis_error twain_get_scan_parameters(
+	struct lis_scan_session *self,
+	struct lis_scan_parameters *parameters
+);
+static int twain_end_of_feed(struct lis_scan_session *session);
+static int twain_end_of_page(struct lis_scan_session *session);
+static enum lis_error twain_scan_read(
+	struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
+);
+static void twain_cancel(struct lis_scan_session *session);
+
+
+static struct lis_scan_session g_twain_session_template = {
+	.get_scan_parameters = twain_get_scan_parameters,
+	.end_of_feed = twain_end_of_feed,
+	.end_of_page = twain_end_of_page,
+	.scan_read = twain_scan_read,
+	.cancel = twain_cancel,
 };
 
 
@@ -349,6 +409,7 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 {
 	TW_UINT16 twrc;
 	enum lis_error err;
+	HANDLE hnd;
 
 	if (private->init) {
 		return LIS_OK;
@@ -399,6 +460,10 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		&g_app_id, &g_libinsane_identity_template,
 		sizeof(g_app_id)
 	);
+	hnd = GetConsoleWindow();
+	if (hnd == NULL) {
+		hnd = GetDesktopWindow();
+	}
 	twrc = DSM_ENTRY(NULL, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, NULL);
 	if (twrc != TWRC_SUCCESS) {
 		err = twrc_to_lis_error(twrc);
@@ -629,7 +694,28 @@ static TW_UINT16 twain_dsm_callback(
 		return TWRC_FAILURE;
 	}
 
-	// TODO
+	lis_log_info(
+		"DSM Callback(%s, 0x%lX, 0x%X, 0x%X, 0x%p) called by DSM",
+		private->parent.name, dg, dat, msg, data
+	);
+
+	if (private->dsm2app.sem == NULL) {
+		lis_log_warning(
+			"DSM Callback(%s, 0x%lX, 0x%X, 0x%X, 0x%p) called"
+			" when not expected",
+			private->parent.name, dg, dat, msg, data
+		);
+		return TWRC_FAILURE;
+	}
+
+	private->dsm2app.msgs[private->dsm2app.write_idx] = msg;
+	private->dsm2app.write_idx++;
+	private->dsm2app.write_idx %= MAX_MSG;
+
+	ReleaseSemaphore(
+		private->dsm2app.sem, 1 /* count */,
+		NULL /* previous count */
+	);
 
 	return TWRC_SUCCESS;
 }
@@ -716,7 +802,7 @@ static enum lis_error twain_get_device(
 
 	item->use_callback = (
 		(g_app_id.SupportedGroups & DF_DSM2)
-			&& (g_app_id.SupportedGroups & DF_DS2)
+			&& (item->twain_id.SupportedGroups & DF_DS2)
 	);
 	lis_log_info("Twain source: use callback = %d", item->use_callback);
 
@@ -1197,8 +1283,10 @@ static enum lis_error lis_str_to_twain_int(
 
 
 /* TW_ONEVALUE is so poorly defined ... */
+#pragma pack (push, before_twain)
+#pragma pack (2)
 union lis_one_value {
-	const TW_ONEVALUE twain;
+	TW_ONEVALUE twain;
 	struct {
 		TW_UINT16 item_type;
 		union {
@@ -1211,6 +1299,7 @@ union lis_one_value {
 		} value;
 	} lis;
 };
+#pragma pack (pop, before_twain)
 
 
 static enum lis_error twain_simple_set_value(
@@ -1255,7 +1344,12 @@ static enum lis_error twain_simple_set_value(
 					private->twain_cap, in_value.string,
 					&intvalue
 				);
+				lis_log_debug(
+					"Value: %s -> %d", in_value.string,
+					intvalue
+				);
 			} else {
+				lis_log_debug("Value: %d", in_value.integer);
 				intvalue = in_value.integer;
 			}
 			value->lis.value.integer8 = intvalue;
@@ -1269,7 +1363,12 @@ static enum lis_error twain_simple_set_value(
 					private->twain_cap, in_value.string,
 					&intvalue
 				);
+				lis_log_debug(
+					"Value: %s -> %d", in_value.string,
+					intvalue
+				);
 			} else {
+				lis_log_debug("Value: %d", in_value.integer);
 				intvalue = in_value.integer;
 			}
 			value->lis.value.integer16 = intvalue;
@@ -1283,7 +1382,12 @@ static enum lis_error twain_simple_set_value(
 					private->twain_cap, in_value.string,
 					&intvalue
 				);
+				lis_log_debug(
+					"Value: %s -> %d", in_value.string,
+					intvalue
+				);
 			} else {
+				lis_log_debug("Value: %d", in_value.integer);
 				intvalue = in_value.integer;
 			}
 			value->lis.value.integer32 = intvalue;
@@ -1291,12 +1395,19 @@ static enum lis_error twain_simple_set_value(
 
 		case TWTY_BOOL:
 			// lis type == LIS_TYPE_BOOL
+			lis_log_debug("Value: %d", in_value.boolean);
 			value->lis.value.boolean = in_value.boolean;
 			break;
 
 		case TWTY_FIX32:
 			// lis type == LIS_TYPE_DOUBLE
+			lis_log_debug("Value: %f", in_value.dbl);
 			value->lis.value.dbl = twain_fix(in_value.dbl);
+			lis_log_debug(
+				"Value: %d + %d/65536",
+				value->lis.value.dbl.Whole,
+				value->lis.value.dbl.Frac
+			);
 			break;
 
 		case TWTY_STR32:
@@ -1308,6 +1419,7 @@ static enum lis_error twain_simple_set_value(
 				value->lis.value.str, in_value.string,
 				sizeof(value->lis.value.str)
 			);
+			lis_log_debug("Value: %s", value->lis.value.str);
 			break;
 
 		default:
@@ -1319,8 +1431,6 @@ static enum lis_error twain_simple_set_value(
 			err = LIS_ERR_UNSUPPORTED;
 			break;
 	}
-
-	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
 
 	if (LIS_IS_ERROR(err)) {
 		lis_log_error(
@@ -1362,6 +1472,10 @@ static enum lis_error twain_simple_set_value(
 	);
 
 end:
+	// XXX(Jflesch): Based on twain samples, we unlock *after*
+	// setting the value
+	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
+
 	private->item->impl->entry_points.DSM_MemFree(cap.hContainer);
 	return err;
 }
@@ -1511,19 +1625,442 @@ static enum lis_error twain_get_options(
 
 	lis_log_info("%s->get_options(): %d options", self->name, nb_opts);
 	*out_descs = private->opts_ptrs;
+
 	return LIS_OK;
 }
 
 
-static enum lis_error twain_scan_start(
-		struct lis_item *self, struct lis_scan_session **session
+static void clean_session(struct lis_twain_session *private)
+{
+	if (private->item->dsm2app.sem != NULL) {
+		CloseHandle(private->item->dsm2app.sem);
+		private->item->dsm2app.sem = NULL;
+	}
+	private->item->session = NULL;
+}
+
+
+static enum lis_error next_page(struct lis_twain_session *private)
+{
+	TW_UINT16 twrc;
+	enum lis_error err;
+	int partial_header_len;
+	struct lis_scan_parameters params;
+
+	lis_log_info("next_page() ...");
+
+	assert(private->img.mem == NULL);
+
+	memset(&private->img.infos, 0, sizeof(private->img.infos));
+	twrc = DSM_ENTRY(
+		&(private->item->twain_id), DG_IMAGE, DAT_IMAGEINFO, MSG_GET,
+		&private->img.infos
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"Failed to get image infos: 0x%X -> 0x%X, %s",
+			twrc, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	twrc = DSM_ENTRY(
+		&(private->item->twain_id), DG_IMAGE, DAT_IMAGENATIVEXFER,
+		MSG_GET, &(private->img.handle)
+	);
+	if (twrc != TWRC_SUCCESS && twrc != TWRC_XFERDONE) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"Failed to get image: 0x%X -> 0x%X, %s",
+			twrc, err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	private->img.mem = private->item->impl->entry_points.DSM_MemLock(
+		private->img.handle
+	);
+
+	lis_hexdump(private->img.mem, BMP_HEADER_SIZE);
+
+	// Twain DS only return a partial header
+	err = twain_get_scan_parameters(&private->parent, &params);
+	assert(LIS_IS_OK(err));
+
+	lis_scan_params2bmp(&params, &private->img.header);
+	partial_header_len = BMP_HEADER_SIZE - (
+		((char *)(&(private->img.header.remaining_header)))
+		- ((char *)(&(private->img.header)))
+	);
+	lis_log_info("partial header length: %d", partial_header_len);
+	memcpy(
+		&(private->img.header.remaining_header),
+		private->img.mem,
+		partial_header_len
+	);
+	lis_hexdump(&private->img.header, BMP_HEADER_SIZE);
+
+	// From TWAIN example
+	// If the driver did not fill in the biSizeImage field, then compute it
+	// Each scan line of the image is aligned on a DWORD (32bit) boundary
+	if(private->img.header.pixel_data_size == 0) {
+		private->img.header.pixel_data_size = (
+			(((private->img.header.width
+				* private->img.header.nb_bits_per_pixel)
+				+ 31) & ~31) / 8)
+				* private->img.header.height;
+	}
+
+	private->img.mem = ((char *)private->img.mem) + partial_header_len;
+
+	private->img.header_size = BMP_HEADER_SIZE;
+	private->img.header_read = 0;
+	// TODO(Jflesch): endianess of BMP header
+	private->img.img_size = private->img.header.pixel_data_size;
+	lis_log_info(
+		"Expecting %d bytes of data", private->img.img_size
+	);
+	private->img.img_read = 0;
+
+	lis_log_info("next_page(): OK");
+	return LIS_OK;
+}
+
+
+static void end_page(struct lis_twain_session *private)
+{
+	TW_UINT16 twrc;
+	enum lis_error err;
+	TW_PENDINGXFERS xfers;
+	TW_USERINTERFACE ui;
+
+	lis_log_info("end_page() ...");
+
+	if (private->img.mem != NULL)  {
+		private->item->impl->entry_points.DSM_MemUnlock(
+			private->img.handle
+		);
+		private->item->impl->entry_points.DSM_MemFree(
+			private->img.handle
+		);
+		private->img.mem = NULL;
+	}
+
+	if (private->cancelled) {
+		goto check_end;
+	}
+
+	memset(&xfers, 0, sizeof(xfers));
+	twrc = DSM_ENTRY(
+		&(private->item->twain_id), DG_CONTROL, DAT_PENDINGXFERS,
+		MSG_ENDXFER, &xfers
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"Failed to look for next pages: 0x%X -> 0x%X, %s",
+			twrc, err, lis_strerror(err)
+		);
+		private->xfer_pending = FALSE;
+		return;
+	}
+
+	private->xfer_pending = (xfers.Count > 0);
+	lis_log_info(
+		"end_page(): OK (next ? %d ; cancelled ? %d)",
+		(int)private->xfer_pending,
+		(int)private->cancelled
+	);
+
+check_end:
+	memset(&ui, 0, sizeof(ui));
+	ui.ShowUI = FALSE;
+	ui.ModalUI = TRUE;
+	ui.hParent = GetDesktopWindow();
+
+	if (!private->xfer_pending || !private->cancelled) {
+		lis_log_info("End of scan --> disabling DS");
+		twrc = DSM_ENTRY(
+			&(private->item->twain_id), DG_CONTROL,
+			DAT_USERINTERFACE, MSG_DISABLEDS, &ui
+		);
+		if (twrc != TWRC_SUCCESS) {
+			lis_log_warning("Failed to disable datasource");
+		}
+	}
+}
+
+
+static enum lis_error twain_get_scan_parameters(
+		struct lis_scan_session *self,
+		struct lis_scan_parameters *parameters
 	)
 {
-	LIS_UNUSED(self);
-	LIS_UNUSED(session);
+	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
+	lis_log_info("get_scan_parameters() ...");
+	memset(parameters, 0, sizeof(*parameters));
+	parameters->format = LIS_IMG_FORMAT_BMP;
+	parameters->width = private->img.infos.ImageWidth;
+	parameters->height = private->img.infos.ImageLength;
+	parameters->image_size = (
+		private->img.infos.ImageWidth
+		* private->img.infos.ImageLength
+		* 3
+	);
 
-	// TODO
-	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	lis_log_info("get_scan_parameters(): OK");
+	return LIS_OK;
+}
+
+
+static int twain_end_of_feed(struct lis_scan_session *self)
+{
+	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
+	int r;
+	r = (!private->xfer_pending && !private->cancelled);
+	lis_log_info("end_of_feed() ? %d", r);
+	return r;
+}
+
+
+static int twain_end_of_page(struct lis_scan_session *self)
+{
+	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
+	int r;
+	r = (private->img.mem == NULL && !private->cancelled);
+	lis_log_info("end_of_page() ? %d", r);
+	return r;
+}
+
+
+static enum lis_error twain_scan_read(
+		struct lis_scan_session *self, void *out_buffer,
+		size_t *buffer_size
+	)
+{
+	enum lis_error err;
+	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
+	size_t to_copy;
+
+	lis_log_info("scan_read(%d B) ...", (int)(*buffer_size));
+	if (private->img.mem == NULL) {
+		err = next_page(private);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_error(
+				"scan_read(): next_page() failed: 0x%X, %s",
+				err, lis_strerror(err)
+			);
+			return err;
+		}
+	}
+
+	if (private->cancelled) {
+		end_page(private);
+		return LIS_ERR_CANCELLED;
+	}
+
+	if (private->img.header_read < private->img.header_size) {
+		to_copy = MIN(
+			((int)(*buffer_size)),
+			private->img.header_size - private->img.header_read
+		);
+		lis_log_debug(
+			"scan_read(header: %p, %d/%d, %d B) ...",
+			(void *)&private->img.header,
+			private->img.header_read,
+			private->img.header_size,
+			(int)(to_copy)
+		);
+		memcpy(
+			out_buffer,
+			((char *)(&private->img.header)) + private->img.header_read,
+			to_copy
+		);
+		private->img.header_read += to_copy;
+		(*buffer_size) = to_copy;
+
+	} else if (private->img.img_read < private->img.img_size) {
+
+		to_copy = MIN(
+			((int)(*buffer_size)),
+			private->img.img_size - private->img.img_read
+		);
+		lis_log_debug(
+			"scan_read(content: %p, %d/%d, %d B) ...",
+			private->img.mem,
+			private->img.img_read,
+			private->img.img_size,
+			(int)(to_copy)
+		);
+		memcpy(
+			out_buffer,
+			((char *)(private->img.mem)) + private->img.img_read,
+			to_copy
+		);
+		private->img.img_read += to_copy;
+		(*buffer_size) = to_copy;
+
+	}
+
+	if (private->img.img_read >= private->img.img_size) {
+		end_page(private);
+	}
+	lis_log_info("scan_read(): OK (%d B)", (int)(*buffer_size));
+	return LIS_OK;
+}
+
+
+static void twain_cancel(struct lis_scan_session *self)
+{
+	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
+	private->cancelled = TRUE;
+}
+
+
+static enum lis_error wait_ready(struct lis_twain_item *private)
+{
+	MSG win_msg;
+	TW_UINT16 twrc, msg;
+	TW_EVENT event;
+
+	if (private->use_callback) {
+		lis_log_info("Twain scan: Waiting for DSM callback ...");
+		while(TRUE) {
+			WaitForSingleObject(
+				private->dsm2app.sem, INFINITE /* timeout */
+			);
+
+			msg = private->dsm2app.msgs[private->dsm2app.read_idx];
+			private->dsm2app.read_idx++;
+			private->dsm2app.read_idx %= MAX_MSG;
+			lis_log_debug("Message: 0x%X", (int)msg);
+
+			switch(msg) {
+				case MSG_XFERREADY:
+					return LIS_OK;
+				case MSG_CLOSEDSREQ:
+				case MSG_CLOSEDSOK:
+				case MSG_NULL:
+					break;
+				default:
+					lis_log_error(
+						"Unexpected event: 0x%X",
+						(int)msg
+					);
+					return LIS_ERR_IO_ERROR;
+			}
+		}
+		return LIS_OK;
+	} else {
+		lis_log_debug("GetMessage() ...");
+		while (GetMessage(&win_msg, NULL /* handle */,
+				0 /* min msg */, 0 /* max msg */)) {
+			lis_log_debug("GetMessage() !");
+			memset(&event, 0, sizeof(event));
+			event.pEvent = &win_msg;
+			event.TWMessage = MSG_NULL;
+			twrc = DSM_ENTRY(
+				&private->twain_id, DG_CONTROL, DAT_EVENT,
+				MSG_PROCESSEVENT, &event
+			);
+
+			lis_log_debug("Twrc: 0x%X", twrc);
+			if (twrc == TWRC_DSEVENT) {
+				lis_log_debug(
+					"Message: 0x%X", (int)event.TWMessage
+				);
+				switch(event.TWMessage) {
+					case MSG_XFERREADY:
+						return LIS_OK;
+					case MSG_CLOSEDSREQ:
+					case MSG_CLOSEDSOK:
+					case MSG_NULL:
+						break;
+					default:
+						lis_log_error(
+							"Unexpected event: 0x%X",
+							(int)event.TWMessage
+						);
+						return LIS_ERR_IO_ERROR;
+				}
+			} else {
+				TranslateMessage(&win_msg);
+				DispatchMessage(&win_msg);
+			}
+		}
+		lis_log_warning("Got message WM_QUIT");
+		return LIS_ERR_CANCELLED;
+	}
+}
+
+
+static enum lis_error twain_scan_start(
+		struct lis_item *self, struct lis_scan_session **out_session
+	)
+{
+	struct lis_twain_item *private = LIS_TWAIN_ITEM_PRIVATE(self);
+	struct lis_twain_session *session;
+	TW_USERINTERFACE ui;
+	TW_UINT16 twrc;
+	enum lis_error err;
+
+	session = calloc(1, sizeof(struct lis_twain_session));
+	if (session == NULL) {
+		lis_log_error("Out of memory");
+		return LIS_ERR_NO_MEM;
+	}
+	memcpy(
+		&session->parent, &g_twain_session_template,
+		sizeof(session->parent)
+	);
+	session->item = private;
+
+	memset(&private->dsm2app, 0, sizeof(private->dsm2app));
+
+	private->dsm2app.sem = CreateSemaphore(
+		NULL, // default security attributes
+		0, // initial count
+		MAX_MSG - 1, // max sem count
+		"twain_dsm2app"
+	);
+	if (private->dsm2app.sem == NULL) {
+		lis_log_error("Failed to create semaphore");
+		return LIS_ERR_NO_MEM;
+	}
+
+	memset(&ui, 0, sizeof(ui));
+	ui.ShowUI = FALSE;
+	ui.ModalUI = TRUE;
+	ui.hParent = GetDesktopWindow();
+
+	twrc = DSM_ENTRY(
+		&private->twain_id, DG_CONTROL, DAT_USERINTERFACE,
+		MSG_ENABLEDS, &ui
+	);
+	if (twrc != TWRC_SUCCESS && twrc != TWRC_CHECKSTATUS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"%s->scan_start(): MSG_ENABLEDS failed:"
+			" %d -> 0x%X, %s",
+			self->name, twrc, err, lis_strerror(err)
+		);
+		clean_session(session);
+		return err;
+	}
+
+	lis_log_info("Waiting for scan transfer");
+	err = wait_ready(private);
+	if (LIS_IS_ERROR(err)) {
+		clean_session(session);
+		return err;
+	}
+
+	lis_log_info("Scan transfer ready");
+
+	session->xfer_pending = TRUE;
+	*out_session = &session->parent;
+	return next_page(session);
 }
 
 
