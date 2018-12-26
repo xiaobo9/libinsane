@@ -73,8 +73,14 @@ static void tests_alias_xres(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_xres, &opt_xres_default);
-	lis_dumb_add_option(g_dumb, &opt_yres, &opt_yres_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_xres, &opt_xres_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
+	lis_dumb_add_option(
+		g_dumb, &opt_yres, &opt_yres_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_opt_aliases(g_dumb, &g_alias);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -168,8 +174,14 @@ static void tests_xpos_xextent(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_xpos, &opt_xpos_default);
-	lis_dumb_add_option(g_dumb, &opt_xextent, &opt_xextent_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_xpos, &opt_xpos_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
+	lis_dumb_add_option(
+		g_dumb, &opt_xextent, &opt_xextent_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_opt_aliases(g_dumb, &g_alias);
 	LIS_ASSERT_EQUAL(err, LIS_OK);

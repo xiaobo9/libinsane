@@ -16,6 +16,7 @@
 struct lis_dumb_option {
 	struct lis_option_descriptor parent;
 	struct lis_dumb_private *impl;
+	int set_flags;
 
 	int has_value;
 	union lis_value default_value;
@@ -62,6 +63,7 @@ struct lis_dumb_private {
 	} scan;
 
 	struct {
+		int list;
 		int set;
 		int get;
 	} nb;
@@ -270,7 +272,7 @@ static enum lis_error dumb_opt_set_value(struct lis_option_descriptor *self,
 	lis_copy(self->value.type, &value, &private->value);
 	private->has_value = 1;
 
-	*set_flags = LIS_SET_FLAG_MUST_RELOAD_PARAMS;
+	*set_flags = private->set_flags;
 	return LIS_OK;
 }
 
@@ -280,6 +282,7 @@ static enum lis_error dumb_get_options(
 	)
 {
 	struct lis_dumb_item *private = LIS_DUMB_ITEM(self);
+	private->impl->nb.list++;
 	*out_descs = private->impl->opts;
 	return LIS_OK;
 }
@@ -406,7 +409,7 @@ void lis_dumb_set_get_device_return(struct lis_api *self, enum lis_error ret)
 
 
 void lis_dumb_add_option(struct lis_api *self, const struct lis_option_descriptor *opt,
-	const union lis_value *default_value)
+	const union lis_value *default_value, int set_flags)
 {
 
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
@@ -415,6 +418,7 @@ void lis_dumb_add_option(struct lis_api *self, const struct lis_option_descripto
 
 	opt_private = calloc(1, sizeof(struct lis_dumb_option));
 	opt_private->impl = private;
+	opt_private->set_flags = set_flags;
 	memcpy(&opt_private->parent, opt, sizeof(opt_private->parent));
 	if (opt_private->parent.fn.get_value == NULL) {
 		opt_private->parent.fn.get_value = dumb_opt_get_value;
@@ -522,4 +526,11 @@ int lis_dumb_get_nb_set(struct lis_api *self)
 {
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
 	return private->nb.set;
+}
+
+
+int lis_dumb_get_nb_list_options(struct lis_api *self)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	return private->nb.list;
 }

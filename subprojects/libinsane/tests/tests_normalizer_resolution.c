@@ -50,7 +50,10 @@ static void tests_resolution_integer_range(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_resolution, &opt_resolution_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_resolution(g_dumb, &g_res);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -116,7 +119,10 @@ static void tests_resolution_double_list(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_resolution, &opt_resolution_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_resolution(g_dumb, &g_res);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -176,7 +182,10 @@ static void tests_resolution_double_range(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_resolution, &opt_resolution_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_resolution(g_dumb, &g_res);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -238,7 +247,10 @@ static void tests_resolution_double_range_getset(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	lis_dumb_set_nb_devices(g_dumb, 2);
-	lis_dumb_add_option(g_dumb, &opt_resolution, &opt_resolution_default);
+	lis_dumb_add_option(
+		g_dumb, &opt_resolution, &opt_resolution_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_resolution(g_dumb, &g_res);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
