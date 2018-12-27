@@ -38,8 +38,11 @@ doc: build/build.ninja
 
 check: build_c
 	! command -v sparse || python3 ./check_sparse.py build/compile_commands.json
+	# Debian / Ubuntu
 	(cd build ; ! command -v run-clang-tidy-4.0.py || ! (run-clang-tidy-4.0.py | grep warning 2>&1))
 	(cd build ; ! command -v run-clang-tidy-7 || ! (run-clang-tidy-7 | grep warning 2>&1))
+	# Fedora
+	(cd build ; [ ! -f /usr/share/clang/run-clang-tidy.py ] || ! (/usr/share/clang/run-clang-tidy.py | grep warning 2>&1))
 
 test: build/build.ninja
 	(cd build && ninja test)
