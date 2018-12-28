@@ -11,22 +11,25 @@
 
 struct _LibinsaneScanSessionPrivate
 {
+	GObject *parent_ref;
 	struct lis_scan_session *session;
 	int finished;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneScanSession, libinsane_scan_session, G_TYPE_OBJECT)
 
+static void libinsane_scan_session_dispose(GObject *self)
+{
+	LibinsaneScanSession *session = LIBINSANE_SCAN_SESSION(self);
+
+	lis_log_debug("[gobject] Disposing");
+	libinsane_scan_session_cancel(session);
+}
 
 static void libinsane_scan_session_finalize(GObject *self)
 {
-	LibinsaneScanSession *session = LIBINSANE_SCAN_SESSION(self);
-	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(session);
 	lis_log_debug("[gobject] Finalizing");
-	if (!private->finished) {
-		private->session->cancel(private->session);
-		private->finished = 1;
-	}
+	LIS_UNUSED(self);
 }
 
 
@@ -34,6 +37,7 @@ static void libinsane_scan_session_class_init(LibinsaneScanSessionClass *cls)
 {
 	GObjectClass *go_cls;
 	go_cls = G_OBJECT_CLASS(cls);
+	go_cls->dispose = libinsane_scan_session_dispose;
 	go_cls->finalize = libinsane_scan_session_finalize;
 }
 
@@ -45,17 +49,20 @@ static void libinsane_scan_session_init(LibinsaneScanSession *self)
 }
 
 LibinsaneScanSession *libinsane_scan_session_new_from_libinsane(
-		struct lis_scan_session *scan_session
+		GObject *parent_ref, struct lis_scan_session *scan_session
 	)
 {
 	LibinsaneScanSession *session;
 	LibinsaneScanSessionPrivate *private;
+
+	g_object_ref(parent_ref);
 
 	lis_log_debug("[gobject] enter");
 	session = g_object_new(LIBINSANE_SCAN_SESSION_TYPE, NULL);
 	private = libinsane_scan_session_get_instance_private(session);
 	private->session = scan_session;
 	private->finished = 0;
+	private->parent_ref = parent_ref;
 	lis_log_debug("[gobject] leave");
 
 	return session;
@@ -66,7 +73,9 @@ LibinsaneScanSession *libinsane_scan_session_new_from_libinsane(
  * libinsane_scan_session_get_scan_parameters:
  * Returns: (transfer full): item scan parameters.
  */
-LibinsaneScanParameters *libinsane_scan_session_get_scan_parameters(LibinsaneScanSession *self, GError **error)
+LibinsaneScanParameters *libinsane_scan_session_get_scan_parameters(
+		LibinsaneScanSession *self, GError **error
+	)
 {
 	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(self);
 	struct lis_scan_parameters lis_params;
@@ -166,6 +175,10 @@ GBytes *libinsane_scan_session_read_bytes(LibinsaneScanSession *self, gsize lng,
 void libinsane_scan_session_cancel(LibinsaneScanSession *self)
 {
 	LibinsaneScanSessionPrivate *private = libinsane_scan_session_get_instance_private(self);
+	if (private->finished) {
+		return;
+	}
 	private->session->cancel(private->session);
 	private->finished = 1;
+	g_clear_object(&private->parent_ref);
 }
