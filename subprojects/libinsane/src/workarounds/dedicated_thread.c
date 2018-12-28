@@ -51,6 +51,8 @@ struct dt_item_private {
 
 	struct dt_opt_private *opts;
 	struct lis_option_descriptor **opts_ptrs;
+
+	struct dt_scan_session_private *session;
 };
 #define DT_ITEM_PRIVATE(impl) ((struct dt_item_private *)(impl))
 
@@ -58,6 +60,7 @@ struct dt_item_private {
 struct dt_scan_session_private {
 	struct lis_scan_session parent;
 	struct lis_scan_session *wrapped;
+	struct dt_item_private *item;
 	struct dt_impl_private *impl;
 };
 #define DT_SCAN_SESSION_PRIVATE(session) ((struct dt_scan_session_private *)(session))
@@ -521,12 +524,18 @@ static void real_item_scan_start(void *_data)
 	struct dt_item_scan_start_data *data = _data;
 	struct dt_scan_session_private *session;
 
+	if (data->private->session != NULL) {
+		FREE(data->private->session);
+	}
+
 	session = calloc(1, sizeof(struct dt_scan_session_private));
+	data->private->session = session;
 	if (session == NULL) {
 		lis_log_error("Out of memory");
 		data->ret = LIS_ERR_NO_MEM;
 		return;
 	}
+	session->item = data->private;
 
 	data->ret = data->private->wrapped->scan_start(
 		data->private->wrapped,
@@ -570,6 +579,7 @@ static void close_item(struct dt_item_private *item)
 		FREE(item->children_ptrs);
 		FREE(item->children);
 	}
+	FREE(item->session);
 }
 
 
@@ -792,6 +802,7 @@ static void dt_scan_cancel(struct lis_scan_session *self)
 {
 	struct dt_scan_session_private *private = DT_SCAN_SESSION_PRIVATE(self);
 	run(private->impl, real_scan_cancel, private);
+	private->item->session = NULL;
 	FREE(private);
 }
 

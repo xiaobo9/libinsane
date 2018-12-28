@@ -14,7 +14,8 @@
 struct one_scan_session_private {
 	struct lis_scan_session parent;
 	struct lis_scan_session *wrapped;
-	struct lis_item *item;
+	struct lis_item *bw_item; /* basewrapper item */
+	struct lis_item *item; /* wrapped item (underlying implementation) */
 };
 #define ONE_SCAN_SESSION_PRIVATE(session) \
 	((struct one_scan_session_private *)(session))
@@ -108,6 +109,7 @@ static void one_cancel(struct lis_scan_session *self)
 {
 	struct one_scan_session_private *private = \
 		ONE_SCAN_SESSION_PRIVATE(self);
+	lis_bw_item_set_user_ptr(private->bw_item, NULL);
 	private->wrapped->cancel(private->wrapped);
 	FREE(private);
 }
@@ -123,13 +125,21 @@ static enum lis_error on_scan_start(
 
 	LIS_UNUSED(user_data);
 
+	session = lis_bw_item_get_user_ptr(item);
+	FREE(session);
+	lis_bw_item_set_user_ptr(item, NULL);
+
 	session = calloc(1, sizeof(struct one_scan_session_private));
 	if (session == NULL) {
 		lis_log_error("Out of memory");
 		return LIS_ERR_NO_MEM;
 	}
 
+	session->bw_item = item;
+	lis_bw_item_set_user_ptr(session->bw_item, session);
+
 	item = lis_bw_get_original_item(item);
+
 	err = item->scan_start(item, &session->wrapped);
 	if (LIS_IS_ERROR(err)) {
 		FREE(session);
@@ -147,6 +157,20 @@ static enum lis_error on_scan_start(
 }
 
 
+static void on_item_close(struct lis_item *item, int root, void *user_data)
+{
+	struct one_scan_session_private *session;
+
+	LIS_UNUSED(root);
+	LIS_UNUSED(user_data);
+
+	session = lis_bw_item_get_user_ptr(item);
+	FREE(session);
+	lis_bw_item_set_user_ptr(item, NULL);
+}
+
+
+
 enum lis_error lis_api_workaround_one_page_flatbed(struct lis_api *to_wrap, struct lis_api **impl)
 {
 	enum lis_error err;
@@ -156,5 +180,6 @@ enum lis_error lis_api_workaround_one_page_flatbed(struct lis_api *to_wrap, stru
 		return err;
 	}
 	lis_bw_set_on_scan_start(*impl, on_scan_start, NULL);
+	lis_bw_set_on_close_item(*impl, on_item_close, NULL);
 	return err;
 }

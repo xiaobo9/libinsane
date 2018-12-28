@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,6 +17,9 @@
 struct lis_sane
 {
 	struct lis_api parent;
+
+	bool is_init;
+
 	struct lis_device_descriptor **dev_descs;
 };
 #define LIS_SANE_PRIVATE(impl) ((struct lis_sane *)(impl))
@@ -182,7 +186,7 @@ static enum lis_error sane_status_to_lis_error(SANE_Status status)
 }
 
 
-static enum lis_error ensure_sane_is_init(void)
+static enum lis_error ensure_sane_is_init(struct lis_sane *impl)
 {
 	enum lis_error err;
 	SANE_Int version_code = 0;
@@ -199,8 +203,9 @@ static enum lis_error ensure_sane_is_init(void)
 			return err;
 		}
 		lis_log_info("Sane version code: 0x%X", version_code);
-		g_sane_initialized++;
 	}
+	g_sane_initialized++;
+	impl->is_init = 1;
 
 	return LIS_OK;
 }
@@ -246,6 +251,15 @@ static void lis_sane_cleanup(struct lis_api *impl)
 {
 	struct lis_sane *private = LIS_SANE_PRIVATE(impl);
 
+	lis_log_debug("Sane cleanup ...");
+
+	if (!private->is_init) {
+		lis_log_debug("Sane cleanup: not initialized, nothing to do");
+		return;
+	}
+
+	assert(g_sane_initialized > 0);
+
 	/* WORKAROUND(Jflesch):
 	 * sane_exit() must be called from the main thread or it will crash
 	 * (not sure why).
@@ -259,16 +273,15 @@ static void lis_sane_cleanup(struct lis_api *impl)
 			" libsane will remain active until the program stops"
 		);
 	} else {
-		if (g_sane_initialized > 0) {
-			lis_log_debug("sane_exit()");
-			sane_exit();
-			g_sane_initialized--;
-			lis_log_debug("freeing Libinsane data ...");
-			lis_sane_cleanup_dev_descriptors(private->dev_descs);
-			free(private);
-			lis_log_debug("Libinsane data freed ...");
-		}
+		lis_log_debug("sane_exit()");
+		sane_exit();
 	}
+
+	g_sane_initialized--;
+	lis_sane_cleanup_dev_descriptors(private->dev_descs);
+	private->is_init = 0;
+	free(private);
+	lis_log_debug("Sane implementation cleaned up");
 }
 
 
@@ -283,7 +296,7 @@ static enum lis_error lis_sane_list_devices(
 	int nb_devs, i;
 	int local_only = 0;
 
-	err = ensure_sane_is_init();
+	err = ensure_sane_is_init(private);
 	if (LIS_IS_ERROR(err)) {
 		return err;
 	}
@@ -352,10 +365,9 @@ static enum lis_error lis_sane_get_device(struct lis_api *impl, const char *dev_
 {
 	struct lis_sane_item *private;
 	enum lis_error err;
+	struct lis_sane *impl_private = LIS_SANE_PRIVATE(impl);
 
-	LIS_UNUSED(impl);
-
-	err = ensure_sane_is_init();
+	err = ensure_sane_is_init(impl_private);
 	if (LIS_IS_ERROR(err)) {
 		return err;
 	}
@@ -387,7 +399,6 @@ static void free_option(struct lis_sane_option *opt)
 		FREE(opt->parent.constraint.possible.list.values);
 	}
 	FREE(opt->value_buf);
-	opt->value_buf = NULL;
 }
 
 
@@ -420,7 +431,8 @@ static enum lis_error resize_options(struct lis_sane_item *private, int nb_optio
 	}
 
 	/* drop obsolete option slots if any */
-	for (i = nb_options ; i < private->nb_opts ; i++) {
+	/* we don't reuse constraints, that would be too complex */
+	for (i = 0 ; i < private->nb_opts ; i++) {
 		free_option(&private->options[i]);
 	}
 
@@ -447,7 +459,7 @@ static void cleanup_options(struct lis_sane_item *private)
 {
 	int i;
 
-	// all the pointers to strings have been stolen to libsane, so we don't have to free()
+	// all the pointers to strings have been stolen from libsane, so we don't have to free()
 	// them
 
 	for (i = 0 ; i < private->nb_opts ; i++) {
@@ -517,10 +529,12 @@ static enum lis_error lis_sane_item_get_scan_parameters(
 static void lis_sane_item_close(struct lis_item *self)
 {
 	struct lis_sane_item *private = LIS_SANE_ITEM_PRIVATE(self);
+
 	cleanup_options(private);
 	lis_log_debug("sane_close()");
 	free((void *)private->parent.name);
 	sane_close(private->handle);
+	FREE(private);
 }
 
 
@@ -657,7 +671,13 @@ static struct lis_value_list sane_word_list_to_lis_list(enum lis_value_type type
 
 	memset(&lis_list, 0, sizeof(lis_list));
 
-	lis_list.values = calloc(sane_list[0], sizeof(union lis_value));
+	if (sane_list[0] <= 1) {
+		lis_list.values = NULL;
+		lis_list.nb_values = 0;
+		return lis_list;
+	}
+
+	lis_list.values = calloc(sane_list[0] - 1, sizeof(union lis_value));
 	if (lis_list.values == NULL) {
 		lis_log_error("Out of memory");
 		return lis_list;
@@ -665,8 +685,7 @@ static struct lis_value_list sane_word_list_to_lis_list(enum lis_value_type type
 	lis_list.nb_values = sane_list[0] - 1;
 
 	for (i = 1 ; i < sane_list[0] ; i++) {
-		switch(type)
-		{
+		switch(type) {
 			case LIS_TYPE_BOOL:
 				lis_list.values[i - 1].boolean = sane_list[i];
 				break;
@@ -700,8 +719,11 @@ static struct lis_value_list sane_string_list_to_lis_list(enum lis_value_type ty
 
 	for (nb_values = 0 ; sane_list[nb_values] != NULL ; nb_values++) {
 	}
+	if (nb_values == 0) {
+		return lis_list;
+	}
 
-	lis_list.values = calloc(nb_values + 1, sizeof(union lis_value));
+	lis_list.values = calloc(nb_values, sizeof(union lis_value));
 	if (lis_list.values == NULL) {
 		lis_log_error("Out of memory");
 		return lis_list;
