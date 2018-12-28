@@ -296,6 +296,34 @@ static void test_cache_set_value_2(void)
 }
 
 
+static void test_cache_double_get_device(void)
+{
+	enum lis_error err;
+	struct lis_item *device = NULL;
+	struct lis_item *device2 = NULL;
+
+	LIS_ASSERT_EQUAL(tests_cache_init(), 0);
+
+	err = g_cache->get_device(
+		g_cache, LIS_DUMB_DEV_ID_FIRST, &device
+	);
+	LIS_ASSERT_TRUE(LIS_IS_OK(err));
+	LIS_ASSERT_NOT_EQUAL(device, NULL);
+
+	err = g_cache->get_device(
+		g_cache, LIS_DUMB_DEV_ID_FIRST, &device2
+	);
+	LIS_ASSERT_TRUE(LIS_IS_OK(err));
+	LIS_ASSERT_NOT_EQUAL(device2, NULL);
+	LIS_ASSERT_EQUAL(device, device2);
+
+	device->close(device);
+	device2->close(device2);
+
+	LIS_ASSERT_EQUAL(tests_cache_cleanup(), 0);
+}
+
+
 int register_tests(void)
 {
 	CU_pSuite suite = NULL;
@@ -309,7 +337,8 @@ int register_tests(void)
 	if (CU_add_test(suite, "list_options", test_cache_list_options) == NULL
 			|| CU_add_test(suite, "get_value", test_cache_get_value) == NULL
 			|| CU_add_test(suite, "set_value", test_cache_set_value) == NULL
-			|| CU_add_test(suite, "set_value_2", test_cache_set_value_2) == NULL) {
+			|| CU_add_test(suite, "set_value_2", test_cache_set_value_2) == NULL
+			|| CU_add_test(suite, "double_get_device", test_cache_double_get_device) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}
