@@ -13,6 +13,8 @@ struct cache_opt_private {
 
 	bool has_last_value;
 	union lis_value last_value;
+
+	struct cache_item_private *item;
 };
 #define CACHE_OPT_PRIVATE(opt) ((struct cache_opt_private *)(opt))
 
@@ -20,6 +22,8 @@ struct cache_opt_private {
 struct cache_item_private {
 	struct lis_item parent;
 	struct lis_item *wrapped;
+
+	bool options_valid;
 
 	struct cache_item_private *children;
 	struct lis_item **children_ptrs;
@@ -174,6 +178,12 @@ static enum lis_error cache_set_value(
 		return err;
 	}
 
+	if ((*set_flags) & LIS_SET_FLAG_MUST_RELOAD_OPTIONS) {
+		// constraints have changed.
+		// force next call to get_options() to reload all options.
+		private->item->options_valid = 0;
+	}
+
 	if (((*set_flags) & (
 				LIS_SET_FLAG_MUST_RELOAD_OPTIONS
 				| LIS_SET_FLAG_INEXACT
@@ -210,7 +220,7 @@ static enum lis_error cache_get_options(
 	int nb_opts, i;
 	struct cache_item_private *private = CACHE_ITEM_PRIVATE(self);
 
-	if (private->opts_ptrs != NULL) {
+	if (private->options_valid && private->opts_ptrs != NULL) {
 		lis_log_info(
 			"%s->get_options(): returning cached options",
 			self->name
@@ -218,6 +228,8 @@ static enum lis_error cache_get_options(
 		*out_descs = private->opts_ptrs;
 		return LIS_OK;
 	}
+
+	free_opts(private);
 
 	err = private->wrapped->get_options(private->wrapped, &opts);
 	if (LIS_IS_ERROR(err)) {
@@ -259,12 +271,14 @@ static enum lis_error cache_get_options(
 			&private->opts[i].parent, opts[i],
 			sizeof(private->opts[i].parent)
 		);
+		private->opts[i].item = private;
 		private->opts[i].wrapped = opts[i];
 		private->opts[i].parent.fn.set_value = cache_set_value;
 		private->opts[i].parent.fn.get_value = cache_get_value;
 		private->opts_ptrs[i] = &private->opts[i].parent;
 	}
 
+	private->options_valid = 1;
 	*out_descs = private->opts_ptrs;
 	return LIS_OK;
 }
