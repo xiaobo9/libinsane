@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <windows.h>
 
+#include <libinsane/constants.h>
 #include <libinsane/util.h>
 
 #include "capabilities.h"
@@ -16,9 +17,9 @@ static struct lis_twain_cap_possible g_twain_boolean[] = {
 
 static struct lis_twain_cap_possible g_twain_possible_pixel_types[] = {
 	// value names have been changed to match Sane
-	{ .str = "Lineart", .twain_int = TWPT_BW },
-	{ .str = "Grayscale", .twain_int = TWPT_GRAY },
-	{ .str = "Color", .twain_int = TWPT_RGB },
+	{ .str = OPT_VALUE_MODE_BW, .twain_int = TWPT_BW },
+	{ .str = OPT_VALUE_MODE_GRAYSCALE, .twain_int = TWPT_GRAY },
+	{ .str = OPT_VALUE_MODE_COLOR, .twain_int = TWPT_RGB },
 	{ .str = "palette", .twain_int = TWPT_PALETTE },
 	{ .str = "cmy", .twain_int = TWPT_CMY },
 	{ .str = "cmyk", .twain_int = TWPT_CMYK },
@@ -41,7 +42,7 @@ static struct lis_twain_cap_possible g_twain_possible_pixel_types[] = {
 static struct lis_twain_cap_possible g_twain_possible_caps[] = {
 	{ .str = "transfer_count", .twain_int = CAP_XFERCOUNT, },
 	{ .str = "compression", .twain_int = ICAP_COMPRESSION, },
-	{ .str = "mode", .twain_int = ICAP_PIXELTYPE, },
+	{ .str = OPT_NAME_MODE, .twain_int = ICAP_PIXELTYPE, },
 	{ .str = "units", .twain_int = ICAP_UNITS, },
 	{ .str = "transfer_mechanism", .twain_int = ICAP_XFERMECH, },
 	{ .str = "author", .twain_int = CAP_AUTHOR, },
