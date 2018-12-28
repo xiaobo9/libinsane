@@ -184,10 +184,6 @@ static void raw24_on_item_close(
 		return;
 	}
 
-	lis_log_info(
-		"Device has been closed but scan session hasn't been"
-		" cancelled"
-	);
 	lis_raw24_cancel(&private->parent);
 	lis_log_debug("%s closed", item->name);
 }
