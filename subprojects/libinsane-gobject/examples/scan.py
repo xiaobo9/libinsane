@@ -19,8 +19,8 @@ from gi.repository import Libinsane  # noqa: E402
 #! [ExampleLogger]
 class ExampleLogger(GObject.GObject, Libinsane.Logger):
     def do_log(self, lvl, msg):
-        if lvl <= Libinsane.LogLevel.INFO:
-            return
+        # if lvl <= Libinsane.LogLevel.INFO:
+        #     return
         print("{}: {}".format(lvl.value_nick, msg))
 #! [ExampleLogger]
 
@@ -220,20 +220,23 @@ def main():
 #! [ExampleInit]
 
     dev = get_device(api, dev_id)
-    source = get_source(dev, source_name)
+    try:
+        source = get_source(dev, source_name)
 
-    list_opts(source)
+        list_opts(source)
 
-    # set the options
+        # set the options
 #! [ExampleOptsToSet]
-    set_opt(source, 'resolution', 300)
-    # set_opt(source, 'mode', "Lineart")
-    # set_opt(source, 'depth', 1)
+        set_opt(source, 'resolution', 300)
+        # set_opt(source, 'mode', "Lineart")
+        # set_opt(source, 'depth', 1)
 #! [ExampleOptsToSet]
 
-    print("Scanning ...")
-    scan(source, output_file)
-    print("Scan done")
+        print("Scanning ...")
+        scan(source, output_file)
+        print("Scan done")
+    finally:
+        dev.close()
 
 
 if __name__ == "__main__":

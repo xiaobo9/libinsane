@@ -6,7 +6,7 @@
 #include "item.h"
 
 LibinsaneItem *libinsane_item_new_from_libinsane(
-	GObject *parent, struct lis_item *lis_item
+	GObject *parent, gboolean root, struct lis_item *lis_item
 );
 
 #endif

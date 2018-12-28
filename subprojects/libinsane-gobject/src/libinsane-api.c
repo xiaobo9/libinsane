@@ -258,7 +258,7 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 	}
 
 	item = libinsane_item_new_from_libinsane(
-		G_OBJECT(self), lis_item
+		G_OBJECT(self), TRUE /* root*/, lis_item
 	);
 	lis_log_debug("leave");
 	return item;

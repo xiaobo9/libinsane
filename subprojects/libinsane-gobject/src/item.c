@@ -15,7 +15,8 @@ struct _LibinsaneItemPrivate
 {
 	GObject *parent_ref;
 	struct lis_item *item;
-	int closed;
+	gboolean root;
+	gboolean closed;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneItem, libinsane_item, G_TYPE_OBJECT)
@@ -52,7 +53,7 @@ static void libinsane_item_init(LibinsaneItem *self)
 
 
 LibinsaneItem *libinsane_item_new_from_libinsane(
-		GObject *parent_ref, struct lis_item *lis_item
+		GObject *parent_ref, gboolean root, struct lis_item *lis_item
 	)
 {
 	LibinsaneItem *item;
@@ -64,7 +65,8 @@ LibinsaneItem *libinsane_item_new_from_libinsane(
 	private = libinsane_item_get_instance_private(item);
 	private->item = lis_item;
 	private->parent_ref = parent_ref;
-	private->closed = 0;
+	private->closed = FALSE;
+	private->root = root;
 	lis_log_debug("[gobject] leave");
 
 	return item;
@@ -114,9 +116,13 @@ void libinsane_item_close(LibinsaneItem *self, GError **error)
 		return;
 	}
 
-	lis_log_debug("Closing item '%s'", private->item->name);
-	private->closed = 1;
-	private->item->close(private->item);
+	private->closed = TRUE;
+	if (private->root) {
+		lis_log_debug("Closing item '%s'", private->item->name);
+		// only the root item must be closed
+		private->item->close(private->item);
+		private->item = NULL;
+	}
 	g_clear_object(&private->parent_ref);
 }
 
@@ -158,7 +164,7 @@ GList *libinsane_item_get_children(LibinsaneItem *self, GError **error)
 
 	for (i = 0 ; children[i] != NULL ; i++) {
 		item = libinsane_item_new_from_libinsane(
-			G_OBJECT(self), children[i]
+			G_OBJECT(self), FALSE /* !root */, children[i]
 		);
 		out = g_list_prepend(out, item);
 	}
