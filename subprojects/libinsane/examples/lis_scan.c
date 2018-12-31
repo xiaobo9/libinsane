@@ -204,20 +204,20 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 
 	CHECK_ERR(sources[0]->scan_start(sources[0], &scan_session));
 
-	// scan parameters must be obtained *after* the scan session has been
-	// started if we want a reliable image width (this is a limitation of
-	// some drivers).
-	CHECK_ERR(scan_session->get_scan_parameters(
-		scan_session, &parameters
-	));
-	printf(
-		"Scan will be: %d px x %d px (%ld bytes)\n",
-		parameters.width, parameters.height,
-		(long)parameters.image_size
-	);
-	write_header(out, &parameters);
-
 	while (!scan_session->end_of_feed(scan_session)) {
+		// scan parameters must be obtained *after* the scan session has been
+		// started if we want a reliable image width (this is a limitation of
+		// some drivers).
+		CHECK_ERR(scan_session->get_scan_parameters(
+			scan_session, &parameters
+		));
+		printf(
+			"Scan will be: %d px x %d px (%ld bytes)\n",
+			parameters.width, parameters.height,
+			(long)parameters.image_size
+		);
+		write_header(out, &parameters);
+
 		while (!scan_session->end_of_page(scan_session)) {
 			bufsize = sizeof(img_buffer);
 			err = scan_session->scan_read(
