@@ -108,33 +108,52 @@ static enum lis_error fix_range_type(enum lis_value_type type, struct lis_value_
 static enum lis_error range_to_list(const struct lis_value_range *in, struct lis_value_list *out)
 {
 	int val, idx;
-	int offset = 0;
-	int interval = in->interval.integer;
+	int interval;
 
-	if (interval < MIN_RESOLUTION_INTERVAL) {
+	interval = in->interval.integer;
+
+	if (interval <= 1) {
+		// such interval would generate a list far too long
 		interval = MIN_RESOLUTION_INTERVAL;
 	}
 
-	out->nb_values = ((in->max.integer - in->min.integer) / interval) + 1;
+	// Compute how many values we will generate:
+	// Depending on the range, we may add an extra value at the
+	// beginning of the list, and another one at the end of the list
+	// (--> + 2). We also add an extra slot by safety (--> + 3)
+	// out->nb_values will be adjusted later based on the number
+	// of values we actually generated.
+	out->nb_values = ((in->max.integer - in->min.integer) / interval) + 3;
 	out->values = calloc(out->nb_values, sizeof(union lis_value));
 	if (out->values == NULL) {
 		lis_log_error("Out of memory");
 		return LIS_ERR_NO_MEM;
 	}
 
-	for (val = in->min.integer, idx = 0 ; val <= in->max.integer ; val += interval, idx++) {
+	idx = 0;
+	val = in->min.integer;
+	if (in->interval.integer <= 1 && (val % interval) != 0) {
+		out->values[idx].integer = val;
+		idx++;
+		val += interval;
+		// realign on the interval for nicer values
+		val -= (val % interval);
+	}
+
+	for ( ; val <= in->max.integer ; val += interval, idx++) {
 		assert(idx < out->nb_values);
 		lis_log_debug(
 			"Resolution range constraint %d-%d-%d --> list constraint: %d",
-			in->min.integer, in->max.integer, interval, val + offset
+			in->min.integer, in->max.integer, interval, val
 		);
-		out->values[idx].integer = val + offset;
-		if (val == 1) {
-			// WORKAROUND(Jflesch): Sane test backend returns the range [1.0, 1200.0, 1.0],
-			// but we prefer round values --> [1.0, 50.0, 100.0, ...]
-			offset = -1;
-		}
+		out->values[idx].integer = val;
 	}
+
+	if (in->interval.integer <= 1 && val != in->max.integer + interval) {
+		out->values[idx].integer = in->max.integer;
+		idx++;
+	}
+
 	out->nb_values = idx;
 
 	return LIS_OK;
@@ -207,7 +226,6 @@ static enum lis_error opt_desc_filter(
 			"Option '" OPT_NAME_RESOLUTION "': Converting constraint range into"
 			" constraint list"
 		);
-
 		err = fix_range_type(opt->value.type, &opt->constraint.possible.range);
 		if (LIS_IS_ERROR(err)) {
 			return err;
