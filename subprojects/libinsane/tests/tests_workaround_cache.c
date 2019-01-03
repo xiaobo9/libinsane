@@ -231,13 +231,14 @@ static void test_cache_set_value(void)
 		set_flags,
 		LIS_SET_FLAG_MUST_RELOAD_PARAMS
 	);
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
+	// cache gets the current value before setting it
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 
 	err = opts[0]->fn.get_value(opts[0], &value);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_ADF), 0);
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 
 	device->close(device);
@@ -282,13 +283,15 @@ static void test_cache_set_value_2(void)
 		set_flags,
 		LIS_SET_FLAG_MUST_RELOAD_OPTIONS
 	);
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
+	// cache gets the current value before setting it
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 
+	// since we got flag 'reload_options', this get_value() will go through
 	err = opts[1]->fn.get_value(opts[1], &value);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_ADF), 0);
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 2);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 
 	device->close(device);

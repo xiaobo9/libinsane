@@ -173,15 +173,60 @@ static enum lis_error cache_set_value(
 {
 	struct cache_opt_private *private = CACHE_OPT_PRIVATE(self);
 	enum lis_error err;
+	union lis_value current;
+	bool same_value = 0;
 
 	*set_flags = 0;
+
+	memset(&current, 0, sizeof(current));
+	err = cache_get_value(self, &current);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_warning(
+			"%s->set_value(): Failed to get current value."
+			" Assuming it's different from the one we are going"
+			" to set",
+			self->name
+		);
+	} else {
+		// check whether the current value is the same than the one
+		// we want to set. If it is, do not risk getting back
+		// a LIS_SET_FLAG_MUST_RELOAD_OPTIONS.
+		switch(private->parent.value.type) {
+			case LIS_TYPE_STRING:
+				same_value = (strcasecmp(
+					value.string, current.string
+				) == 0);
+				break;
+			case LIS_TYPE_INTEGER:
+				same_value = (value.integer == current.integer);
+				break;
+			case LIS_TYPE_BOOL:
+				same_value = (value.boolean == current.boolean);
+				break;
+			case LIS_TYPE_DOUBLE:
+				same_value = (value.dbl == current.dbl);
+				break;
+			case LIS_TYPE_IMAGE_FORMAT:
+				same_value = (value.format == current.format);
+				break;
+		}
+		if (same_value) {
+			*set_flags = 0;
+			lis_log_info(
+				"%s->set_value(): attempting to set what"
+				" is already the current value --> ignored",
+				self->name
+			);
+			return LIS_OK;
+		}
+	}
 
 	err = private->wrapped->fn.set_value(
 		private->wrapped, value, set_flags
 	);
 	free_last_value(private);
 	if (LIS_IS_ERROR(err)) {
-		lis_log_info(
+		lis_log_error(
 			"%s->set_value() failed: 0x%X, %s",
 			self->name, err, lis_strerror(err)
 		);

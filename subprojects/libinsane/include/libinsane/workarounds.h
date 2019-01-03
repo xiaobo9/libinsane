@@ -185,7 +185,7 @@ extern enum lis_error lis_api_workaround_one_page_flatbed(
  * workaround aim to reduce to a strict minimum all the calls to
  * list_options(), option->fn.set(), option->fn.get().
  *
- * Assumes that the 'set_fllags' when calling option->fn.set() is reliable.
+ * Assumes that the 'set_flags' when calling option->fn.set() is reliable.
  *
  * Also keep track of the items. Return the same items as long as
  * they haven't been closed. This reduce risk of programming error
