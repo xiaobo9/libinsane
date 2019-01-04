@@ -112,7 +112,11 @@ static const struct alias g_aliases[] = {
 	{
 		.opt_name = OPT_NAME_RESOLUTION,
 		.requires = ALIAS_REQ_ANY_OPTIONS,
-		.alias_for = (const char *[]) { "xres", "yres", NULL },
+		.alias_for = (const char *[]) {
+			"xres", "yres", // WIA2
+			"x_resolution", "y_resolution", // TWAIN
+			NULL
+		},
 		.get_value = simple_alias_get_value,
 		.set_value = simple_alias_set_value,
 	},

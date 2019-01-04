@@ -78,7 +78,6 @@ static const struct opt_values_mapping *get_opt_mapping(const char *opt_name)
 			return &g_opt_values_mapping[mapping_idx];
 		}
 	}
-	lis_log_debug("No mapping for option '%s'", opt_name);
 	return NULL;
 }
 

@@ -131,11 +131,12 @@ const char *lis_get_version(void)
 void lis_hexdump(const void *_data, size_t nb_bytes)
 {
 	const uint8_t *data = _data;
+	size_t total = nb_bytes;
 
 	while(nb_bytes > 0) {
 		lis_log_debug(
-			"[HEX] (%4d) 0x %02X %02X %02X %02X || %02X %02X %02X %02X",
-			(int)nb_bytes,
+			"[HEX] (%4d) 0x || %02X %02X %02X %02X || %02X %02X %02X %02X",
+			(int)(total - nb_bytes),
 			((int)(data[0])) & 0xFF,
 			(nb_bytes >= 2 ? (((int)(data[1])) & 0xFF) : 0x00),
 			(nb_bytes >= 3 ? (((int)(data[2])) & 0xFF) : 0x00),

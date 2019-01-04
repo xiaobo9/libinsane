@@ -1,10 +1,32 @@
 #ifndef __LIBINSANE_NORMALIZERS_BMP_H
 #define __LIBINSANE_NORMALIZERS_BMP_H
 
+#include <stdint.h>
+
 #include <libinsane/capi.h>
 #include <libinsane/error.h>
 
-#define BMP_HEADER_SIZE 54
+struct bmp_header {
+	uint16_t magic;
+	uint32_t file_size;
+	uint32_t unused;
+	uint32_t offset_to_data;
+	uint32_t remaining_header;
+	uint32_t width;
+	uint32_t height;
+	uint16_t nb_color_planes;
+	uint16_t nb_bits_per_pixel;
+	uint32_t compression;
+	uint32_t pixel_data_size;
+	uint32_t horizontal_resolution; // pixels / meter
+	uint32_t vertical_resolution; // pixels / meter
+	uint32_t nb_colors_in_palette;
+	uint32_t important_colors;
+} __attribute__((packed));
+
+#define BMP_HEADER_SIZE sizeof(struct bmp_header)
+#define BMP_DIB_HEADER_SIZE 40
+
 
 /**
  * \brief convert a bitmap into scan parameters

@@ -32,25 +32,6 @@ static inline uint16_t htobe16(uint16_t v)
 #endif
 
 
-struct bmp_header {
-	uint16_t magic;
-	uint32_t file_size;
-	uint32_t unused;
-	uint32_t offset_to_data;
-	uint32_t remaining_header;
-	uint32_t width;
-	uint32_t height;
-	uint16_t nb_color_planes;
-	uint16_t nb_bits_per_pixel;
-	uint32_t compression;
-	uint32_t pixel_data_size;
-	uint32_t horizontal_resolution; // pixels / meter
-	uint32_t vertical_resolution; // pixels / meter
-	uint32_t nb_colors_in_palette;
-	uint32_t important_colors;
-} __attribute__((packed));
-
-
 enum lis_error lis_bmp2scan_params(
 		const void *bmp,
 		size_t *header_size,
@@ -86,12 +67,14 @@ enum lis_error lis_bmp2scan_params(
 		);
 		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
 	}
-	if (header->compression != 0) {
-		lis_log_error("BMP: Don't know how to handle compression: 0x%"PRIX32, le32toh(header->compression));
+	if (le32toh(header->nb_bits_per_pixel) != 24) {
+		lis_log_error("BMP: Unexpected nb bits per pixel: %u (0x%X)",
+				le32toh(header->nb_bits_per_pixel),
+				header->nb_bits_per_pixel);
 		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
 	}
-	if (le32toh(header->nb_bits_per_pixel) != 24) {
-		lis_log_error("BMP: Unexpected pixel data size: %u", le32toh(header->pixel_data_size));
+	if (header->compression != 0) {
+		lis_log_error("BMP: Don't know how to handle compression: 0x%"PRIX32, le32toh(header->compression));
 		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
 	}
 

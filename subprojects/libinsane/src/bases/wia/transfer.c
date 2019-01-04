@@ -14,9 +14,9 @@
 #include "util.h"
 
 
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-#define container_of(ptr, type, member) \
-      ((type *) ((char *)(ptr) - offsetof(type, member)))
+#define lis_offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#define lis_container_of(ptr, type, member) \
+      ((type *) ((char *)(ptr) - lis_offsetof(type, member)))
 
 
 enum wia_msg_type {
@@ -374,7 +374,7 @@ static void pop_all_msg(struct wia_transfer *self)
 
 static int end_of_feed(struct lis_scan_session *_self)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, scan_session
 	);
 	int r;
@@ -402,7 +402,7 @@ static int end_of_feed(struct lis_scan_session *_self)
 
 static int end_of_page(struct lis_scan_session *_self)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, scan_session
 	);
 	int r;
@@ -434,7 +434,7 @@ static enum lis_error scan_read(
 		size_t *buffer_size
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, scan_session
 	);
 
@@ -508,7 +508,7 @@ static enum lis_error get_scan_parameters(
 		struct lis_scan_parameters *parameters
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, scan_session
 	);
 	static const PROPSPEC input[] = {
@@ -608,7 +608,7 @@ end:
 
 static void scan_cancel(struct lis_scan_session *_self)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, scan_session
 	);
 
@@ -636,7 +636,7 @@ static HRESULT WINAPI wia_app_error_handler_query_interface(
 		void **ppvObject
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, transfer_callback
 	);
 	HRESULT hr;
@@ -732,7 +732,7 @@ static HRESULT WINAPI wia_transfer_cb_query_interface(
 		LisIWiaTransferCallback *_self, REFIID riid, void **ppvObject
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, transfer_callback
 	);
 	HRESULT hr;
@@ -796,7 +796,7 @@ static HRESULT WINAPI wia_transfer_cb_transfer_callback(
 		LisWiaTransferParams *pWiaTransferParams
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, transfer_callback
 	);
 
@@ -959,7 +959,7 @@ static HRESULT WINAPI wia_stream_write(
 		ULONG *pcbWritten
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, istream
 	);
 
@@ -986,7 +986,7 @@ static HRESULT WINAPI wia_stream_seek(
 		ULARGE_INTEGER *plibNewPosition
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, istream
 	);
 	const char *origin = "UNKNOWN";
@@ -1126,7 +1126,7 @@ static HRESULT WINAPI wia_stream_stat(
 		DWORD grfStatFlag
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, istream
 	);
 	SYSTEMTIME systemTime;
@@ -1167,7 +1167,7 @@ static HRESULT WINAPI wia_transfer_cb_get_next_stream(
 		IStream **ppDestination
 	)
 {
-	struct wia_transfer *self = container_of(
+	struct wia_transfer *self = lis_container_of(
 		_self, struct wia_transfer, transfer_callback
 	);
 	char *item_name = NULL;

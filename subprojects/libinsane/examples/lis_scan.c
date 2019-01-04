@@ -14,10 +14,12 @@
 #include "../src/bmp.h"
 
 
+#ifdef DISABLE_DEBUG
 static void noop(enum lis_log_level lvl, const char *msg) {
 	LIS_UNUSED(lvl);
 	LIS_UNUSED(msg);
 }
+#endif
 
 
 struct bmp {
@@ -34,7 +36,11 @@ struct bmp {
 
 static struct lis_log_callbacks g_log_callbacks = {
 	.callbacks = {
+#ifdef DISABLE_DEBUG
 		[LIS_LOG_LVL_DEBUG] = noop,
+#else
+		[LIS_LOG_LVL_DEBUG] = lis_log_stderr,
+#endif
 		[LIS_LOG_LVL_INFO] = lis_log_stderr,
 		[LIS_LOG_LVL_WARNING] = lis_log_stderr,
 		[LIS_LOG_LVL_ERROR] = lis_log_stderr,
@@ -138,6 +144,7 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 				__FILE__, __LINE__, \
 				err, lis_strerror(err) \
 			); \
+			fflush(stderr); \
 			goto end; \
 		} \
 	} while(0)
@@ -150,7 +157,7 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 	struct lis_item **sources;
 	struct lis_scan_parameters parameters;
 	struct lis_scan_session *scan_session;
-	char img_buffer[4096];
+	char img_buffer[32*1024];
 	size_t bufsize;
 	size_t obtained = 0;
 
@@ -186,7 +193,8 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 	// Setting resolution: This one may or may not work, depending on
 	// the scanner
 	printf("Setting resolution to 300\n");
-	CHECK_ERR(lis_set_option(sources[0], OPT_NAME_RESOLUTION, "300"));
+	lis_set_option(sources[0], OPT_NAME_RESOLUTION, "300");
+
 	// Normalizers ensure us that the mode option has the value "Color"
 	// by default (still put here for the example)
 	printf("Setting mode to Color\n");

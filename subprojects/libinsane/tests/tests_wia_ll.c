@@ -10,6 +10,7 @@
 #include <libinsane/wia_ll.h>
 #include <libinsane/util.h>
 
+#define LIS_UNIT_TESTS
 #include "../src/bases/wia/properties.h"
 #include "util.h"
 
@@ -54,7 +55,6 @@ int register_tests(void)
 		return 0;
 	}
 
-	/* order of tests may matter because of Sane test backend ... and that makes me a sad panda .. :( */
 	if (CU_add_test(suite, "check properties", tests_wia_check_properties) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;

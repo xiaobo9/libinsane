@@ -435,6 +435,10 @@ struct lis_api {
 	 * If you already know the device identifier of the scanner you want to use, you do not need
 	 * to call this function. You can call directly \ref get_device.
 	 *
+	 * - Sane: reports only scanners that are online.
+	 * - WIA2: reports only scanners that are online.
+	 * - Twain: report all scanners, even offline scanners (cannot be avoided).
+	 *
 	 * \warning This operation may take many seconds.
 	 * \param[in] local_only 1 if only local devices must be reported, 0 if remote devices must also be reported
 	 * \param[out] dev_infos will point to a list of device descriptions, NULL terminated. Will be
@@ -447,10 +451,20 @@ struct lis_api {
 	);
 
 	/*!
-	 * \brief Open the access to a scanner.
+	 * \brief Open the access to a device.
+	 *
+	 * Open the device.
+	 *
+	 * - Sane: if the device is not connected, it won't try to display anything.
+	 * - WIA2: if the device is not connected, it won't try to display anything.
+	 * - Twain: if the device is not connected, a popup will be displayed and
+	 *   this function will be stuck until the user clicks "ok" (cannot be avoided).
+	 *
 	 * \param[in] dev_id Device identifier. See \ref list_devices().
 	 * \param[out] item Item representing the scanner.
+	 *
 	 * \warning This operation may take many seconds.
+	 * \warning May trigger the display of a popup if the device is not actually available.
 	 * \retval LIS_OK item has been set to ta valid list of items. List is NULL terminated.
 	 *		You *must* use \ref lis_item.close() on it later. See \ref LIS_IS_OK.
 	 * \retval LIS_ERR_DEVICE_BUSY Another process is already using this scanner. item may or may
