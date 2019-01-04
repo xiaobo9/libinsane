@@ -430,6 +430,7 @@ static enum lis_error lis_bw_item_get_options(
 			free_opt_user(private->options[i]);
 		}
 		FREE(private->options[0]);
+		FREE(private->options);
 	}
 
 	for (nb_opts = 0 ; opts[nb_opts] != NULL ; nb_opts++) { }
@@ -497,17 +498,23 @@ static void lis_bw_item_root_close(struct lis_item *self)
 	struct lis_bw_item *item = LIS_BW_ITEM(self);
 	int i;
 
+	lis_log_debug(
+		"%s: closing item %s",
+		item->impl->wrapper_name,
+		item->parent.name
+	);
+
 	if (item->impl->on_close_item.cb != NULL) {
 		if (item->children != NULL) {
 			for (i = 0 ; item->children[i] != NULL ; i++) {
 				item->impl->on_close_item.cb(
-					&item->children[i]->parent, 1 /* children */,
+					&item->children[i]->parent, 0 /* !root */,
 					item->impl->on_close_item.user_data
 				);
 			}
 		}
 		item->impl->on_close_item.cb(
-			self, 0 /* root */,
+			self, 1 /* root */,
 			item->impl->on_close_item.user_data
 		);
 	}

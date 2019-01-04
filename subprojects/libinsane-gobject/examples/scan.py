@@ -223,20 +223,23 @@ def main():
 #! [ExampleInit]
 
     dev = get_device(api, dev_id)
-    source = get_source(dev, source_name)
+    try:
+        source = get_source(dev, source_name)
 
-    list_opts(source)
+        list_opts(source)
 
-    # set the options
+        # set the options
 #! [ExampleOptsToSet]
-    set_opt(source, 'resolution', 300)
-    # set_opt(source, 'mode', "Lineart")
-    # set_opt(source, 'depth', 1)
+        set_opt(source, 'resolution', 300)
+        # set_opt(source, 'mode', "Lineart")
+        # set_opt(source, 'depth', 1)
 #! [ExampleOptsToSet]
 
-    print("Scanning ...")
-    scan(source, output_file)
-    print("Scan done")
+        print("Scanning ...")
+        scan(source, output_file)
+        print("Scan done")
+    finally:
+        dev.close()
 
 
 if __name__ == "__main__":

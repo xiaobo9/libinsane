@@ -20,6 +20,7 @@
 struct _LibinsaneApiPrivate
 {
 	struct lis_api *impl;
+	int closed;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(LibinsaneApi, libinsane_api, G_TYPE_OBJECT)
@@ -107,6 +108,7 @@ LibinsaneApi *libinsane_api_new_safebet(GError **error)
 		lis_log_debug("error");
 		return NULL;
 	}
+	priv->closed = 0;
 	assert(priv->impl != NULL);
 	lis_log_debug("leave");
 
@@ -142,13 +144,18 @@ void libinsane_api_cleanup(LibinsaneApi *self)
 	LibinsaneApiPrivate *priv;
 
 	lis_log_debug("enter");
-
 	priv = libinsane_api_get_instance_private(self);
+
+	if (priv->closed) {
+		return;
+	}
+
 	if (priv->impl != NULL) {
 		lis_log_debug("cleanup");
 		priv->impl->cleanup(priv->impl);
 		priv->impl = NULL;
 	}
+	priv->closed = 1;
 
 	lis_log_debug("leave");
 }
@@ -158,7 +165,7 @@ void libinsane_api_cleanup(LibinsaneApi *self)
  * libinsane_api_list_devices:
  *
  * Returns: (element-type Libinsane.DeviceDescriptor) (transfer full):
- *   list of available devices (LibinsaneItem objects)
+ *   list of available devices (LibinsaneDeviceDescriptors objects)
  */
 GList *libinsane_api_list_devices(
 	LibinsaneApi *self, LibinsaneDeviceLocations locations, GError **error
@@ -174,6 +181,19 @@ GList *libinsane_api_list_devices(
 
 	lis_log_debug("enter");
 
+	priv = libinsane_api_get_instance_private(self);
+
+	if (priv->closed) {
+		err = LIS_ERR_CANCELLED;
+		SET_LIBINSANE_GOBJECT_ERROR(error, err,
+			"Libinsane get devices error: 0x%X, %s",
+			err, lis_strerror(err));
+		lis_log_error(
+			"API->list_devices() called on closed implementation"
+		);
+		return NULL;
+	}
+
 	switch(locations) {
 		case LIBINSANE_DEVICE_LOCATIONS_ANY:
 			lis_locations = LIS_DEVICE_LOCATIONS_ANY;
@@ -183,13 +203,12 @@ GList *libinsane_api_list_devices(
 			break;
 	}
 
-	priv = libinsane_api_get_instance_private(self);
 	err = priv->impl->list_devices(priv->impl, lis_locations, &dev_infos);
 	if (LIS_IS_ERROR(err)) {
 		SET_LIBINSANE_GOBJECT_ERROR(error, err,
 			"Libinsane get devices error: 0x%X, %s",
 			err, lis_strerror(err));
-		lis_log_debug("error");
+		lis_log_error("error");
 		return NULL;
 	}
 
@@ -206,7 +225,7 @@ GList *libinsane_api_list_devices(
 /**
  * libinsane_api_get_device:
  *
- * Returns: (transfer none): list of available devices (LibinsaneItem objects)
+ * Returns: (transfer full): LibinsaneItem object
  */
 LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, GError **error) {
 	LibinsaneApiPrivate *priv;
@@ -218,6 +237,17 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 
 	priv = libinsane_api_get_instance_private(self);
 
+	if (priv->closed) {
+		lis_err = LIS_ERR_CANCELLED;
+		SET_LIBINSANE_GOBJECT_ERROR(error, lis_err,
+			"Libinsane get devices error: 0x%X, %s",
+			lis_err, lis_strerror(lis_err));
+		lis_log_error(
+			"API->get_device() called on closed implementation"
+		);
+		return NULL;
+	}
+
 	lis_err = priv->impl->get_device(priv->impl, dev_id, &lis_item);
 	if (LIS_IS_ERROR(lis_err)) {
 		SET_LIBINSANE_GOBJECT_ERROR(error, lis_err,
@@ -227,7 +257,9 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 		return NULL;
 	}
 
-	item = libinsane_item_new_from_libinsane(lis_item);
+	item = libinsane_item_new_from_libinsane(
+		G_OBJECT(self), TRUE /* root*/, lis_item
+	);
 	lis_log_debug("leave");
 	return item;
 }

@@ -63,8 +63,9 @@ static enum lis_error raw24_scan_start(
 	LIS_UNUSED(user_data);
 
 	private = lis_bw_item_get_user_ptr(root);
-	if (private == NULL) {
+	if (private != NULL) {
 		FREE(private);
+		lis_bw_item_set_user_ptr(root, NULL);
 	}
 
 	private = calloc(1, sizeof(struct lis_raw24_scan_session));
@@ -177,16 +178,14 @@ static void raw24_on_item_close(
 		return;
 	}
 
+	lis_log_debug("Closing %s", item->name);
 	private = lis_bw_item_get_user_ptr(item);
 	if (private == NULL) {
 		return;
 	}
 
-	lis_log_warning(
-		"Device has been closed but scan session hasn't been"
-		" cancelled"
-	);
 	lis_raw24_cancel(&private->parent);
+	lis_log_debug("%s closed", item->name);
 }
 
 

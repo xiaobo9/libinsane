@@ -6,6 +6,7 @@
 #include "option_descriptor.h"
 
 LibinsaneOptionDescriptor *libinsane_option_descriptor_new_from_libinsane(
+		GObject *parent,
 		struct lis_option_descriptor *desc
 	);
 

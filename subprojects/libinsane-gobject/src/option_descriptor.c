@@ -17,6 +17,7 @@
 
 struct _LibinsaneOptionDescriptorPrivate
 {
+	GObject *parent_ref;
 	struct lis_option_descriptor *opt;
 	GValue last_value;
 };
@@ -24,6 +25,19 @@ struct _LibinsaneOptionDescriptorPrivate
 G_DEFINE_TYPE_WITH_PRIVATE(
 		LibinsaneOptionDescriptor, libinsane_option_descriptor, G_TYPE_OBJECT
 	)
+
+
+static void libinsane_option_descriptor_dispose(GObject *self)
+{
+	LibinsaneOptionDescriptorPrivate *private = (
+		libinsane_option_descriptor_get_instance_private(
+			LIBINSANE_OPTION_DESCRIPTOR(self)
+		)
+	);
+	lis_log_debug("[gobject] Disposing");
+	g_clear_object(&private->parent_ref);
+}
+
 
 static void libinsane_option_descriptor_finalize(GObject *object)
 {
@@ -36,6 +50,7 @@ static void libinsane_option_descriptor_class_init(LibinsaneOptionDescriptorClas
 {
 	GObjectClass *go_cls;
 	go_cls = G_OBJECT_CLASS(cls);
+	go_cls->dispose = libinsane_option_descriptor_dispose;
 	go_cls->finalize = libinsane_option_descriptor_finalize;
 }
 
@@ -48,6 +63,7 @@ static void libinsane_option_descriptor_init(LibinsaneOptionDescriptor *self)
 
 
 LibinsaneOptionDescriptor *libinsane_option_descriptor_new_from_libinsane(
+		GObject *parent_ref,
 		struct lis_option_descriptor *lis_opt
 	)
 {
@@ -55,10 +71,14 @@ LibinsaneOptionDescriptor *libinsane_option_descriptor_new_from_libinsane(
 	LibinsaneOptionDescriptorPrivate *private;
 
 	lis_log_debug("[gobject] enter");
+
+	g_object_ref(parent_ref);
+
 	opt = g_object_new(LIBINSANE_OPTION_DESCRIPTOR_TYPE, NULL);
 	private = libinsane_option_descriptor_get_instance_private(opt);
 
 	private->opt = lis_opt;
+	private->parent_ref = parent_ref;
 
 	/* set a default 'last_value' ; won't be actually used ; just here to be freed */
 	g_value_init(&private->last_value, G_TYPE_INT);

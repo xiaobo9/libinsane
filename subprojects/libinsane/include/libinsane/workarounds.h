@@ -186,6 +186,10 @@ extern enum lis_error lis_api_workaround_one_page_flatbed(
  * list_options(), option->fn.set(), option->fn.get().
  *
  * Assumes that the 'set_fllags' when calling option->fn.set() is reliable.
+ *
+ * Also keep track of the items. Return the same items as long as
+ * they haven't been closed. This reduce risk of programming error
+ * (even more when using the GObject layer).
  */
 extern enum lis_error lis_api_workaround_cache(
 	struct lis_api *to_wrap, struct lis_api **out_impl
