@@ -239,19 +239,6 @@ static enum lis_error lis_sn_dev_get_options(
 }
 
 
-static enum lis_error lis_sn_src_get_options(
-		struct lis_item *self, struct lis_option_descriptor ***out_descs
-	)
-{
-	// do not return any option ; that would be redundant with normalizer
-	// 'all_opts_on_all_sources'
-	static const struct lis_option_descriptor *descs[] = { NULL };
-	LIS_UNUSED(self);
-	*out_descs = (struct lis_option_descriptor **)descs;
-	return LIS_OK;
-}
-
-
 static enum lis_error set_source(struct lis_sn_item_private *private)
 {
 	struct lis_option_descriptor **opts = NULL;
@@ -294,6 +281,34 @@ static enum lis_error set_source(struct lis_sn_item_private *private)
 }
 
 
+static enum lis_error lis_sn_src_get_options(
+		struct lis_item *self, struct lis_option_descriptor ***out_descs
+	)
+{
+	enum lis_error err;
+	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
+
+	// XXX(Jflesch): HP drivers + sane backend 'net' (+ difference of
+	// versions):
+	// This combination is very sensitive: Source must be the first option
+	// set. This should be a good time to set it.
+	err = set_source(private);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_warning(
+			"setting source has failed --> scan_start() failed:"
+			" 0x%x, %s",
+			err, lis_strerror(err)
+		);
+	}
+
+	// do not return any option ; that would be redundant with normalizer
+	// 'all_opts_on_all_sources'
+	static const struct lis_option_descriptor *descs[] = { NULL };
+	*out_descs = (struct lis_option_descriptor **)descs;
+	return LIS_OK;
+}
+
+
 static enum lis_error lis_sn_scan_start(struct lis_item *self, struct lis_scan_session **session)
 {
 	struct lis_sn_item_private *private_item = LIS_SN_ITEM_PRIVATE(self);
@@ -308,7 +323,7 @@ static enum lis_error lis_sn_scan_start(struct lis_item *self, struct lis_scan_s
 
 	err = set_source(private_item);
 	if (LIS_IS_ERROR(err)) {
-		lis_log_error("Setting source has failed --> scan_start() failed: 0x%X, %s",
+		lis_log_error("setting source has failed --> scan_start() failed: 0x%x, %s",
 				err, lis_strerror(err));
 		return err;
 	}
