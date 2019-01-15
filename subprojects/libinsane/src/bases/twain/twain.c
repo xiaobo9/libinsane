@@ -732,7 +732,7 @@ static enum lis_error twain_get_device(
 	struct lis_twain_item *item;
 	char other_dev_id[MAX_ID_LENGTH + 1];
 	TW_UINT16 twrc;
-	DSMENTRYPROC cb = twain_dsm_callback;
+	DSMENTRYPROC cb = (DSMENTRYPROC)twain_dsm_callback;
 	TW_CALLBACK callback = {
 		.CallBackProc = *((void **)(&cb)),
 		.RefCon = 0,
