@@ -1310,7 +1310,7 @@ static enum lis_error wiall_opt_set_value(
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
 		lis_log_warning(
-			"Failed to read property %lu, %s from item %s:"
+			"Failed to set property %lu, %s on item %s:"
 			" 0x%lX -> 0x%X (%s)",
 			private->wia2lis->wia.id, private->wia2lis->lis.name,
 			private->item->parent.name,

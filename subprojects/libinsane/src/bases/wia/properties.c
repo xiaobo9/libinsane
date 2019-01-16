@@ -862,7 +862,7 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 			},
 			{
 				.wia.integer = TYMED_MULTIPAGE_CALLBACK,
-				.lis.string = "multipage_acallback",
+				.lis.string = "multipage_callback",
 			},
 			{
 				.wia.integer = TYMED_FILE,
