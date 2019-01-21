@@ -2,7 +2,6 @@
 
 import json
 import os
-import platform
 import subprocess
 import sys
 
@@ -21,6 +20,7 @@ def get_cflags(compile_commands):
                 out.append(f)
         yield (out, cfile['file'])
 
+
 if __name__ == "__main__":
     with open(sys.argv[1], 'r') as fd:
         compile_commands = json.load(fd)
@@ -38,6 +38,7 @@ if __name__ == "__main__":
         cflags += ['-D_Float64x=double']
         cflags += ['-D_Float128=double']
         cflags += ['-D_Float128x=double']
+        cflags += ['-D__ARM_PCS_VFP']
         print("Running sparse on {}".format(filepath))
         cmd = ['sparse', filepath] + cflags
         r = subprocess.run(cmd)
