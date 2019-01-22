@@ -11,6 +11,7 @@ sudo apt install \
         build-essential \
         libsane-dev \
         libgirepository1.0-dev gobject-introspection \
+        python3-gi \
         libcunit1-ncurses-dev \
         valgrind \
         valac
@@ -20,6 +21,28 @@ For static analysis:
 
 ```
 sudo apt install sparse clang-tidy-7
+```
+
+
+# Fedora
+
+```
+sudo dnf install \
+        make \
+        meson \
+        gtk-doc \
+        doxygen plantuml graphviz \
+        sane-backends-devel \
+        gobject-introspection-devel python3-gobject \
+        CUnit-devel \
+        valgrind \
+        vala
+```
+
+For static analysis:
+
+```
+sudo dnf install sparse clang-tools-extra python3-pyyaml
 ```
 
 
