@@ -114,8 +114,6 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 		private->wrapped, &private->parameters_wrapped
 	);
 	if (LIS_IS_ERROR(err)) {
-		private->wrapped->cancel(private->wrapped);
-		FREE(private);
 		return err;
 	}
 
