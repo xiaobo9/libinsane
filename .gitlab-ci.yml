@@ -1,0 +1,33 @@
+image: debian:stable-slim
+
+before_script:
+  - apt-get update
+  # WORKAROUND: manpages is required to install some of the openjdk-jre
+  # and openjdk-jre is required for plantuml, which is required to generate
+  # documentation
+  - mkdir -p /usr/share/man/man1
+  - apt-get install -y -qq make meson build-essential
+  - apt-get install -y -qq libsane-dev
+  - apt-get install -y -qq libgirepository1.0-dev gobject-introspection
+  - apt-get install -y -qq libcunit1-ncurses-dev
+  - apt-get install -y -qq valgrind valac
+  - apt-get install --no-install-recommends -y -qq gtk-doc-tools doxygen plantuml graphviz
+
+check:
+  # We use buster so we have clang-tidy-7 available
+  image: debian:buster-slim
+  tags:
+    - linux
+    - volatile
+  script:
+    - apt-get install -y -qq sparse clang-tidy-7
+    - make check
+
+test:
+  # WORKAROUND: valgrind from Debian stable doesn't work on armhf.
+  image: debian:buster-slim
+  tags:
+    - linux
+    - volatile
+  script:
+    - make test
