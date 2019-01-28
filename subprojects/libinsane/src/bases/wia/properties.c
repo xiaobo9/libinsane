@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libinsane/constants.h>
 #include <libinsane/log.h>
 #include <libinsane/util.h>
 
@@ -469,7 +470,7 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 		.line = __LINE__,
 		.item_type = LIS_PROPERTY_ITEM,
 		.wia = { .id = WIA_IPA_DATATYPE, .type = VT_I4, },
-		.lis = { .name = "datatype", .type = LIS_TYPE_STRING, },
+		.lis = { .name = OPT_NAME_MODE, .type = LIS_TYPE_STRING, },
 		.possibles = (struct lis_wia2lis_possibles[]) {
 			{
 				.wia.integer = LIS_WIA_DATA_AUTO,
@@ -477,7 +478,7 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 			},
 			{
 				.wia.integer = WIA_DATA_COLOR,
-				.lis.string = "color",
+				.lis.string = OPT_VALUE_MODE_COLOR,
 			},
 			{
 				.wia.integer = WIA_DATA_COLOR_DITHER,
@@ -493,11 +494,12 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 			},
 			{
 				.wia.integer = WIA_DATA_GRAYSCALE,
-				.lis.string = "grayscale",
+				.lis.string = OPT_VALUE_MODE_GRAYSCALE,
 			},
 			{
 				.wia.integer = WIA_DATA_THRESHOLD,
-				.lis.string = "threshold",
+				// TODO(Jflesch): to check
+				.lis.string = OPT_VALUE_MODE_BW,
 			},
 			{
 				.wia.integer = LIS_WIA_DATA_RAW_BGR,

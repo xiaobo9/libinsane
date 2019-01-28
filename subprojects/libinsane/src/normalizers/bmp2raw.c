@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +58,7 @@ static struct lis_scan_session g_scan_session_template = {
 };
 
 
-static enum lis_error scan_read(
+static enum lis_error scan_read_bmp_header(
 		struct lis_scan_session *session,
 		char *out, size_t bufsize
 	)
@@ -65,10 +66,9 @@ static enum lis_error scan_read(
 	size_t nb = 0;
 	enum lis_error err;
 
-	while(bufsize > 0
-		&& !session->end_of_page(session)
-		&& !session->end_of_page(session)) {
+	assert(bufsize > 0);
 
+	while(bufsize > 0 && !session->end_of_page(session)) {
 		nb = bufsize;
 		err = session->scan_read(session, out, &nb);
 		if (LIS_IS_ERROR(err)) {
@@ -88,7 +88,7 @@ static enum lis_error scan_read(
 	if (bufsize > 0) {
 		lis_log_error(
 			"Failed to read BMP header: unexpected EOF"
-			" (remaining: %lu B",
+			" (remaining: %lu B)",
 			(long unsigned)bufsize
 		);
 		return LIS_ERR_IO_ERROR;
@@ -102,33 +102,74 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 	enum lis_error err;
 	char buffer[BMP_HEADER_SIZE];
 	size_t h, nb;
+	size_t min_size;
 
 	private->line.current = 0;
 	private->line.padding = 0;
 	private->line.useful = 0;
 
-	err = scan_read(private->wrapped, buffer, sizeof(buffer));
-	if (LIS_IS_ERROR(err)) {
-		return err;
-	}
-
-	h = sizeof(buffer);
-	err = lis_bmp2scan_params(
-		buffer, &h, &private->parameters_out
+	memset(&private->parameters_wrapped, 0, sizeof(private->parameters_wrapped));
+	memset(&private->parameters_out, 0, sizeof(private->parameters_out));
+	err = private->wrapped->get_scan_parameters(
+		private->wrapped, &private->parameters_wrapped
 	);
 	if (LIS_IS_ERROR(err)) {
 		return err;
 	}
 
-	// BMP lines must have a number of bytes multiple of 4
+	if (private->parameters_wrapped.format != LIS_IMG_FORMAT_BMP) {
+		lis_log_warning(
+			"Unexpected image format: %d. Returning it as is",
+			private->parameters_wrapped.format
+		);
+		return LIS_OK;
+	}
+
+	err = scan_read_bmp_header(private->wrapped, buffer, sizeof(buffer));
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
+
+	h = sizeof(buffer);
+	err = lis_bmp2scan_params(buffer, &h, &private->parameters_out);
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
 
 	// line length we want in the output
 	private->line.useful = private->parameters_out.width * 3;
 
-	// line length we have in the BMP
-	private->line.padding = (private->parameters_out.width * 3) % 4; // padding
-	if (private->line.padding != 0) {
-		private->line.padding = 4 - private->line.padding;
+	// BMP lines must have a number of bytes multiple of 4
+
+	// make sure the size makes sense and uses it to compute padding
+	min_size = private->parameters_out.width * private->parameters_out.height * 3;
+	lis_log_info(
+		"[BMP] Min size: %d ; header says: %d",
+		(int)min_size, (int)private->parameters_out.image_size
+	);
+	if (min_size <= private->parameters_out.image_size) {
+		private->line.padding = (
+			(private->parameters_out.image_size - min_size)
+			/ private->parameters_out.height
+		);
+		lis_log_info(
+			"[BMP] Using BMP size to compute padding: %d",
+			(int)private->line.padding
+		);
+	}
+
+	if (min_size > private->parameters_out.image_size
+			|| private->line.padding >= 4
+			|| private->line.padding < 0) {
+		// line length we have in the BMP
+		private->line.padding = (private->parameters_out.width * 3) % 4; // padding
+		if (private->line.padding != 0) {
+			private->line.padding = 4 - private->line.padding;
+		}
+		lis_log_info(
+			"[BMP] Using line lengths to compute padding: %d",
+			(int)private->line.padding
+		);
 	}
 
 	lis_log_info(
@@ -197,25 +238,6 @@ static enum lis_error bmp2raw_scan_start(
 	memcpy(&private->parent, &g_scan_session_template,
 		sizeof(private->parent));
 	private->item = root;
-
-	err = private->wrapped->get_scan_parameters(
-		private->wrapped, &private->parameters_wrapped
-	);
-	if (LIS_IS_ERROR(err)) {
-		private->wrapped->cancel(private->wrapped);
-		FREE(private);
-		return err;
-	}
-
-	if (private->parameters_wrapped.format != LIS_IMG_FORMAT_BMP) {
-		lis_log_warning(
-			"Unexpected image format: %d. Returning it as is",
-			private->parameters_wrapped.format
-		);
-		*out = private->wrapped;
-		FREE(private);
-		return LIS_OK;
-	}
 
 	err = read_bmp_header(private);
 	if (LIS_IS_ERROR(err)) {

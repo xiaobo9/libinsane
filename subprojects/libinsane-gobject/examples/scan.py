@@ -19,8 +19,8 @@ from gi.repository import Libinsane  # noqa: E402
 #! [ExampleLogger]
 class ExampleLogger(GObject.GObject, Libinsane.Logger):
     def do_log(self, lvl, msg):
-        # if lvl <= Libinsane.LogLevel.INFO:
-        #     return
+        if lvl <= Libinsane.LogLevel.INFO:
+            return
         print("{}: {}".format(lvl.value_nick, msg))
         sys.stdout.flush()
 #! [ExampleLogger]
@@ -126,16 +126,17 @@ def raw_to_img(params, img_bytes):
 def scan(source, output_file):
     session = source.scan_start()
 
-    scan_params = session.get_scan_parameters()
-    print("Expected scan parameters: {} ; {}x{} = {} bytes".format(
-          scan_params.get_format(),
-          scan_params.get_width(), scan_params.get_height(),
-          scan_params.get_image_size()))
-    total = scan_params.get_image_size()
-
     try:
         page_nb = 0
         while not session.end_of_feed() and page_nb < 20:
+            # Do not assume that all the pages will have the same size !
+            scan_params = session.get_scan_parameters()
+            print("Expected scan parameters: {} ; {}x{} = {} bytes".format(
+                  scan_params.get_format(),
+                  scan_params.get_width(), scan_params.get_height(),
+                  scan_params.get_image_size()))
+            total = scan_params.get_image_size()
+
             img = []
             r = 0
             if output_file is not None:
@@ -143,7 +144,7 @@ def scan(source, output_file):
             else:
                 out = None
             print("Scanning page {} --> {}".format(page_nb, out))
-            while True:
+            while not session.end_of_page():
                 data = session.read_bytes(128 * 1024)
                 data = data.get_data()
                 img.append(data)
@@ -151,8 +152,6 @@ def scan(source, output_file):
                 print("Got {} bytes => {}/{} bytes".format(
                     len(data), r, total)
                 )
-                if session.end_of_page():
-                    break
             img = b"".join(img)
             print("Got {} bytes".format(len(img)))
             if out is not None:

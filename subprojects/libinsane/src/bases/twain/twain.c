@@ -1664,6 +1664,11 @@ static enum lis_error next_page(struct lis_twain_session *private)
 		);
 		return err;
 	}
+	lis_log_info(
+		"Expected image: %d x %d",
+		(int)private->img.infos.ImageWidth,
+		(int)private->img.infos.ImageLength
+	);
 
 	twrc = DSM_ENTRY(
 		&(private->item->twain_id), DG_IMAGE, DAT_IMAGENATIVEXFER,
@@ -1696,8 +1701,7 @@ static enum lis_error next_page(struct lis_twain_session *private)
 	lis_log_info("partial header length: %d", partial_header_len);
 	memcpy(
 		&(private->img.header.remaining_header),
-		private->img.mem,
-		partial_header_len
+		private->img.mem, partial_header_len
 	);
 	lis_hexdump(&private->img.header, BMP_HEADER_SIZE);
 
@@ -1710,6 +1714,10 @@ static enum lis_error next_page(struct lis_twain_session *private)
 				* private->img.header.nb_bits_per_pixel)
 				+ 31) & ~31) / 8)
 				* private->img.header.height;
+		lis_log_warning(
+			"Missing pixel data size. Computed: %d",
+			private->img.header.pixel_data_size
+		);
 	}
 
 	private->img.mem = ((char *)private->img.mem) + partial_header_len;
@@ -1728,7 +1736,7 @@ static enum lis_error next_page(struct lis_twain_session *private)
 }
 
 
-static void end_page(struct lis_twain_session *private)
+static enum lis_error end_page(struct lis_twain_session *private)
 {
 	TW_UINT16 twrc;
 	enum lis_error err;
@@ -1763,7 +1771,7 @@ static void end_page(struct lis_twain_session *private)
 			twrc, err, lis_strerror(err)
 		);
 		private->xfer_pending = FALSE;
-		return;
+		return err;
 	}
 
 	private->xfer_pending = (xfers.Count > 0);
@@ -1779,7 +1787,7 @@ check_end:
 	ui.ModalUI = TRUE;
 	ui.hParent = GetDesktopWindow();
 
-	if (!private->xfer_pending || !private->cancelled) {
+	if (private->cancelled || !private->xfer_pending) {
 		lis_log_info("End of scan --> disabling DS");
 		twrc = DSM_ENTRY(
 			&(private->item->twain_id), DG_CONTROL,
@@ -1789,6 +1797,7 @@ check_end:
 			lis_log_warning("Failed to disable datasource");
 		}
 	}
+	return LIS_OK;
 }
 
 
@@ -1814,22 +1823,37 @@ static enum lis_error twain_get_scan_parameters(
 }
 
 
-static int twain_end_of_feed(struct lis_scan_session *self)
-{
-	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
-	int r;
-	r = (!private->xfer_pending && !private->cancelled);
-	lis_log_info("end_of_feed() ? %d", r);
-	return r;
-}
-
-
 static int twain_end_of_page(struct lis_scan_session *self)
 {
 	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
 	int r;
-	r = (private->img.mem == NULL && !private->cancelled);
+	r = private->cancelled || private->img.mem == NULL;
 	lis_log_info("end_of_page() ? %d", r);
+	return r;
+}
+
+
+static int twain_end_of_feed(struct lis_scan_session *self)
+{
+	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
+	int r;
+	enum lis_error err;
+
+	r = private->cancelled || (!private->xfer_pending);
+	lis_log_info("end_of_feed() ? %d", r);
+
+	if (!r && private->img.mem == NULL) {
+		// we have to do it here so get_scan_parameters() returns
+		// the correct value
+		err = next_page(private);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_error(
+				"scan_read(): next_page() failed: 0x%X, %s",
+				err, lis_strerror(err)
+			);
+		}
+	}
+
 	return r;
 }
 
@@ -1904,7 +1928,10 @@ static enum lis_error twain_scan_read(
 	}
 
 	if (private->img.img_read >= private->img.img_size) {
-		end_page(private);
+		err = end_page(private);
+		if (LIS_IS_ERROR(err)) {
+			return err;
+		}
 	}
 	lis_log_info("scan_read(): OK (%d B)", (int)(*buffer_size));
 	return LIS_OK;

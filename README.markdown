@@ -7,7 +7,7 @@ Work In Progress
 * [APIs](https://doc.openpaper.work/libinsane/latest/libinsane/scan_apis.html)
   - [X] Sane
   - [X] WIA2
-  - [ ] TWAIN
+  - [X] TWAIN
 * Normalizers
   - [X] [source_nodes](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#a00631383dd47b29767cd0bc4cb2486f4) (Sane)
   - [X] [min_one_source](https://doc.openpaper.work/libinsane/latest/libinsane/normalizers_8h.html#aeaab4354a3d7cac9d671772638c39645) (Sane, WIA)

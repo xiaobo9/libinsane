@@ -80,7 +80,8 @@ enum lis_error lis_bmp2scan_params(
 
 	params->format = LIS_IMG_FORMAT_RAW_RGB_24;
 	params->width = le32toh(header->width);
-	params->image_size = header->file_size - header->offset_to_data;
+	// params->image_size = header->file_size - header->offset_to_data;
+	params->image_size = le32toh(header->pixel_data_size);
 
 	params->height = le32toh(header->height);
 	if (params->height < 0) {
