@@ -49,7 +49,7 @@ test: build/build.ninja
 
 test_hw:
 	rm -rf test_hw_out
-	. ./activate_test_env.sh && subprojects/libinsane-gobject/tests/test_hw.py test_hw_out
+	subprojects/libinsane-gobject/tests/test_hw.py test_hw_out
 
 linux_exe:
 
