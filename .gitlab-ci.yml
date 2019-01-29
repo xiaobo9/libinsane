@@ -1,17 +1,30 @@
 image: debian:stable-slim
 
-before_script:
-  - apt-get update
-  # WORKAROUND: manpages is required to install some of the openjdk-jre
-  # and openjdk-jre is required for plantuml, which is required to generate
-  # documentation
-  - mkdir -p /usr/share/man/man1
-  - apt-get install -y -qq make meson build-essential
-  - apt-get install -y -qq libsane-dev
-  - apt-get install -y -qq libgirepository1.0-dev gobject-introspection
-  - apt-get install -y -qq libcunit1-ncurses-dev
-  - apt-get install -y -qq valgrind valac
-  - apt-get install --no-install-recommends -y -qq gtk-doc-tools doxygen plantuml graphviz
+.apt: &apt
+  before_script:
+    - apt-get update
+    # WORKAROUND: manpages is required to install some of the openjdk-jre
+    # and openjdk-jre is required for plantuml, which is required to generate
+    # documentation
+    - mkdir -p /usr/share/man/man1
+    - apt-get install -y -qq make meson build-essential
+    - apt-get install -y -qq libsane-dev
+    - apt-get install -y -qq libgirepository1.0-dev gobject-introspection
+    - apt-get install -y -qq libcunit1-ncurses-dev
+    - apt-get install -y -qq valgrind valac
+    - apt-get install --no-install-recommends -y -qq gtk-doc-tools doxygen plantuml graphviz
+
+.msys: &msys
+  before_script:
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S make
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-cunit
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-doxygen
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-gcc
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-gobject-introspection
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-meson
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-python3-gobject
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-python3-pillow
+    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-vala
 
 check:
   # We use buster so we have clang-tidy-7 available
@@ -19,6 +32,7 @@ check:
   tags:
     - linux
     - volatile
+  <<: *apt
   script:
     - apt-get install -y -qq sparse clang-tidy-7
     - make check
@@ -29,5 +43,40 @@ test:
   tags:
     - linux
     - volatile
+  <<: *apt
   script:
     - make test
+
+
+test_hw_linux:
+  tags:
+    - linux
+    - testhw
+  script:
+    # Keep in mind this one is a real system --> you're not root on it
+    # --> no APT commands here
+    - . ./activate_test_env.sh && make test_hw
+  artifacts:
+    paths:
+      - test_hw_out
+    expire_in: 2 days
+
+
+test_hw_windows:
+  variables:
+    MSYSTEM: "MINGW32"
+    CHERE_INVOKING: "yes"
+  tags:
+    - windows
+    - testhw
+  # This one is a real system too, but it's a Windows, so nobody cares.
+  # Dependencies should already be installed, but still it's simpler and safer
+  # to ask pacman to install them anyway.
+  <<: *msys
+  script:
+    - c:\msys32\usr\bin\bash -lc "make install PREFIX=/mingw32"
+    - c:\msys32\usr\bin\bash -lc "make test_hw"
+  artifacts:
+    paths:
+      - test_hw_out
+    expire_in: 2 days
