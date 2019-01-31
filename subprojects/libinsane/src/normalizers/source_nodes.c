@@ -287,6 +287,7 @@ static enum lis_error lis_sn_src_get_options(
 {
 	enum lis_error err;
 	struct lis_sn_item_private *private = LIS_SN_ITEM_PRIVATE(self);
+	static const struct lis_option_descriptor *descs[] = { NULL };
 
 	// XXX(Jflesch): HP drivers + sane backend 'net' (+ difference of
 	// versions):
@@ -303,7 +304,6 @@ static enum lis_error lis_sn_src_get_options(
 
 	// do not return any option ; that would be redundant with normalizer
 	// 'all_opts_on_all_sources'
-	static const struct lis_option_descriptor *descs[] = { NULL };
 	*out_descs = (struct lis_option_descriptor **)descs;
 	return LIS_OK;
 }
