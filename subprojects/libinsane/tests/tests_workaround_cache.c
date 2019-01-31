@@ -179,7 +179,10 @@ static void test_cache_get_value(void)
 	LIS_ASSERT_NOT_EQUAL(opts, NULL);
 	LIS_ASSERT_NOT_EQUAL(opts[0], NULL);
 
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
+	// source node normalizer tried to set the source --> cache
+	// workaround made a call to get_value() first and saw the
+	// correct value was already set
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	err = opts[0]->fn.get_value(opts[0], &value);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_FLATBED), 0);
@@ -222,7 +225,7 @@ static void test_cache_set_value(void)
 	LIS_ASSERT_NOT_EQUAL(opts, NULL);
 	LIS_ASSERT_NOT_EQUAL(opts[0], NULL);
 
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 0);
 	value.string = OPT_VALUE_SOURCE_ADF;
 	err = opts[0]->fn.set_value(opts[0], value, &set_flags);
@@ -274,7 +277,7 @@ static void test_cache_set_value_2(void)
 	LIS_ASSERT_NOT_EQUAL(opts[0], NULL);
 	LIS_ASSERT_NOT_EQUAL(opts[1], NULL);
 
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 0);
 	value.string = OPT_VALUE_SOURCE_ADF;
 	err = opts[1]->fn.set_value(opts[1], value, &set_flags);
@@ -284,14 +287,14 @@ static void test_cache_set_value_2(void)
 		LIS_SET_FLAG_MUST_RELOAD_OPTIONS
 	);
 	// cache gets the current value before setting it
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 2);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 
 	// since we got flag 'reload_options', this get_value() will go through
 	err = opts[1]->fn.get_value(opts[1], &value);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_ADF), 0);
-	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 2);
+	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 3);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 
 	device->close(device);

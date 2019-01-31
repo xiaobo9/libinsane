@@ -179,6 +179,62 @@ static void tests_scan_start(void)
 }
 
 
+static void tests_get_options(void)
+{
+	enum lis_error err;
+	struct lis_item *item = NULL;
+	struct lis_item **children = NULL;
+	struct lis_option_descriptor **opts = NULL;
+	struct lis_option_descriptor **opts_src = NULL;
+	int source_opt_idx;
+	union lis_value value;
+
+	LIS_ASSERT_EQUAL(tests_sn_init(), 0);
+
+	err = lis_api_normalizer_source_nodes(g_dumb, &g_sn);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = g_sn->get_device(g_sn, LIS_DUMB_DEV_ID_FIRST, &item);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = item->get_options(item, &opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	for (source_opt_idx = 0 ; opts[source_opt_idx] != NULL ; source_opt_idx++) {
+		if (strcasecmp(opts[source_opt_idx]->name, OPT_NAME_SOURCE) == 0) {
+			break;
+		}
+	}
+	LIS_ASSERT_NOT_EQUAL(opts[source_opt_idx], NULL);
+
+	err = opts[source_opt_idx]->fn.get_value(opts[source_opt_idx], &value);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_FLATBED), 0);
+
+	err = item->get_children(item, &children);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	LIS_ASSERT_NOT_EQUAL(children[0], NULL);
+	LIS_ASSERT_EQUAL(children[0]->name, OPT_VALUE_SOURCE_FLATBED);
+	LIS_ASSERT_NOT_EQUAL(children[1], NULL);
+	LIS_ASSERT_EQUAL(children[1]->name, OPT_VALUE_SOURCE_ADF);
+	LIS_ASSERT_EQUAL(children[2], NULL);
+
+	/* should trigger a change of source to make sure we get the correct parameters
+	 */
+	err = children[1]->get_options(children[1], &opts_src);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = opts[source_opt_idx]->fn.get_value(opts[source_opt_idx], &value);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_ADF), 0);
+
+	item->close(item);
+
+	LIS_ASSERT_EQUAL(tests_sn_clean(), 0);
+}
+
+
 int register_tests(void)
 {
 	CU_pSuite suite = NULL;
@@ -190,7 +246,8 @@ int register_tests(void)
 	}
 
 	if (CU_add_test(suite, "tests_source_nodes()", tests_source_nodes) == NULL
-			|| CU_add_test(suite, "tests_scan_start()", tests_scan_start) == NULL) {
+			|| CU_add_test(suite, "tests_scan_start()", tests_scan_start) == NULL
+			|| CU_add_test(suite, "tests_get_options()", tests_get_options) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}
