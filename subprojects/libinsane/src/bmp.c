@@ -84,16 +84,7 @@ enum lis_error lis_bmp2scan_params(
 	params->image_size = le32toh(header->pixel_data_size);
 
 	params->height = le32toh(header->height);
-	if (params->height < 0) {
-		// XXX(Jflesch): Epsom XP-425 says crap
-		params->height *= -1;
-	}
 	params->width = le32toh(header->width);
-	if (params->width < 0) {
-		// XXX(Jflesch): Epsom XP-425 says crap on height, so I assume
-		// it can also happen on width
-		params->width *= -1;
-	}
 
 	lis_log_info(
 		"BMP header says: %d x %d = %lu",
@@ -127,7 +118,9 @@ void lis_scan_params2bmp(
 	header->remaining_header = htole32(0x28);
 	header->nb_color_planes = htole16(1);
 	header->nb_bits_per_pixel = htole16(24);
-	header->height = htole32(params->height);
+	// we always work from top to bottom: use negative height
+	// to indicate that
+	header->height = htole32(-1 * params->height);
 	header->width = htole32(params->width);
 
 	// padding must be taken into account
