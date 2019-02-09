@@ -319,14 +319,20 @@ struct lis_scan_session {
 	 * \warning This operation may take many seconds.
 	 */
 	enum lis_error (*scan_read) (
-		struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
+		struct lis_scan_session *session, void *out_buffer,
+		size_t *buffer_size
 	);
 
 	/*!
 	 * \brief Cancel the current scan session.
 	 *
-	 * This function stops the current scan session and releases any resource related to the scan
-	 * session.
+	 * This function stops the current scan session and releases any
+	 * resource related to the scan session.
+	 *
+	 * This function can safely be called at the end of a scan session to
+	 * release resources. However, beware: Not all drivers handle
+	 * gracefully scan cancellation while still scanning. Instead, you are
+	 * advised to wait for the end of scan session and discard the images.
 	 */
 	void (*cancel)(struct lis_scan_session *session);
 };
