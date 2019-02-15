@@ -136,8 +136,6 @@ static enum lis_error on_scan_start(
 	}
 
 	session->bw_item = item;
-	lis_bw_item_set_user_ptr(session->bw_item, session);
-
 	item = lis_bw_get_original_item(item);
 
 	err = item->scan_start(item, &session->wrapped);
@@ -152,6 +150,7 @@ static enum lis_error on_scan_start(
 	);
 	session->item = item;
 
+	lis_bw_item_set_user_ptr(session->bw_item, session);
 	*out_session = &session->parent;
 	return LIS_OK;
 }
