@@ -1114,6 +1114,11 @@ static enum lis_error lis_sane_scan_start(struct lis_item *self,
 static int lis_sane_end_of_feed(struct lis_scan_session *session)
 {
 	struct lis_sane_scan_session *private = LIS_SANE_SCAN_SESSION_PRIVATE(session);
+	if (!private->end_of_feed) {
+		// otherwise the next call to end_of_page() would return 1
+		// and scan would loop forever
+		private->end_of_page = 0;
+	}
 	return private->end_of_feed;
 }
 
