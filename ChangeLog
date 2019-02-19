@@ -1,0 +1,4 @@
+2019/0x/xx - 0.9:
+- First release: Test preview.
+- Support of Sane, WIA2 and TWAIN.
+- Known limitation: Only support scan of color images on Windows (24bits)

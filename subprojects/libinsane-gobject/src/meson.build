@@ -37,7 +37,9 @@ libinsane_gobject_dep = declare_dependency(
 gir = gnome.generate_gir(libinsane_gobject,
     sources: INSANE_GOBJECT_SRCS + INSANE_GOBJECT_HEADERS,
     namespace: 'Libinsane',
-    nsversion: '0.1',
+    # Not a typo: This is the GObject API version. Not the Libinsane
+    # version.
+    nsversion: '1.0',
     includes: 'GObject-2.0',
     install: true)
 
