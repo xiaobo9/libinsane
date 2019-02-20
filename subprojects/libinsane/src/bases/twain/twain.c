@@ -424,10 +424,11 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 	lis_log_debug("TWAIN init: LoadLibrary(" TWAIN_DSM_DLL ")");
 	g_twain_dll = LoadLibraryA(TWAIN_DSM_DLL);
 	if (g_twain_dll == NULL) {
-		lis_log_error(
+		// expected to happen on most modern Windows systems
+		lis_log_info(
 			"Failed to load Twain DLL: 0x%lX", GetLastError()
 		);
-		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+		return LIS_OK;
 	}
 	lis_log_debug("TWAIN init: LoadLibrary(" TWAIN_DSM_DLL ") successful");
 
@@ -541,6 +542,7 @@ static enum lis_error twain_list_devices(
 		struct lis_device_descriptor ***dev_infos
 	)
 {
+	static struct lis_device_descriptor *no_devs[] = { NULL };
 	struct lis_twain_private *private = LIS_TWAIN_PRIVATE(impl);
 	enum lis_error err;
 	int src_idx;
@@ -553,6 +555,12 @@ static enum lis_error twain_list_devices(
 	err = twain_init(private);
 	if (LIS_IS_ERROR(err)) {
 		return err;
+	}
+	if (g_twain_dll == NULL) {
+		// twain DLL is not available. This is expected on most modern
+		// Windows systems.
+		*dev_infos = no_devs;
+		return LIS_OK;
 	}
 
 	free_devices(private);
@@ -744,6 +752,17 @@ static enum lis_error twain_get_device(
 	if (LIS_IS_ERROR(err)) {
 		return err;
 	}
+	if (g_twain_dll == NULL) {
+		// twain DLL is not available. This is expected on most modern
+		// Windows systems. Still, the application shouldn't have
+		// requested a TWAIN scanner then.
+		lis_log_error(
+			"TWAIN DLL not available."
+			" Cannot open access to device [%s]", dev_id
+		);
+		return LIS_ERR_INVALID_VALUE;
+	}
+
 
 	if (private->devices == NULL) {
 		lis_log_debug("No device list loaded yet. Loading now");
