@@ -1867,7 +1867,7 @@ static int twain_end_of_feed(struct lis_scan_session *self)
 		err = next_page(private);
 		if (LIS_IS_ERROR(err)) {
 			lis_log_error(
-				"scan_read(): next_page() failed: 0x%X, %s",
+				"end_of_feed(): next_page() failed: 0x%X, %s",
 				err, lis_strerror(err)
 			);
 		}

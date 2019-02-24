@@ -34,16 +34,21 @@ struct lis_bmp2raw_scan_session
 	struct lis_scan_session *wrapped;
 	struct lis_item *item;
 
+	bool header_read;
 	struct lis_scan_parameters parameters_wrapped;
 	struct lis_scan_parameters parameters_out;
+	int need_mirroring;
+
+	enum lis_error read_err;
 
 	struct {
 		int current; // what has been read in the current line
 		int useful; // useful part of the line
 		int padding; // extra padding at the end of each line
+
+		uint8_t *content;
 	} line;
 
-	enum lis_error read_err;
 };
 #define LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session) \
 	((struct lis_bmp2raw_scan_session *)(session))
@@ -104,6 +109,7 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 	size_t h, nb;
 	size_t min_size;
 
+	FREE(private->line.content);
 	private->line.current = 0;
 	private->line.padding = 0;
 	private->line.useful = 0;
@@ -134,6 +140,16 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 	err = lis_bmp2scan_params(buffer, &h, &private->parameters_out);
 	if (LIS_IS_ERROR(err)) {
 		return err;
+	}
+
+	if (private->parameters_out.height >= 0) {
+		// by default, BMP are bottom-to-top, but our RAW24 goes
+		// top-to-bottom. So to fix it and keep the scan displayable
+		// on-the-fly, we reverse the lines (--> page will appear
+		// rotated 180 degrees).
+		private->need_mirroring = 1;
+	} else {
+		private->parameters_out.height *= -1;
 	}
 
 	// line length we want in the output
@@ -172,9 +188,28 @@ static enum lis_error read_bmp_header(struct lis_bmp2raw_scan_session *private)
 		);
 	}
 
+	// we will read line by line ; we need somewhere to store the lines
+	private->line.content = calloc(
+		sizeof(uint8_t),
+		private->line.useful + private->line.padding
+	);
+	if (private->line.content == NULL) {
+		return LIS_ERR_NO_MEM;
+	}
+	// mark the current content as used (will force loading the next
+	// line next time read() is called)
+	private->line.current = private->line.useful;
+
 	lis_log_info(
 		"BMP: useful line length = %d B ; padding = %d B",
 		private->line.useful, private->line.padding
+	);
+
+	// lis_bmp2scan_params() returns the image size as stored in the BMP
+	// but here we want the image size as RAW24
+	private->parameters_out.image_size = (
+		3 * private->parameters_out.width
+		* private->parameters_out.height
 	);
 
 	h -= BMP_HEADER_SIZE;
@@ -286,6 +321,7 @@ static void bmp2raw_on_item_close(
 		"Device has been closed but scan session hasn't been"
 		" cancelled"
 	);
+	FREE(private->line.content);
 	lis_bmp2raw_cancel(&private->parent);
 }
 
@@ -294,7 +330,12 @@ static int lis_bmp2raw_end_of_feed(struct lis_scan_session *session)
 {
 	struct lis_bmp2raw_scan_session *private = \
 		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
-	return private->wrapped->end_of_feed(private->wrapped);
+	int r;
+	r = private->wrapped->end_of_feed(private->wrapped);
+	if (r) {
+		FREE(private->line.content);
+	}
+	return r;
 }
 
 
@@ -304,9 +345,14 @@ static int lis_bmp2raw_end_of_page(struct lis_scan_session *session)
 		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
 	int r;
 
+	if (private->line.current < private->line.useful) {
+		return 0;
+	}
+
 	r = private->wrapped->end_of_page(private->wrapped);
 
-	if (r && !private->parent.end_of_feed(&private->parent)) {
+	if (r && !private->header_read &&
+			!private->parent.end_of_feed(&private->parent)) {
 		private->read_err = read_bmp_header(private);
 		if (LIS_IS_ERROR(private->read_err)) {
 			lis_log_error(
@@ -315,39 +361,75 @@ static int lis_bmp2raw_end_of_page(struct lis_scan_session *session)
 				lis_strerror(private->read_err)
 			);
 		}
+		// avoid double header read
+		private->header_read = 1;
 	}
 
 	return r;
 }
 
 
-static enum lis_error read_padding(struct lis_bmp2raw_scan_session *private)
+static enum lis_error read_next_line(struct lis_bmp2raw_scan_session *private)
 {
+	size_t to_read, r;
 	enum lis_error err;
-	char padding[4];
-	size_t r;
-	size_t out;
+	uint8_t *out;
 
-	r = private->line.padding;
+	to_read = private->line.useful + private->line.padding;
+	out = private->line.content;
+	lis_log_debug("Reading BMP line: %d bytes", (int)to_read);
 
-	assert(r <= sizeof(padding));
-
-	lis_log_debug("scan_read(): Reading padding: %ld B", (long)r);
-
-	while (r > 0) {
-		out = r;
-		err = private->wrapped->scan_read(private->wrapped, padding, &out);
+	while(to_read > 0) {
+		r = to_read;
+		err = private->wrapped->scan_read(private->wrapped, out, &r);
 		if (LIS_IS_ERROR(err)) {
-			lis_log_error(
-				"Failed to read BMP padding (%lu B)",
-				(long)r
-			);
 			return err;
 		}
-		r -= out;
+		to_read -= r;
+		out += r;
 	}
 
 	return LIS_OK;
+}
+
+
+static void bgr2rgb(uint8_t *line, int line_len)
+{
+	uint8_t tmp;
+
+	for (; line_len > 0 ; line += 3, line_len -= 3) {
+		tmp = line[0];
+		line[0] = line[2];
+		line[2] = tmp;
+	}
+}
+
+
+static inline void swap_pixels(uint8_t *pa, uint8_t *pb)
+{
+	uint8_t tmp[3];
+
+	assert(pa != pb);
+
+	tmp[0] = pa[0];
+	tmp[1] = pa[1];
+	tmp[2] = pa[2];
+	pa[0] = pb[0];
+	pa[1] = pb[1];
+	pa[2] = pb[2];
+	pb[0] = tmp[0];
+	pb[1] = tmp[1];
+	pb[2] = tmp[2];
+}
+
+
+static void mirror_line(uint8_t *line, int line_len)
+{
+	int pos;
+
+	for (pos = 0; pos < (line_len / 2) - 3 ; pos += 3) {
+		swap_pixels(&line[pos], &line[line_len - pos - 3]);
+	}
 }
 
 
@@ -359,7 +441,8 @@ static enum lis_error lis_bmp2raw_scan_read(
 	struct lis_bmp2raw_scan_session *private = \
 		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
 	enum lis_error err;
-	size_t initial = *buffer_size;
+	size_t remaining_to_read = *buffer_size;
+	size_t to_copy;
 
 	if (LIS_IS_ERROR(private->read_err)) {
 		lis_log_warning(
@@ -369,35 +452,52 @@ static enum lis_error lis_bmp2raw_scan_read(
 		return private->read_err;
 	}
 
-	if (private->line.padding == 0) {
-		return private->wrapped->scan_read(
-			private->wrapped, out_buffer, buffer_size
-		);
-	}
+	// indicate to end_of_page() that it will have to read again the
+	// next header of the next page
+	private->header_read = 0;
 
-	*buffer_size = MIN(
-		*buffer_size,
-		((size_t)(private->line.useful - private->line.current))
-	);
-	lis_log_debug(
-		"scan_read(): Reducing read from %ld B to %ld B",
-		(long)initial, (long)(*buffer_size)
-	);
-	err = private->wrapped->scan_read(
-		private->wrapped, out_buffer, buffer_size
-	);
-	if (LIS_IS_ERROR(err)) {
-		return err;
-	}
+	while(remaining_to_read > 0) {
+		if (private->line.current >= private->line.useful) {
+			if (session->end_of_page(session)) {
+				lis_log_debug("scan_read(): end of page");
+				*buffer_size -= remaining_to_read;
+				return LIS_OK;
+			}
 
-	private->line.current += *buffer_size;
-
-	if (private->line.current >= private->line.useful) {
-		err = read_padding(private);
-		if (LIS_IS_ERROR(err)) {
-			return err;
+			err = read_next_line(private);
+			if (LIS_IS_ERROR(err)) {
+				lis_log_error(
+					"scan_read(): failed to read next"
+					" pixel line: 0x%X, %s",
+					err, lis_strerror(err)
+				);
+				return err;
+			}
+			bgr2rgb(
+				private->line.content, private->line.useful
+			);
+			if (private->need_mirroring) {
+				mirror_line(
+					private->line.content,
+					private->line.useful
+				);
+			}
+			private->line.current = 0;
 		}
-		private->line.current = 0;
+
+		to_copy = MIN(
+			private->line.useful - private->line.current,
+			(int)remaining_to_read
+		);
+		assert(to_copy > 0);
+		memcpy(
+			out_buffer,
+			private->line.content + private->line.current,
+			to_copy
+		);
+		out_buffer = ((uint8_t *)out_buffer) + to_copy;
+		remaining_to_read -= to_copy;
+		private->line.current += to_copy;
 	}
 
 	return LIS_OK;
@@ -408,6 +508,7 @@ static void lis_bmp2raw_cancel(struct lis_scan_session *session)
 {
 	struct lis_bmp2raw_scan_session *private = \
 		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
+	FREE(private->line.content);
 	private->wrapped->cancel(private->wrapped);
 	lis_bw_item_set_user_ptr(private->item, NULL);
 	FREE(private);
