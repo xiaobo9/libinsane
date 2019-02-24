@@ -321,6 +321,7 @@ static void free_options(struct lis_bw_item *item)
 	}
 	if (item->options != NULL) {
 		for (i = 0 ; item->options[i] != NULL ; i++) {
+			FREE(item->options[i]->basewrapper.name);
 			free_opt_constraint(&item->options[i]->basewrapper);
 			free_opt_user(item->options[i]);
 		}
@@ -405,12 +406,31 @@ static enum lis_error lis_bw_item_get_children(struct lis_item *self, struct lis
 }
 
 
+static struct lis_bw_option_descriptor *get_bw_opt(
+		struct lis_bw_option_descriptor **opts,
+		const char *name
+	)
+{
+	if (opts == NULL) {
+		return NULL;
+	}
+	for ( ; (*opts) != NULL ; opts++) {
+		if (strcasecmp((*opts)->basewrapper.name, name) == 0) {
+			return *opts;
+		}
+	}
+	return NULL;
+}
+
+
 static enum lis_error lis_bw_item_get_options(
 		struct lis_item *self, struct lis_option_descriptor ***descs
 	)
 {
 	struct lis_bw_item *private = LIS_BW_ITEM(self);
 	struct lis_option_descriptor **opts;
+	struct lis_bw_option_descriptor **old_opts;
+	struct lis_bw_option_descriptor *old_opt;
 	int nb_opts, i;
 	enum lis_error err;
 
@@ -423,57 +443,92 @@ static enum lis_error lis_bw_item_get_options(
 		return err;
 	}
 
-	/* free any previous options */
-	if (private->options != NULL) {
-		for (i = 0 ; private->options[i] != NULL ; i++) {
-			free_opt_constraint(&private->options[i]->basewrapper);
-			free_opt_user(private->options[i]);
-		}
-		FREE(private->options[0]);
-		FREE(private->options);
-	}
+	// ASSUMPTION(Jflesch): we assume we get the same list of options
+	// every time. If we don't get back an option, we will have a memory
+	// leak.
+	old_opts = private->options;
 
 	for (nb_opts = 0 ; opts[nb_opts] != NULL ; nb_opts++) { }
-	private->options = calloc(nb_opts + 1, sizeof(struct lis_bw_option_descriptor *));
-	if (nb_opts > 0) {
-		/* duplicate the options so the filter can modify them */
-		private->options[0] = calloc(nb_opts, sizeof(struct lis_bw_option_descriptor));
-		for (i = 0 ; i < nb_opts ; i++) {
-			private->options[i] = private->options[0] + i;
-			memcpy(&private->options[i]->parent, opts[i], sizeof(private->options[i]->parent));
-			private->options[i]->parent.fn.get_value = lis_bw_get_value;
-			private->options[i]->parent.fn.set_value = lis_bw_set_value;
-			private->options[i]->item = private;
-			private->options[i]->wrapped = opts[i];
-			err = dup_opt_constraint(&private->options[i]->parent);
-			if (LIS_IS_ERROR(err)) {
-				FREE(private->options[0]);
-				FREE(private->options);
-				return err;
-			}
+	private->options = calloc(
+		nb_opts + 1, sizeof(struct lis_bw_option_descriptor *)
+	);
+
+	if (nb_opts <= 0) {
+		// nothing more to do
+		err = LIS_OK;
+		goto end;
+	}
+
+	/* duplicate the options so the filter can modify them */
+	private->options[0] = calloc(nb_opts, sizeof(struct lis_bw_option_descriptor));
+	for (i = 0 ; i < nb_opts ; i++) {
+		private->options[i] = private->options[0] + i;
+
+		old_opt = get_bw_opt(old_opts, opts[i]->name);
+
+		// reuse existing opt if possible
+		// (we have to keep the user_ptr whenever possible)
+		if (old_opt != NULL) {
 			memcpy(
-				&private->options[i]->basewrapper,
-				&private->options[i]->parent,
-				sizeof(private->options[i]->basewrapper)
+				private->options[i], old_opt,
+				sizeof(*(private->options[i]))
 			);
+			free_opt_constraint(&private->options[i]->basewrapper);
 		}
-		/* and filter */
-		for (i = 0 ; i < nb_opts ; i++) {
-			err = private->impl->opt_desc_filter.cb(
-				self, &private->options[i]->parent,
-				private->impl->opt_desc_filter.user_data
+
+		private->options[i]->item = private;
+		memcpy(
+			&private->options[i]->parent, opts[i],
+			sizeof(private->options[i]->parent)
+		);
+		private->options[i]->parent.fn.get_value = lis_bw_get_value;
+		private->options[i]->parent.fn.set_value = lis_bw_set_value;
+		private->options[i]->wrapped = opts[i];
+
+		if (old_opt != NULL) {
+			private->options[i]->parent.name = \
+				private->options[i]->basewrapper.name;
+		} else {
+			private->options[i]->parent.name = strdup(opts[i]->name);
+		}
+
+		err = dup_opt_constraint(&private->options[i]->parent);
+		if (LIS_IS_ERROR(err)) {
+			FREE(private->options[0]);
+			FREE(private->options);
+			goto end;
+		}
+
+		memcpy(
+			&private->options[i]->basewrapper,
+			&private->options[i]->parent,
+			sizeof(private->options[i]->basewrapper)
+		);
+
+		err = private->impl->opt_desc_filter.cb(
+			self, &private->options[i]->parent,
+			private->impl->opt_desc_filter.user_data
+		);
+		if (LIS_IS_ERROR(err)) {
+			lis_log_warning(
+				"%s: option filter returned an error: %d, %s",
+				private->impl->wrapper_name,
+				err, lis_strerror(err)
 			);
-			if (LIS_IS_ERROR(err)) {
-				lis_log_warning("%s: option filter returned an error: %d, %s",
-						private->impl->wrapper_name, err, lis_strerror(err));
-				FREE(private->options[0]);
-				FREE(private->options);
-				return err;
-			}
+			FREE(private->options[0]);
+			FREE(private->options);
+			goto end;
 		}
 	}
+
+end:
+	if (old_opts != NULL) {
+		FREE(old_opts[0]);
+		FREE(old_opts);
+	}
+
 	*descs = (struct lis_option_descriptor **)private->options;
-	return LIS_OK;
+	return err;
 }
 
 
