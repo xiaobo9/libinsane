@@ -38,7 +38,7 @@ if CUNIT.found()
     foreach t: LIBINSANE_TESTS
         e = executable('tests_@0@'.format(t), 'main.c', 'tests_@0@.c'.format(t),
             dependencies: [libinsane_dep, CUNIT])
-        test('tests_@0@'.format(t), e)
+        test('tests_@0@'.format(t), e, timeout: 120)
     endforeach
 
     vg = find_program('valgrind', required: false)
