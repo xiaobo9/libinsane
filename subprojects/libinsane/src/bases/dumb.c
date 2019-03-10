@@ -370,7 +370,11 @@ void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices)
 	private->allocated_descs = 1;
 	for (i = 0 ; i < nb_devices ; i++) {
 		private->descs[i] = calloc(1, sizeof(struct lis_device_descriptor));
-		asprintf(&private->descs[i]->dev_id, LIS_DUMB_DEV_ID_FORMAT, i);
+		if (asprintf(&private->descs[i]->dev_id, LIS_DUMB_DEV_ID_FORMAT, i) < 0) {
+			// this is test code, so it doesn't actually matter.
+			// but let's make GCC happy.
+			assert(0);
+		}
 		private->descs[i]->vendor = "Microsoft";
 		private->descs[i]->model = "Bugware";
 		private->descs[i]->type = NULL;
