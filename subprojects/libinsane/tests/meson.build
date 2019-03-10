@@ -39,7 +39,11 @@ foreach t: LIBINSANE_TESTS
     test('tests_@0@'.format(t), e)
 endforeach
 
-if host_machine.system() != build_machine.system() or build_machine.system() == 'windows' or build_machine.system() == 'cygwin'
+vg = find_program('valgrind', required: false)
+
+if host_machine.system() != build_machine.system() or build_machine.system() == 'windows' or build_machine.system() == 'cygwin' or not vg.found()
+
+    warning('Tests: Valgrind won\'t be used. Can\'t look for memory leaks.')
 
     foreach t: LIBINSANE_VALGRIND_TESTS
         e = executable(
@@ -53,7 +57,6 @@ if host_machine.system() != build_machine.system() or build_machine.system() == 
 
 else
 
-    vg = find_program('valgrind')
     foreach t: LIBINSANE_VALGRIND_TESTS
         e = executable(
             'tests_@0@'.format(t),
