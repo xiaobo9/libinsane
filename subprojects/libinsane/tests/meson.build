@@ -31,46 +31,54 @@ LIBINSANE_VALGRIND_TESTS = [
     'workaround_opt_values',
 ]
 
-CUNIT = dependency('cunit')
+CUNIT = dependency('cunit', required: false)
 
-foreach t: LIBINSANE_TESTS
-    e = executable('tests_@0@'.format(t), 'main.c', 'tests_@0@.c'.format(t),
-        dependencies: [libinsane_dep, CUNIT])
-    test('tests_@0@'.format(t), e)
-endforeach
+if CUNIT.found()
 
-vg = find_program('valgrind', required: false)
-
-if host_machine.system() != build_machine.system() or build_machine.system() == 'windows' or build_machine.system() == 'cygwin' or not vg.found()
-
-    warning('Tests: Valgrind won\'t be used. Can\'t look for memory leaks.')
-
-    foreach t: LIBINSANE_VALGRIND_TESTS
-        e = executable(
-            'tests_@0@'.format(t),
-            'main.c',
-            'tests_@0@.c'.format(t),
-            dependencies: [libinsane_dep, CUNIT]
-        )
+    foreach t: LIBINSANE_TESTS
+        e = executable('tests_@0@'.format(t), 'main.c', 'tests_@0@.c'.format(t),
+            dependencies: [libinsane_dep, CUNIT])
         test('tests_@0@'.format(t), e)
     endforeach
 
+    vg = find_program('valgrind', required: false)
+
+    if host_machine.system() != build_machine.system() or build_machine.system() == 'windows' or build_machine.system() == 'cygwin' or not vg.found()
+
+        warning('Tests: Valgrind won\'t be used. Can\'t look for memory leaks.')
+
+        foreach t: LIBINSANE_VALGRIND_TESTS
+            e = executable(
+                'tests_@0@'.format(t),
+                'main.c',
+                'tests_@0@.c'.format(t),
+                dependencies: [libinsane_dep, CUNIT]
+            )
+            test('tests_@0@'.format(t), e)
+        endforeach
+
+    else
+
+        foreach t: LIBINSANE_VALGRIND_TESTS
+            e = executable(
+                'tests_@0@'.format(t),
+                'main.c',
+                'tests_@0@.c'.format(t),
+                dependencies: [libinsane_dep, CUNIT]
+            )
+            test('tests_@0@'.format(t), vg,
+                args: [
+                    '--trace-children=yes',
+                    '--leak-check=full',
+                    '--error-exitcode=10',
+                    e.full_path()
+                ])
+        endforeach
+
+    endif
+
 else
 
-    foreach t: LIBINSANE_VALGRIND_TESTS
-        e = executable(
-            'tests_@0@'.format(t),
-            'main.c',
-            'tests_@0@.c'.format(t),
-            dependencies: [libinsane_dep, CUNIT]
-        )
-        test('tests_@0@'.format(t), vg,
-            args: [
-                '--trace-children=yes',
-                '--leak-check=full',
-                '--error-exitcode=10',
-                e.full_path()
-            ])
-    endforeach
+    warning('Cunit not found. TESTS DISABLED')
 
 endif
