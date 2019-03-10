@@ -10,7 +10,7 @@ import sys
 import PIL.Image
 
 import gi
-gi.require_version('Libinsane', '0.1')
+gi.require_version('Libinsane', '1.0')
 from gi.repository import GObject  # noqa: E402
 from gi.repository import Libinsane  # noqa: E402
 

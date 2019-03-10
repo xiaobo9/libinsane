@@ -9,7 +9,7 @@ import sys
 import traceback
 
 import gi
-gi.require_version('Libinsane', '0.1')
+gi.require_version('Libinsane', '1.0')
 from gi.repository import GObject  # noqa: E402
 
 
