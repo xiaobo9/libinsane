@@ -90,11 +90,18 @@ libinsane_dep = declare_dependency(
     link_with: libinsane
 )
 
-pkg.generate(
-    description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
-    name: 'libinsane',
-    extra_cflags: pkg_cflags,
-    libraries: [libinsane] + pkg_deps,
-    version: '0.1',
-)
-
+if meson.version().version_compare('>=0.46.0')
+    pkg.generate(
+        libinsane,
+        name: 'libinsane',
+        description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
+    )
+else
+    pkg.generate(
+        name: 'libinsane',
+        version: '0.1',
+        description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
+        extra_cflags: pkg_cflags,
+        libraries: [libinsane] + pkg_deps,
+    )
+endif
