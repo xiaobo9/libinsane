@@ -82,6 +82,7 @@ libinsane = library(
     'insane', libinsane_srcs, version_h,
     include_directories: libinsane_inc,
     dependencies: deps,
+    version: '0.1.0',
     install: true,
     c_args: extra_cflags,
 )
