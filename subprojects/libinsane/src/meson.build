@@ -64,19 +64,22 @@ else
     pkg_cflags = ['-pthreads']
 endif
 
-gen_version = custom_target(
-    'gen-version-file',
-    input: [],
-    output: ['version.h'],
-    command: [
-        'sh', join_paths(meson.current_source_dir(), 'gen_version_file.sh'),
-        '@OUTPUT@',
-    ],
-)
+if meson.version().version_compare('>=0.41.0')
+    version_h = vcs_tag(
+        input: 'version.h.in',
+        output: 'version.h',
+    )
+else
+    version_h = vcs_tag(
+        input: 'version.h.in',
+        output: 'version.h',
+	version: meson.project_version(),
+    )
+endif
 
 
 libinsane = library(
-    'insane', libinsane_srcs, gen_version,
+    'insane', libinsane_srcs, version_h,
     include_directories: libinsane_inc,
     dependencies: deps,
     install: true,

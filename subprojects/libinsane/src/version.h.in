@@ -1,0 +1,1 @@
+#define LIBINSANE_VERSION "@VCS_TAG@"
