@@ -82,7 +82,7 @@ libinsane = library(
     'insane', libinsane_srcs, version_h,
     include_directories: libinsane_inc,
     dependencies: deps,
-    version: '0.1.0',
+    version: meson.project_version(),
     install: true,
     c_args: extra_cflags,
 )
@@ -100,7 +100,7 @@ if meson.version().version_compare('>=0.46.0')
 else
     pkg.generate(
         name: 'libinsane',
-        version: '0.1',
+        version: meson.project_version(),
         description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
         extra_cflags: pkg_cflags,
         libraries: [libinsane] + pkg_deps,
