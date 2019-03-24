@@ -64,21 +64,25 @@ else
     pkg_cflags = ['-pthreads']
 endif
 
-gen_version = custom_target(
-    'gen-version-file',
-    input: [],
-    output: ['version.h'],
-    command: [
-        'sh', join_paths(meson.current_source_dir(), 'gen_version_file.sh'),
-        '@OUTPUT@',
-    ],
-)
+if meson.version().version_compare('>=0.41.0')
+    version_h = vcs_tag(
+        input: 'version.h.in',
+        output: 'version.h',
+    )
+else
+    version_h = vcs_tag(
+        input: 'version.h.in',
+        output: 'version.h',
+	version: meson.project_version(),
+    )
+endif
 
 
 libinsane = library(
-    'insane', libinsane_srcs, gen_version,
+    'insane', libinsane_srcs, version_h,
     include_directories: libinsane_inc,
     dependencies: deps,
+    version: meson.project_version(),
     install: true,
     c_args: extra_cflags,
 )
@@ -87,11 +91,18 @@ libinsane_dep = declare_dependency(
     link_with: libinsane
 )
 
-pkg.generate(
-    description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
-    name: 'libinsane',
-    extra_cflags: pkg_cflags,
-    libraries: [libinsane] + pkg_deps,
-    version: '0.1',
-)
-
+if meson.version().version_compare('>=0.46.0')
+    pkg.generate(
+        libinsane,
+        name: 'libinsane',
+        description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
+    )
+else
+    pkg.generate(
+        name: 'libinsane',
+        version: meson.project_version(),
+        description: 'Cross-platform Cross-API Cross-driver Cross-scanner image scan library',
+        extra_cflags: pkg_cflags,
+        libraries: [libinsane] + pkg_deps,
+    )
+endif
