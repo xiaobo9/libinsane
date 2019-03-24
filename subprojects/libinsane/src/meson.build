@@ -73,7 +73,8 @@ else
     version_h = vcs_tag(
         input: 'version.h.in',
         output: 'version.h',
-	version: meson.project_version(),
+        version: meson.project_version(),
+        fallback: meson.project_version(),
     )
 endif
 
