@@ -330,29 +330,20 @@ static int lis_bmp2raw_end_of_feed(struct lis_scan_session *session)
 {
 	struct lis_bmp2raw_scan_session *private = \
 		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
-	int r;
-	r = private->wrapped->end_of_feed(private->wrapped);
-	if (r) {
+	int end_of_feed;
+	int end_of_page;
+
+	end_of_page = private->wrapped->end_of_page(private->wrapped);
+	end_of_feed = private->wrapped->end_of_feed(private->wrapped);
+	if (end_of_feed) {
 		FREE(private->line.content);
-	}
-	return r;
-}
-
-
-static int lis_bmp2raw_end_of_page(struct lis_scan_session *session)
-{
-	struct lis_bmp2raw_scan_session *private = \
-		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
-	int r;
-
-	if (private->line.current < private->line.useful) {
-		return 0;
+		return 1;
 	}
 
-	r = private->wrapped->end_of_page(private->wrapped);
-
-	if (r && !private->header_read &&
+	if (end_of_page && !private->header_read &&
 			!private->parent.end_of_feed(&private->parent)) {
+		// we must do it here so get_scan_parameters() will return
+		// the correct parameters.
 		private->read_err = read_bmp_header(private);
 		if (LIS_IS_ERROR(private->read_err)) {
 			lis_log_error(
@@ -365,7 +356,20 @@ static int lis_bmp2raw_end_of_page(struct lis_scan_session *session)
 		private->header_read = 1;
 	}
 
-	return r;
+	return 0;
+}
+
+
+static int lis_bmp2raw_end_of_page(struct lis_scan_session *session)
+{
+	struct lis_bmp2raw_scan_session *private = \
+		LIS_BMP2RAW_SCAN_SESSION_PRIVATE(session);
+
+	if (private->line.current < private->line.useful) {
+		return 0;
+	}
+
+	return private->wrapped->end_of_page(private->wrapped);
 }
 
 
