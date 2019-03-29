@@ -1204,6 +1204,56 @@ static enum lis_error get_simple_constraint(
 }
 
 
+static enum lis_error get_frame_constraint(
+		struct lis_option_descriptor *opt,
+		TW_CAPABILITY *twain_cap,
+		const void *twain_container,
+		void *min_struct_offset, void *max_struct_offset
+	)
+{
+	union {
+		const TW_ONEVALUE *one;
+		const TW_ENUMERATION *enumeration;
+	} container;
+	char *ptr;
+	const TW_FIX32 *min, *max;
+
+	switch(twain_cap->ConType) {
+		case TWON_ONEVALUE:
+			container.one = twain_container;
+			ptr = (char *)&container.one->Item;
+			break;
+		case TWON_ENUMERATION:
+			container.enumeration = twain_container;
+			/* XXX(Jflesch): We only use the values from the first page because
+			 * we can't retranscrive the other values.
+			 */
+			lis_log_warning(
+				"Frame constraint is expressed as an enumeration (nb items = %lu)."
+				" Will only provide the first frame",
+				container.enumeration->NumItems
+			);
+			ptr = (char *)&container.enumeration->ItemList;
+			break;
+		default:
+			lis_log_warning(
+				"Unknown twain container type: 0x%X. Assuming integer",
+				twain_cap->ConType
+			);
+			return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	}
+
+	min = (TW_FIX32 *)(ptr + ((int)min_struct_offset));
+	max = (TW_FIX32 *)(ptr + ((int)max_struct_offset));
+
+	opt->constraint.type = LIS_CONSTRAINT_RANGE;
+	opt->constraint.possible.range.min.dbl = twain_unfix(min);
+	opt->constraint.possible.range.max.dbl = twain_unfix(max);
+	opt->constraint.possible.range.interval.dbl = 0.0001; // TODO ?
+
+	return LIS_OK;
+}
+
 
 static enum lis_error twain_simple_get_value(
 		struct lis_option_descriptor *self, union lis_value *out
@@ -1599,12 +1649,10 @@ static enum lis_error make_frame_option(
 		const struct lis_twain_cap *lis_cap,
 		TW_CAPABILITY *twain_cap,
 		void *container,
-		const char *opt_name, void *struct_offset
+		const char *opt_name, void *struct_offset,
+		void *min_struct_offset, void *max_struct_offset
 	)
 {
-	LIS_UNUSED(twain_cap); // TODO
-	LIS_UNUSED(container); // TODO
-
 	opt->twain_cap = lis_cap;
 	opt->item = item;
 
@@ -1621,9 +1669,9 @@ static enum lis_error make_frame_option(
 
 	opt->extra = struct_offset;
 
-	// TODO
-	// get_frame_constraint(&opt->parent, lis_cap, twain_cap, container);
-
+	get_frame_constraint(
+		&opt->parent, twain_cap, container, min_struct_offset, max_struct_offset
+	);
 	return LIS_OK;
 }
 
@@ -1640,7 +1688,8 @@ static enum lis_error make_frame_options(
 	make_frame_option(
 		item, opt, lis_cap, twain_cap, container,
 		OPT_NAME_TL_X,
-		&(((TW_FRAME *)(NULL))->Left)
+		&(((TW_FRAME *)(NULL))->Left),
+		&(((TW_FRAME *)(NULL))->Left), &(((TW_FRAME *)(NULL))->Right)
 	);
 	(*nb_opts)++;
 	opt++;
@@ -1648,7 +1697,8 @@ static enum lis_error make_frame_options(
 	make_frame_option(
 		item, opt, lis_cap, twain_cap, container,
 		OPT_NAME_TL_Y,
-		&(((TW_FRAME *)(NULL))->Top)
+		&(((TW_FRAME *)(NULL))->Top),
+		&(((TW_FRAME *)(NULL))->Top), &(((TW_FRAME *)(NULL))->Bottom)
 	);
 	(*nb_opts)++;
 	opt++;
@@ -1656,7 +1706,8 @@ static enum lis_error make_frame_options(
 	make_frame_option(
 		item, opt, lis_cap, twain_cap, container,
 		OPT_NAME_BR_X,
-		&(((TW_FRAME *)(NULL))->Right)
+		&(((TW_FRAME *)(NULL))->Right),
+		&(((TW_FRAME *)(NULL))->Left), &(((TW_FRAME *)(NULL))->Right)
 	);
 	(*nb_opts)++;
 	opt++;
@@ -1664,7 +1715,8 @@ static enum lis_error make_frame_options(
 	make_frame_option(
 		item, opt, lis_cap, twain_cap, container,
 		OPT_NAME_BR_Y,
-		&(((TW_FRAME *)(NULL))->Bottom)
+		&(((TW_FRAME *)(NULL))->Bottom),
+		&(((TW_FRAME *)(NULL))->Top), &(((TW_FRAME *)(NULL))->Bottom)
 	);
 	(*nb_opts)++;
 	opt++;
