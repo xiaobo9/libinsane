@@ -1099,11 +1099,6 @@ static enum lis_error get_simple_constraint(
 	size_t el_size;
 	unsigned int i;
 
-	if (opt->value.type == LIS_TYPE_BOOL) {
-		opt->constraint.type = LIS_CONSTRAINT_NONE;
-		return LIS_OK;
-	}
-
 	switch(cap->ConType) {
 		case TWON_ARRAY:
 			container.array = twain_container;
