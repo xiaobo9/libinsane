@@ -18,9 +18,10 @@ extern "C" {
  * WIA2: For each scanner, provides a device tree (see :ref:`WIA2` description).
  *
  * Sane: There is no tree (see :ref:`Sane` description). Children nodes (sources) are
- * simulated.
+ * simulated based on the values of the option 'source'.
  *
- * TWAIN: There is no tree (see :ref:`TWAIN` description). Children nodes (sources) are simulated.
+ * TWAIN: There is no tree (see :ref:`TWAIN` description). Children nodes (sources) are simulated
+ * based on the values of the option 'feeder_enabled'.
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] out_impl Implementation of the out_impl including the workaround.
