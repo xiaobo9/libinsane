@@ -30,6 +30,12 @@ struct lis_sn_item_private
 {
 	struct lis_item item;
 	struct lis_sn_device_private *device;
+
+	struct
+	{
+		const char *name;
+		union lis_value value;
+	} opt;
 };
 #define LIS_SN_ITEM_PRIVATE(item) ((struct lis_sn_item_private *)(item))
 
@@ -181,22 +187,24 @@ static enum lis_error lis_sn_dev_get_children(struct lis_item *self, struct lis_
 	for (opt_idx = 0 ; opts[opt_idx] != NULL ; opt_idx++) {
 		if (strcasecmp(opts[opt_idx]->name, OPT_NAME_SOURCE) == 0) {
 			break;
+		} else if (strcasecmp(opts[opt_idx]->name, OPT_NAME_FEEDER_ENABLED) == 0) {
+			break;
 		}
 	}
 	if (opts[opt_idx] == NULL) {
 		lis_log_warning(
 			"Failed to get child items from wrapped implementation"
-			" + no option \"source\" found"
+			" + no option \"source\"/\"feeder_enabled\" found"
 		);
 		return get_children_err;
 	}
 
-	if (opts[opt_idx]->value.type != LIS_TYPE_STRING
-		|| opts[opt_idx]->constraint.type != LIS_CONSTRAINT_LIST
+	if (opts[opt_idx]->constraint.type != LIS_CONSTRAINT_LIST
 		|| opts[opt_idx]->constraint.possible.list.nb_values <= 0) {
 		lis_log_warning(
 			"Failed to get child items from wrapped implementation"
-			" + option \"source\" doesn't have expected types (%d:%d:%d)",
+			" + option \"source\"/\"feeder_enabled\" doesn't have"
+			" expected types (%d:%d:%d)",
 			opts[opt_idx]->value.type, opts[opt_idx]->constraint.type,
 			opts[opt_idx]->constraint.possible.list.nb_values
 		);
@@ -219,8 +227,26 @@ static enum lis_error lis_sn_dev_get_children(struct lis_item *self, struct lis_
 	for (source_idx = 0 ; source_idx < device->nb_sources ; source_idx++) {
 		memcpy(&device->sources[source_idx].item, &g_sn_source_template,
 			sizeof(device->sources[source_idx].item));
-		device->sources[source_idx].item.name = \
-			opts[opt_idx]->constraint.possible.list.values[source_idx].string;
+
+		device->sources[source_idx].opt.name = strdup(opts[opt_idx]->name);
+		// TODO(Jflesch): Out of memory
+
+		if (opts[opt_idx]->value.type == LIS_TYPE_STRING) {
+			device->sources[source_idx].item.name =
+				strdup(opts[opt_idx]->constraint.possible.list.values[source_idx].string);
+			device->sources[source_idx].opt.value.string = device->sources[source_idx].item.name;
+		} else {
+			memcpy(
+				&device->sources[source_idx].opt.value,
+				&opts[opt_idx]->constraint.possible.list.values[source_idx],
+				sizeof(device->sources[source_idx].opt.value)
+			);
+			device->sources[source_idx].item.name = strdup(
+				opts[opt_idx]->constraint.possible.list.values[source_idx].boolean
+				? OPT_VALUE_SOURCE_ADF : OPT_VALUE_SOURCE_FLATBED
+			);
+		}
+
 		device->source_ptrs[source_idx] = &device->sources[source_idx].item;
 		device->sources[source_idx].device = device;
 	}
@@ -244,7 +270,6 @@ static enum lis_error set_source(struct lis_sn_item_private *private)
 	struct lis_option_descriptor **opts = NULL;
 	int source_opt_idx;
 	enum lis_error err;
-	union lis_value value;
 	int set_flags;
 
 	if (private == &private->device->item) {
@@ -260,18 +285,23 @@ static enum lis_error set_source(struct lis_sn_item_private *private)
 	}
 
 	for (source_opt_idx = 0 ; opts[source_opt_idx] != NULL ; source_opt_idx++) {
-		if (strcasecmp(opts[source_opt_idx]->name, OPT_NAME_SOURCE) == 0) {
+		if (strcasecmp(opts[source_opt_idx]->name, private->opt.name) == 0) {
 			break;
 		}
 	}
 	if (opts[source_opt_idx] == NULL) {
-		lis_log_error("wrapped->get_options() didn't return the option '%s'",
-			OPT_NAME_SOURCE);
+		lis_log_error(
+			"wrapped->get_options() didn't return the option '%s'",
+			private->opt.name
+		);
 		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
 	}
 
-	value.string = private->item.name;
-	err = opts[source_opt_idx]->fn.set_value(opts[source_opt_idx], value, &set_flags);
+	err = opts[source_opt_idx]->fn.set_value(
+		opts[source_opt_idx],
+		private->opt.value,
+		&set_flags
+	);
 	if (LIS_IS_OK(err)) {
 		lis_log_info("Source set to '%s'", private->item.name);
 	} else {
@@ -361,6 +391,15 @@ static void lis_sn_src_close(struct lis_item *self)
 static void lis_sn_dev_close(struct lis_item *self)
 {
 	struct lis_sn_device_private *private = LIS_SN_DEVICE_PRIVATE(self);
+	int i;
+
+	if (private->source_ptrs != NULL) {
+		for (i = 0 ; i < private->nb_sources ; i++) {
+			FREE(private->sources[i].opt.name);
+			FREE(private->sources[i].item.name);
+		}
+	}
+
 	FREE(private->source_ptrs);
 	FREE(private->sources);
 	FREE(private->scan_session);

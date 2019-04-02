@@ -15,10 +15,12 @@ extern "C" {
 /*!
  * \brief Ensure that sources are represented as node
  *
- * WIA2: For each scanner, provide a device tree (see :ref:`WIA2` description).
+ * WIA2: For each scanner, provides a device tree (see :ref:`WIA2` description).
  *
- * Sane: There is no tree (see :ref:`Sane` description). Children nodes (sources) must be
+ * Sane: There is no tree (see :ref:`Sane` description). Children nodes (sources) are
  * simulated.
+ *
+ * TWAIN: There is no tree (see :ref:`TWAIN` description). Children nodes (sources) are simulated.
  *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] out_impl Implementation of the out_impl including the workaround.
