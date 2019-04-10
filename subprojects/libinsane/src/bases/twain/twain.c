@@ -1847,7 +1847,11 @@ static int twain_end_of_page(struct lis_scan_session *self)
 	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
 	int r;
 	r = private->cancelled || private->img.mem == NULL;
-	lis_log_info("end_of_page() ? %d", r);
+	if (r) {
+		lis_log_info("end_of_page() ? %d", r);
+	} else {
+		lis_log_debug("end_of_page() ? %d", r);
+	}
 	return r;
 }
 
@@ -1886,7 +1890,7 @@ static enum lis_error twain_scan_read(
 	struct lis_twain_session *private = LIS_TWAIN_SESSION_PRIVATE(self);
 	size_t to_copy;
 
-	lis_log_info("scan_read(%d B) ...", (int)(*buffer_size));
+	lis_log_debug("scan_read(%d B) ...", (int)(*buffer_size));
 	if (private->img.mem == NULL) {
 		err = next_page(private);
 		if (LIS_IS_ERROR(err)) {
@@ -1952,7 +1956,7 @@ static enum lis_error twain_scan_read(
 			return err;
 		}
 	}
-	lis_log_info("scan_read(): OK (%d B)", (int)(*buffer_size));
+	lis_log_debug("scan_read(): OK (%d B)", (int)(*buffer_size));
 	return LIS_OK;
 }
 
