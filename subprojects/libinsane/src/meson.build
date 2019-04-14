@@ -27,7 +27,6 @@ libinsane_srcs = files(
     'workarounds/one_page_flatbed.c',
     'workarounds/opt_names.c',
     'workarounds/opt_values.c',
-    'workarounds/set_opt_late.c',
 )
 
 deps = [dependency('threads')]

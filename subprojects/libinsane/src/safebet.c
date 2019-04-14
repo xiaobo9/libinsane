@@ -28,12 +28,6 @@ static const struct {
 	int enabled_by_default;
 } g_implementations[] = {
 	{
-		.name = "workaround_set_opt_late",
-		.env = "LIBINSANE_WORKAROUND_SET_OPT_LATE",
-		.wrap_cb = lis_api_workaround_set_opt_late,
-		.enabled_by_default = 1,
-	},
-	{
 		.name = "workaround_check_capabilities",
 		.env = "LIBINSANE_WORKAROUND_CHECK_CAPABILITIES",
 		.wrap_cb = lis_api_workaround_check_capabilities,

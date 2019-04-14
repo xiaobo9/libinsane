@@ -113,27 +113,6 @@ extern enum lis_error lis_api_workaround_check_capabilities(
 
 
 /*!
- * \brief Set some options only right before scanning.
- *
- * - API: Sane:
- * - Seen on:
- *   - HP Deskjet 2130 and HP Scanjet 5550c
- *   - Client: Libsane 1.0.27 + backend 'net'
- *   - Server: Libsane 1.0.25 + backend 'hpaio'
- *
- * Setting mode=Color makes the whole thing go haywire:
- * It becomes impossible to list options anymore. So 'mode' must be set
- * only right before scanning.
- *
- * \param[in] to_wrap Base implementation to wrap.
- * \param[out] out_impl Implementation of the out_impl including the workaround.
- */
-extern enum lis_error lis_api_workaround_set_opt_late(
-	struct lis_api *to_wrap, struct lis_api **out_impl
-);
-
-
-/*!
  * \brief Thread-safety
  *
  * - API: Sane, WIA, TWAIN

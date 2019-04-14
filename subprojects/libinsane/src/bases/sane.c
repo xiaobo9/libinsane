@@ -806,6 +806,13 @@ static enum lis_error lis_sane_item_get_options(struct lis_item *self,
 	int nb_opts, in, out;
 	const SANE_Option_Descriptor *sane_desc;
 
+	// WORKAROUND(Jflesch):
+	// When using the backend 'net', if we got a SANE_INFO_RELOAD_OPTIONS,
+	// we must first call sane_get_option_descriptor() before sane_control_option()
+	// even if we just want to use sane_control_option() to get the number of options.
+	// --> we make unused call here just to make backend 'net' reloads the options.
+	sane_get_option_descriptor(private->handle, 0);
+
 	err = sane_status_to_lis_error(sane_control_option(
 		private->handle, 0 /* option 0 = number of options */,
 		SANE_ACTION_GET_VALUE, &nb_opts, NULL
