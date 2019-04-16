@@ -75,9 +75,6 @@ static enum lis_error root_get_children(struct lis_item *self, struct lis_item *
 	memcpy(&child->parent, &g_mos_item_template, sizeof(child->parent));
 	child->parent.name = OPT_VALUE_SOURCE_FLATBED;
 	child->parent.type = original->type;
-	if (child->parent.type == LIS_ITEM_UNIDENTIFIED) {
-		child->parent.type = LIS_ITEM_FLATBED;
-	}
 	child->ptrs[0] = &child->parent;
 	child->ptrs[1] = NULL;
 	child->wrapped = original;

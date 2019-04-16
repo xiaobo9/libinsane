@@ -1285,7 +1285,6 @@ static const struct lis_twain_cap g_twain_caps[] = {
 		.type = TWTY_FIX32,
 		.possibles = NULL,
 	},
-	/* TODO(Jflesch)
 	{
 		.name = "frames",
 		.id = ICAP_FRAMES,
@@ -1293,7 +1292,6 @@ static const struct lis_twain_cap g_twain_caps[] = {
 		.type = TWTY_FRAME,
 		.possibles = NULL,
 	},
-	*/
 	{
 		.name = "x_native_resolution",
 		.id = ICAP_XNATIVERESOLUTION,

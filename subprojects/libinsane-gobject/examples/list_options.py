@@ -49,39 +49,44 @@ def main():
         print("")
         print(dev.to_string())
 
-        dev = api.get_device(dev.get_dev_id())
-        children = dev.get_children()
-        print("|-- Found {} sources".format(len(children)))
+        try:
+            dev = api.get_device(dev.get_dev_id())
+            children = dev.get_children()
+            print("|-- Found {} sources".format(len(children)))
 
-        for item in [dev] + children:
-            print("|")
-            print("|-- {} ({})".format(
-                item.get_name(),
-                "device" if item == dev else "source"
-            ))
-            opts = item.get_options()
-            for opt in opts:
-                print("|   |-- {}".format(opt.get_name()))
-                print("|   |   |-- Title: {}".format(opt.get_title()))
-                print("|   |   |-- Description: {}".format(opt.get_desc()))
-                print("|   |   |-- Capabilities: {}".format(
-                    opt.get_capabilities())
-                )
-                print("|   |   |-- Unit: {}".format(opt.get_value_unit()))
-                print("|   |   |-- Constraint type: {}".format(
-                      opt.get_constraint_type()))
-                print("|   |   |-- Constraint: {}".format(
-                    opt.get_constraint())
-                )
-                if opt.is_readable():
-                    try:
-                        print("|   |   |-- Value: {}".format(opt.get_value()))
-                    except Exception as exc:
-                        print("|   |   |-- Value: [{}]".format(str(exc)))
-                else:
-                    print("|   |   |-- Value: (unavailable)")
-        print("")
-        dev.close()
+            for item in [dev] + children:
+                print("|")
+                print("|-- {} ({})".format(
+                    item.get_name(),
+                    "device" if item == dev else "source"
+                ))
+                opts = item.get_options()
+                for opt in opts:
+                    print("|   |-- {}".format(opt.get_name()))
+                    print("|   |   |-- Title: {}".format(opt.get_title()))
+                    print("|   |   |-- Description: {}".format(opt.get_desc()))
+                    print("|   |   |-- Capabilities: {}".format(
+                        opt.get_capabilities())
+                    )
+                    print("|   |   |-- Unit: {}".format(opt.get_value_unit()))
+                    print("|   |   |-- Constraint type: {}".format(
+                          opt.get_constraint_type()))
+                    print("|   |   |-- Constraint: {}".format(
+                        opt.get_constraint())
+                    )
+                    if opt.is_readable():
+                        try:
+                            print("|   |   |-- Value: {}".format(
+                                opt.get_value())
+                            )
+                        except Exception as exc:
+                            print("|   |   |-- Value: [{}]".format(str(exc)))
+                    else:
+                        print("|   |   |-- Value: (unavailable)")
+            print("")
+            dev.close()
+        except Exception as exc:
+            print("EXCEPTION: {}".format(exc))
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@
 #include <windows.h>
 
 #include <libinsane/capi.h>
+#include <libinsane/constants.h>
 #include <libinsane/error.h>
 #include <libinsane/log.h>
 #include <libinsane/twain.h>
@@ -48,6 +49,8 @@ struct lis_twain_option {
 
 	const struct lis_twain_cap *twain_cap;
 	struct lis_twain_item *item;
+
+	void *extra; // option-dependant
 };
 #define LIS_TWAIN_OPT_PRIVATE(opt) ((struct lis_twain_option *)(opt))
 
@@ -896,11 +899,7 @@ static enum lis_value_type twain_type_to_lis(
 }
 
 
-static enum lis_value_type twain_cap_to_lis_type(
-		const TW_CAPABILITY *cap,
-		const struct lis_twain_cap *twain_cap_def,
-		const void *twain_container
-	)
+static TW_UINT16 get_twain_cap_type(const TW_CAPABILITY *cap, const void *twain_container)
 {
 	union {
 		const TW_ARRAY *array;
@@ -908,53 +907,47 @@ static enum lis_value_type twain_cap_to_lis_type(
 		const TW_ONEVALUE *one;
 		const TW_RANGE *range;
 	} container;
-	enum lis_value_type type;
-	int valid = 0;
 
 	switch(cap->ConType) {
 		case TWON_ARRAY:
 			container.array = twain_container;
-			type = twain_type_to_lis(
-				twain_cap_def->name, container.array->ItemType
-			);
-			valid = 1;
-			break;
+			return container.array->ItemType;
 		case TWON_ENUMERATION:
 			container.enumeration = twain_container;
-			type = twain_type_to_lis(
-				twain_cap_def->name,
-				container.enumeration->ItemType
-			);
-			valid = 1;
-			break;
+			return container.enumeration->ItemType;
 		case TWON_ONEVALUE:
 			container.one = twain_container;
-			type = twain_type_to_lis(
-				twain_cap_def->name, container.one->ItemType
-			);
-			valid = 1;
-			break;
+			return container.one->ItemType;
 		case TWON_RANGE:
 			container.range = twain_container;
-			type = twain_type_to_lis(
-				twain_cap_def->name, container.range->ItemType
-			);
-			valid = 1;
-			break;
+			return container.range->ItemType;
 	}
 
-	if (!valid) {
-		lis_log_warning(
-			"Unknown twain container for option '%s': 0x%X."
-			" Assuming integer", twain_cap_def->name, cap->ConType
-		);
-		return LIS_TYPE_INTEGER;
-	}
+	lis_log_warning(
+		"Unknown twain container for option: 0x%X."
+		" Assuming integer", cap->ConType
+	);
+	return TWTY_UINT32;
+}
+
+
+
+static enum lis_value_type twain_cap_to_lis_type(
+		const TW_CAPABILITY *cap,
+		const struct lis_twain_cap *twain_cap_def,
+		const void *twain_container
+	)
+{
+	enum lis_value_type type;
+
+	type = twain_type_to_lis(
+		twain_cap_def->name,
+		get_twain_cap_type(cap, twain_container)
+	);
 
 	if (type == LIS_TYPE_INTEGER && twain_cap_def->possibles != NULL) {
 		return LIS_TYPE_STRING;
 	}
-
 	return type;
 }
 
@@ -1090,7 +1083,7 @@ static enum lis_error twain_cap_to_lis(
 }
 
 
-static enum lis_error get_constraint(
+static enum lis_error get_simple_constraint(
 		struct lis_option_descriptor *opt,
 		const struct lis_twain_cap *twain_cap_def,
 		const TW_CAPABILITY *cap,
@@ -1105,11 +1098,6 @@ static enum lis_error get_constraint(
 	} container;
 	size_t el_size;
 	unsigned int i;
-
-	if (opt->value.type == LIS_TYPE_BOOL) {
-		opt->constraint.type = LIS_CONSTRAINT_NONE;
-		return LIS_OK;
-	}
 
 	switch(cap->ConType) {
 		case TWON_ARRAY:
@@ -1210,6 +1198,56 @@ static enum lis_error get_constraint(
 	return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
 }
 
+
+static enum lis_error get_frame_constraint(
+		struct lis_option_descriptor *opt,
+		TW_CAPABILITY *twain_cap,
+		const void *twain_container,
+		void *min_struct_offset, void *max_struct_offset
+	)
+{
+	union {
+		const TW_ONEVALUE *one;
+		const TW_ENUMERATION *enumeration;
+	} container;
+	char *ptr;
+	const TW_FIX32 *min, *max;
+
+	switch(twain_cap->ConType) {
+		case TWON_ONEVALUE:
+			container.one = twain_container;
+			ptr = (char *)&container.one->Item;
+			break;
+		case TWON_ENUMERATION:
+			container.enumeration = twain_container;
+			/* XXX(Jflesch): We only use the values from the first page because
+			 * we can't retranscrive the other values.
+			 */
+			lis_log_warning(
+				"Frame constraint is expressed as an enumeration (nb items = %lu)."
+				" Will only provide the first frame",
+				container.enumeration->NumItems
+			);
+			ptr = (char *)&container.enumeration->ItemList;
+			break;
+		default:
+			lis_log_warning(
+				"Unknown twain container type: 0x%X. Assuming integer",
+				twain_cap->ConType
+			);
+			return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+	}
+
+	min = (TW_FIX32 *)(ptr + ((int)min_struct_offset));
+	max = (TW_FIX32 *)(ptr + ((int)max_struct_offset));
+
+	opt->constraint.type = LIS_CONSTRAINT_RANGE;
+	opt->constraint.possible.range.min.dbl = twain_unfix(min);
+	opt->constraint.possible.range.max.dbl = twain_unfix(max);
+	opt->constraint.possible.range.interval.dbl = 0.0001; // TODO ?
+
+	return LIS_OK;
+}
 
 
 static enum lis_error twain_simple_get_value(
@@ -1315,6 +1353,7 @@ union lis_one_value {
 			TW_INT32 integer32;
 			TW_FIX32 dbl;
 			TW_STR255 str;
+			TW_FRAME frame;
 		} value;
 	} lis;
 };
@@ -1522,6 +1561,274 @@ static void free_opts(struct lis_twain_item *private)
 }
 
 
+static enum lis_error twain_frame_get_value(
+		struct lis_option_descriptor *self, union lis_value *out
+	)
+{
+	struct lis_twain_option *private = LIS_TWAIN_OPT_PRIVATE(self);
+	TW_UINT16 twrc;
+	TW_CAPABILITY cap;
+	enum lis_error err;
+	const TW_ONEVALUE *container;
+	const char *frame_ptr;
+	const TW_FIX32 *value;
+
+	lis_log_info(
+		"%s->frame_get_value(%s) ...",
+		private->item->parent.name, self->name
+	);
+	memset(&cap, 0, sizeof(cap));
+	cap.Cap = private->twain_cap->id;
+	cap.ConType = TWON_DONTCARE16;
+	twrc = DSM_ENTRY(
+		&private->item->twain_id,
+		DG_CONTROL, DAT_CAPABILITY, MSG_GETCURRENT,
+		&cap
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"%s->frame_get_value(%s): Failed to get value: 0x%X, %s",
+			private->item->parent.name, self->name,
+			err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	if (cap.ConType != TWON_ONEVALUE) {
+		lis_log_error(
+			"%s->frame_get_value(%s): Unsupported container type: 0x%X",
+			private->item->parent.name, self->name,
+			cap.ConType
+		);
+		return LIS_ERR_UNSUPPORTED;
+	}
+
+	container = private->item->impl->entry_points.DSM_MemLock(
+		cap.hContainer
+	);
+
+	frame_ptr = (char *)(&container->Item);
+	// in this case, 'extra' does not contain an actual pointer, but
+	// an offset in the TW_FRAME structure (in bytes)
+	frame_ptr += ((int)(private->extra));
+	value = (TW_FIX32 *)frame_ptr;
+	out->dbl = twain_unfix(value);
+
+	lis_log_info(
+		"%s->frame_get_value(%s) successful",
+		private->item->parent.name, self->name
+	);
+
+	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
+	private->item->impl->entry_points.DSM_MemFree(cap.hContainer);
+	return LIS_OK;
+}
+
+
+static enum lis_error twain_frame_set_value(
+		struct lis_option_descriptor *self, union lis_value in_value,
+		int *set_flags
+	)
+{
+	struct lis_twain_option *private = LIS_TWAIN_OPT_PRIVATE(self);
+	TW_UINT16 twrc;
+	TW_CAPABILITY cap;
+	enum lis_error err;
+	const TW_ONEVALUE *container;
+	TW_FRAME frame;
+	union lis_one_value *value;
+	char *frame_ptr;
+
+	// always assume result is inexact (we don't get any feedback)
+	*set_flags = LIS_SET_FLAG_INEXACT;
+
+	lis_log_info(
+		"%s->frame_set_value(%s) ...",
+		private->item->parent.name, self->name
+	);
+
+
+	// read the current frame first
+
+	memset(&cap, 0, sizeof(cap));
+	cap.Cap = private->twain_cap->id;
+	cap.ConType = TWON_DONTCARE16;
+	twrc = DSM_ENTRY(
+		&private->item->twain_id,
+		DG_CONTROL, DAT_CAPABILITY, MSG_GETCURRENT,
+		&cap
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"%s->frame_set_value(%s): Failed to get value: 0x%X, %s",
+			private->item->parent.name, self->name,
+			err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	if (cap.ConType != TWON_ONEVALUE) {
+		lis_log_error(
+			"%s->frame_set_value(%s): Unsupported container type: 0x%X",
+			private->item->parent.name, self->name,
+			cap.ConType
+		);
+		return LIS_ERR_UNSUPPORTED;
+	}
+
+	container = private->item->impl->entry_points.DSM_MemLock(
+		cap.hContainer
+	);
+
+	memcpy(&frame, &container->Item, sizeof(frame));
+
+	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
+	private->item->impl->entry_points.DSM_MemFree(cap.hContainer);
+
+
+	// set the new value
+
+	frame_ptr = (char *)&frame;
+	// in this case, 'extra' does not contain an actual pointer, but
+	// an offset in the TW_FRAME structure (in bytes)
+	frame_ptr += ((int)private->extra);
+	*((TW_FIX32 *)frame_ptr) = twain_fix(in_value.dbl);
+
+	memset(&cap, 0, sizeof(cap));
+	cap.Cap = private->twain_cap->id;
+	cap.ConType = TWON_ONEVALUE;
+
+	cap.hContainer = private->item->impl->entry_points.DSM_MemAllocate(
+		sizeof(union lis_one_value)
+	);
+	// TODO(Jflesch): out of mem ?
+
+	value = private->item->impl->entry_points.DSM_MemLock(cap.hContainer);
+
+	memset(value, 0, sizeof(*value));
+	value->lis.item_type = private->twain_cap->type;
+	memcpy(&value->lis.value.frame, &frame, sizeof(value->lis.value.frame));
+
+	twrc = DSM_ENTRY(
+		&private->item->twain_id,
+		DG_CONTROL, DAT_CAPABILITY, MSG_SET,
+		&cap
+	);
+	// XXX(Jflesch): Based on twain samples, we unlock *after*
+	// setting the value
+	private->item->impl->entry_points.DSM_MemUnlock(cap.hContainer);
+	private->item->impl->entry_points.DSM_MemFree(cap.hContainer);
+
+	if (twrc == TWRC_CHECKSTATUS) {
+		(*set_flags) |= (
+			LIS_SET_FLAG_MUST_RELOAD_OPTIONS
+			| LIS_SET_FLAG_MUST_RELOAD_PARAMS
+		);
+		twrc = TWRC_SUCCESS;
+	}
+
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_error(
+			"%s->simple_set_value(%s): Failed to get value: 0x%X, %s",
+			private->item->parent.name, self->name,
+			err, lis_strerror(err)
+		);
+		return err;
+	}
+
+	lis_log_info(
+		"%s->frame_set_value(%s) successful",
+		private->item->parent.name, self->name
+	);
+
+	return LIS_OK;
+}
+
+
+static enum lis_error make_frame_option(
+		struct lis_twain_item *item,
+		struct lis_twain_option *opt,
+		const struct lis_twain_cap *lis_cap,
+		TW_CAPABILITY *twain_cap,
+		void *container,
+		const char *opt_name, void *struct_offset,
+		void *min_struct_offset, void *max_struct_offset
+	)
+{
+	opt->twain_cap = lis_cap;
+	opt->item = item;
+
+	opt->parent.name = opt_name;
+	opt->parent.title = lis_cap->name; // TODO
+	opt->parent.desc = lis_cap->name; // TODO
+	opt->parent.capabilities = (
+		lis_cap->readonly ? 0 : LIS_CAP_SW_SELECT
+	);
+	opt->parent.value.type = LIS_TYPE_DOUBLE;
+	opt->parent.value.unit = LIS_UNIT_NONE; // TODO ?
+	opt->parent.fn.get_value = twain_frame_get_value;
+	opt->parent.fn.set_value = twain_frame_set_value;
+
+	opt->extra = struct_offset;
+
+	get_frame_constraint(
+		&opt->parent, twain_cap, container, min_struct_offset, max_struct_offset
+	);
+	return LIS_OK;
+}
+
+
+static enum lis_error make_frame_options(
+		struct lis_twain_item *item,
+		struct lis_twain_option *opt,
+		const struct lis_twain_cap *lis_cap,
+		TW_CAPABILITY *twain_cap,
+		void *container,
+		int *nb_opts
+	)
+{
+	make_frame_option(
+		item, opt, lis_cap, twain_cap, container,
+		OPT_NAME_TL_X,
+		&(((TW_FRAME *)(NULL))->Left),
+		&(((TW_FRAME *)(NULL))->Left), &(((TW_FRAME *)(NULL))->Right)
+	);
+	(*nb_opts)++;
+	opt++;
+
+	make_frame_option(
+		item, opt, lis_cap, twain_cap, container,
+		OPT_NAME_TL_Y,
+		&(((TW_FRAME *)(NULL))->Top),
+		&(((TW_FRAME *)(NULL))->Top), &(((TW_FRAME *)(NULL))->Bottom)
+	);
+	(*nb_opts)++;
+	opt++;
+
+	make_frame_option(
+		item, opt, lis_cap, twain_cap, container,
+		OPT_NAME_BR_X,
+		&(((TW_FRAME *)(NULL))->Right),
+		&(((TW_FRAME *)(NULL))->Left), &(((TW_FRAME *)(NULL))->Right)
+	);
+	(*nb_opts)++;
+	opt++;
+
+	make_frame_option(
+		item, opt, lis_cap, twain_cap, container,
+		OPT_NAME_BR_Y,
+		&(((TW_FRAME *)(NULL))->Bottom),
+		&(((TW_FRAME *)(NULL))->Top), &(((TW_FRAME *)(NULL))->Bottom)
+	);
+	(*nb_opts)++;
+	opt++;
+	return LIS_OK;
+}
+
+
 static enum lis_error make_simple_option(
 		struct lis_twain_item *item,
 		struct lis_twain_option *opt,
@@ -1547,7 +1854,7 @@ static enum lis_error make_simple_option(
 	opt->parent.fn.get_value = twain_simple_get_value;
 	opt->parent.fn.set_value = twain_simple_set_value;
 
-	get_constraint(&opt->parent, lis_cap, twain_cap, container);
+	get_simple_constraint(&opt->parent, lis_cap, twain_cap, container);
 
 	(*nb_opts)++;
 	return LIS_OK;
@@ -1571,7 +1878,7 @@ static enum lis_error twain_get_options(
 
 	lis_log_info("%s->get_options() ...", self->name);
 
-	/* There is a Twain capabilities to list all supported capapbilities,
+	/* There is a Twain capabilities to list all supported capabilities,
 	 * but it's not supported by all data sources. Our safest best here
 	 * is to probe available capabilities ourselves by getting their
 	 * values.
@@ -1579,8 +1886,10 @@ static enum lis_error twain_get_options(
 
 	all_caps = lis_twain_get_all_caps(&nb_caps);
 
+	// in case we have the capability 'frame': This capability is
+	// represented by 4 options (tl-x, tl-y, br-x, br-y).
 	private->opts = calloc(
-		nb_caps, sizeof(struct lis_twain_option)
+		nb_caps + 4, sizeof(struct lis_twain_option)
 	);
 	if (private->opts == NULL) {
 		lis_log_error("Out of memory");
@@ -1599,35 +1908,46 @@ static enum lis_error twain_get_options(
 			&g_app_id, &private->twain_id, DG_CONTROL,
 			DAT_CAPABILITY, MSG_GET, &cap
 		);
-		if (twrc == TWRC_SUCCESS) {
-			lis_log_debug(
-				"Got option '%s' (container type 0x%X)",
-				all_caps[cap_idx].name,
-				cap.ConType
-			);
-
-			container = private->impl->entry_points.DSM_MemLock(
-				cap.hContainer
-			);
-
-			make_simple_option(
-				private,
-				&private->opts[nb_opts], &all_caps[cap_idx],
-				&cap, container, &nb_opts
-			);
-
-			private->impl->entry_points.DSM_MemUnlock(
-				cap.hContainer
-			);
-			private->impl->entry_points.DSM_MemFree(
-				cap.hContainer
-			);
-		} else {
+		if (twrc != TWRC_SUCCESS) {
 			lis_log_debug(
 				"Option '%s' is not available",
 				all_caps[cap_idx].name
 			);
+			continue;
 		}
+
+		lis_log_debug(
+			"Got option '%s' (container type 0x%X)",
+			all_caps[cap_idx].name,
+			cap.ConType
+		);
+
+		container = private->impl->entry_points.DSM_MemLock(
+			cap.hContainer
+		);
+
+		if (get_twain_cap_type(&cap, container) == TWTY_FRAME) {
+			make_frame_options(
+				private,
+				&private->opts[nb_opts],
+				&all_caps[cap_idx],
+				&cap, container, &nb_opts
+			);
+		} else {
+			make_simple_option(
+				private,
+				&private->opts[nb_opts],
+				&all_caps[cap_idx],
+				&cap, container, &nb_opts
+			);
+		}
+
+		private->impl->entry_points.DSM_MemUnlock(
+			cap.hContainer
+		);
+		private->impl->entry_points.DSM_MemFree(
+			cap.hContainer
+		);
 	}
 
 	private->opts_ptrs = calloc(

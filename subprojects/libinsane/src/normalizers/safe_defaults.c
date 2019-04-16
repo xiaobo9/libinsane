@@ -143,6 +143,11 @@ static const struct safe_setter g_safe_setters[] = {
 		.cb_data = NULL, /* FALSE */
 		.flags = SET_IMMEDIATELY,
 	},
+	{
+		.opt_name = "supported_sizes", .cb = set_str,
+		.cb_data = "none",
+		.flags = SET_IMMEDIATELY,
+	},
 	{ .opt_name = NULL },
 };
 

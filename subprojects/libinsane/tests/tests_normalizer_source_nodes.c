@@ -106,9 +106,9 @@ static void tests_source_nodes(void)
 		LIS_ASSERT_EQUAL(err, LIS_OK);
 
 		LIS_ASSERT_NOT_EQUAL(children[0], NULL);
-		LIS_ASSERT_EQUAL(children[0]->name, OPT_VALUE_SOURCE_FLATBED);
+		LIS_ASSERT_EQUAL(strcmp(children[0]->name, OPT_VALUE_SOURCE_FLATBED), 0);
 		LIS_ASSERT_NOT_EQUAL(children[1], NULL);
-		LIS_ASSERT_EQUAL(children[1]->name, OPT_VALUE_SOURCE_ADF);
+		LIS_ASSERT_EQUAL(strcmp(children[1]->name, OPT_VALUE_SOURCE_ADF), 0);
 		LIS_ASSERT_EQUAL(children[2], NULL);
 
 		item->close(item);
@@ -155,9 +155,9 @@ static void tests_scan_start(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	LIS_ASSERT_NOT_EQUAL(children[0], NULL);
-	LIS_ASSERT_EQUAL(children[0]->name, OPT_VALUE_SOURCE_FLATBED);
+	LIS_ASSERT_EQUAL(strcmp(children[0]->name, OPT_VALUE_SOURCE_FLATBED), 0);
 	LIS_ASSERT_NOT_EQUAL(children[1], NULL);
-	LIS_ASSERT_EQUAL(children[1]->name, OPT_VALUE_SOURCE_ADF);
+	LIS_ASSERT_EQUAL(strcmp(children[1]->name, OPT_VALUE_SOURCE_ADF), 0);
 	LIS_ASSERT_EQUAL(children[2], NULL);
 
 	/* should trigger a change of source to make sure we get the correct parameters
@@ -215,9 +215,9 @@ static void tests_get_options(void)
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	LIS_ASSERT_NOT_EQUAL(children[0], NULL);
-	LIS_ASSERT_EQUAL(children[0]->name, OPT_VALUE_SOURCE_FLATBED);
+	LIS_ASSERT_EQUAL(strcmp(children[0]->name, OPT_VALUE_SOURCE_FLATBED), 0);
 	LIS_ASSERT_NOT_EQUAL(children[1], NULL);
-	LIS_ASSERT_EQUAL(children[1]->name, OPT_VALUE_SOURCE_ADF);
+	LIS_ASSERT_EQUAL(strcmp(children[1]->name, OPT_VALUE_SOURCE_ADF), 0);
 	LIS_ASSERT_EQUAL(children[2], NULL);
 
 	/* should trigger a change of source to make sure we get the correct parameters
