@@ -93,8 +93,6 @@ enum lis_error lis_str2impls(const char *list_of_impls, struct lis_api **impls)
 				err = lis_api_workaround_dedicated_thread(*impls, &next);
 			} else if (strcmp(tok, "check_capabilities") == 0) {
 				err = lis_api_workaround_check_capabilities(*impls, &next);
-			} else if (strcmp(tok, "set_opt_late") == 0) {
-				err = lis_api_workaround_set_opt_late(*impls, &next);
 			} else if (strcmp(tok, "opt_names") == 0) {
 				err = lis_api_workaround_opt_names(*impls, &next);
 			} else if (strcmp(tok, "opt_values") == 0) {
