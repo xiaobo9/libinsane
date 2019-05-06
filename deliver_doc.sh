@@ -45,7 +45,7 @@ if ! rsync -rtz "${directory}/" "${DELIVERY_USER}@${DELIVERY_SERVER}:${DELIVERY_
   exit 1
 fi
 
-echo "Updating symlink 'latest' ..."
+echo "Updating symlink 'latest': ${out_name} <-- ${DELIVERY_DOC_PATH}/${latest_name}"
 if ! ssh "${DELIVERY_USER}@${DELIVERY_SERVER}" -- ln -fs \
     ${out_name} \
     ${DELIVERY_DOC_PATH}/${latest_name} ; then
