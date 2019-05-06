@@ -35,20 +35,20 @@ echo "$DELIVERY_KEY" | tr -d '\r' | ssh-add - > /dev/null
 echo "Delivering: ${directory} (${CI_COMMIT_REF_NAME} - ${CI_COMMIT_SHORT_SHA})"
 echo "To: $DELIVERY_USER@$DELIVERY_SERVER:$DELIVERY_DOC_PATH"
 
-out_name="libinsane/$(date "+%Y%m%d_%H%M%S")_${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}"
-latest_name="libinsane/latest"
+out_name="$(date "+%Y%m%d_%H%M%S")_${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}"
+latest_name="latest"
 
 ls -lh "${directory}"
 
-if ! rsync -rtz "${directory}/" "${DELIVERY_USER}@${DELIVERY_SERVER}:${DELIVERY_DOC_PATH}/${out_name}" ; then
+if ! rsync -rtz "${directory}/" "${DELIVERY_USER}@${DELIVERY_SERVER}:${DELIVERY_DOC_PATH}/libinsane/${out_name}" ; then
   echo "rsync failed"
   exit 1
 fi
 
-echo "Updating symlink 'latest': ${out_name} <-- ${DELIVERY_DOC_PATH}/${latest_name}"
+echo "Updating symlink 'latest': ${out_name} <-- ${DELIVERY_DOC_PATH}/libinsane/${latest_name}"
 if ! ssh "${DELIVERY_USER}@${DELIVERY_SERVER}" -- ln -fs \
     ${out_name} \
-    ${DELIVERY_DOC_PATH}/${latest_name} ; then
+    ${DELIVERY_DOC_PATH}/libinsane/${latest_name} ; then
   echo ln failed
   exit 1
 fi
