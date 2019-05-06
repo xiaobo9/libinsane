@@ -48,6 +48,21 @@ test:
     - make test
 
 
+doc:
+  image: debian:buster-slim
+  tags:
+    - linux
+    - volatile
+  <<: *apt
+  script:
+    - make doc
+    - ./deliver_doc.sh
+  artifacts:
+    paths:
+      - doc/build
+    expire_in: 2 days
+
+
 test_hw_linux:
   tags:
     - linux
