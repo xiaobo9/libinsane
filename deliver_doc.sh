@@ -40,11 +40,12 @@ latest_name="libinsane/latest"
 
 ls -lh "${directory}"
 
-if ! rsync -rtz "${directory}" "${DELIVERY_USER}@${DELIVERY_SERVER}:${DELIVERY_DOC_PATH}/${out_name}" ; then
+if ! rsync -rtz "${directory}/" "${DELIVERY_USER}@${DELIVERY_SERVER}:${DELIVERY_DOC_PATH}/${out_name}" ; then
   echo "rsync failed"
   exit 1
 fi
 
+echo "Updating symlink 'latest' ..."
 if ! ssh "${DELIVERY_USER}@${DELIVERY_SERVER}" -- ln -fs \
     ${out_name} \
     ${DELIVERY_DOC_PATH}/${latest_name} ; then
