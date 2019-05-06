@@ -1,0 +1,87 @@
+/*!
+ \page howto_python How to use Libinsane in a Python program (or any other language)
+
+### GObject Introspection
+
+To be usable in any programming language easily, Libinsane provides
+GObject Introspection bindings. The following page explains how it works
+with Python 3, but the same principles apply with any other programming
+language that supports GObject Introspection.
+
+
+#### Files
+
+Libinsane provides GObject Introspection bindings. They are actually a C
+library (libinsane-gobject.so... / libinsane-gobject.dll) and a typelib
+file (Libinsane-1.0.typelib) describing the whole library. The file .typelib
+is generated when compiling Libinsane. Using those 2 files,
+GObject Introspection generates bindings dynamically for any language.
+
+By default, GObject introspection looks for the .typelib in
+/usr/lib/girepository-1.0 (GNU/Linux). The library (.so/.dll) will be found
+using the usual mechanisms.
+
+You can change the search paths by setting the following variables:
+
+```
+# (values may vary depending on your distribution and version of Meson)
+export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
+export GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
+```
+
+
+#### Importing
+
+When using Python, you can import any GObject Introspection using the following:
+
+```
+import gi
+gi.require_version('<typelib name >', '<API version>')
+
+from gi.repository import <typelib name>
+```
+
+For Libinsane:
+
+```
+import gi
+gi.require_version('Libinsane', '1.0')
+
+from gi.repository import Libinsane
+```
+
+
+### Writing a Python program using Libinsane
+
+You can find an example program in \ref subprojects/libinsane-gobject/examples.
+For instance, subprojects/libinsane-gobject/examples/scan.py .
+
+
+#### API init
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleInit
+
+
+#### Selecting the device and the scan source
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleListGetDevice
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleListGetScanSource
+
+
+#### Managing scan options
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleListOptions
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleSetOption
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleOptsToSet
+
+
+#### Scanning
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleScan
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleRawToImg
+
+*/

@@ -2,6 +2,14 @@
 
 \page behavior_normalizations Behavior normalizations
 
+Behavior normalizers are wrappers that change some behaviours of the wrapped
+implementations. They do *not* work around or fix bugs. The end goal is to
+just to make sure the behaviour will be consistent across platforms and
+libraries.
+
+For instance, they make sure the default scan area is the biggest scan area
+possible. They also make sure in the end we get images as RAW24.
+
 See \ref normalizers.h.
 
 */

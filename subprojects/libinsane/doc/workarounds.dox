@@ -1,8 +1,14 @@
 /*!
 
-\tableofcontents
-
 \page workarounds Workarounds
+
+In Libinsane, workarounds are wrappers that wraps another implementation and
+change its behaviour to work around bugs (or annoying behaviors really close
+to bugs).
+
+For instance, the Sane API on GNU/Linux let the drivers free to do a lot of
+things as they want. So inevitably, some do not respect
+[usual Sane conventions](http://www.sane-project.org/html/doc014.html).
 
 See \ref workarounds.h.
 

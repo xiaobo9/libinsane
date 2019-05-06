@@ -8,7 +8,7 @@ Libinsane is a library allowing access to image scanners. It is the successor of
 Its name is a reference to the library [Sane](http://sane-project.org/).
 
 
-# Image scanners you said ?
+### Image scanners you said ?
 
 Yep, those things:
 
@@ -22,7 +22,7 @@ Basically, paper eaters. Not webcams, not your smartphone, not USB keys, not
 other weird thingies that could acquire or generate images.
 
 
-# Main features
+### Main features
 
 - Cross-platform: Linux, \*BSD and Windows.
 - Cross-API: [Sane](http://sane-project.org/) (Linux, \*BSD),
@@ -32,48 +32,25 @@ other weird thingies that could acquire or generate images.
 - Cross-scanner and cross-driver: Because a lot of them have their own quirks (and sometimes bugs).
 
 
-# Overall view
+### Guarantees
 
-Let the insanity begin !
+Scanners provide many options. Unfortunately, it is impossible to support them
+all in Libinsane. While any settings should work with Libinsane, only the
+following settings are always guaranteed to work with any scanner on any
+platform:
 
-The end goal of Libinsane is to have a consistent behavior across
-all scan APIs, all scanners, and all drivers. All the workarounds
-and weird quirks should be implemented in Libinsane and not the
-applications using it.
-
-For that purpose, Libinsane provides a bunch of components, each
-solving a specific problem (working around a bug, normalizing
-the behavior of drivers, etc).
-
-These components all implement \ref normalized_api "a normalized C API"
-(think object-oriented interface). This API provides a generic way to
-access scanners and their options and a generic way to scan. In other
-words, there is a single API implemented by all components. Many of the
-components actually just wrap other implementations with their own,
-changing slightly the behavior of the wrapped component.
-
-- Component for WIA support (Windows) implements the normalized API.
-- Component for Twain support (Windows) implements the normalized API.
-- Component for Sane support (Linux) implements the normalized API.
-- Workaround components wraps the normalized API provided by others, and
-  provide themselves an implementation of the normalized API.
-- Behavior normalization components wraps too the normalized API provided
-  by others, and provide themselves an implementation of the normalized API.
-- One of the components manage make it possible to access multiple components
-  at the same time: It wraps multiple implementations of the normalized API
-  and provides a single implem.. well you get the idea ?
-- GObject Introspection support simply wrap any implementation of the
-  normalized API.
-
-Since most of the components wrap other components, they can be stacked easily
-each on top of another and can be enabled or disabled easily.
-
-![Design of Libinsane](design.png)
-
-While it may sound like a lot of wrapping and layers, this approach allows
-modularity. Any workaround or behavior normalization component can be enabled
-or disabled easily for debugging and clear
-[separation of concerns](https://en.wikipedia.org/wiki/Separation_of_concerns)
-is ensured.
+- Any resolution
+- Source:
+  - Flatbed
+  - Automatic Document Feeder
+- Scan area set to the maximum size
+- Mode:
+  - 24 bits colors (any platform)
+  - Grayscale
+    - GNU/Linux: yes
+    - Windows: not supported yet
+  - Black & white:
+    - GNU/Linux: yes
+    - Windows: not supported yet
 
 */

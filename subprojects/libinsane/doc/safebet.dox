@@ -1,6 +1,14 @@
 /*!
+\page safebet Safe bet
 
-\page safebet Safe bet: the recommended set of LibInsane API implementations
+Safe bet is the recommended set of LibInsane API implementations.
+
+`lis_safebet()` takes care of putting together base API implementations
+and wrappers and return an implementation that should work in all cases.
+
+`lis_safebet()` can be configured through environment variables to disable
+(or force enabled) some wrappers. The whole list of variables can easily
+be found in the source code (subprojects/libinsane/src/safebet.c).
 
 See \ref safebet.h
 

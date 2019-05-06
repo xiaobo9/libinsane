@@ -1,0 +1,37 @@
+/*!
+\page howto_c How to use Libinsane in a C program
+
+
+### Writing a C program using Libinsane
+
+The C API is described in `subprojects/libinsane/include/libinsane/capi.h`
+(specifically \ref lis_api "struct lis_api").
+
+You can find an example program in \ref subprojects/libinsane/examples. For
+instance, subprojects/libinsane/examples/lis_scan.c .
+
+\snippet subprojects/libinsane/examples/lis_scan.c ExampleLisScan
+
+
+### Compiling a C program using Libinsane
+
+Libinsane is designed to be used with GCC or Clang.
+
+Please keep in mind that Libinsane is under LGPL. If your program is not
+under LGPL or GPL, you *must* compile against Libinsane dynamically, not
+statically. Users must remain free to modify Libinsane.
+
+If Libinsane has been installed system-wide, you can use pkg-config to get
+the correct compilation flags:
+
+```
+pkg-config --cflags --libs libinsane
+```
+
+For example:
+
+```
+gcc -Wall -Werror `pkg-config --cflags --libs libinsane` -o test test.c
+```
+
+*/

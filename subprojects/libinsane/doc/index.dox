@@ -3,25 +3,44 @@
 
 \ref introduction
 
-\ref quickstart
 
-\ref dependencies
+## How to use Libinsane
+
+\ref install
+
+\ref howto_general
+
+\ref howto_c
+
+\ref howto_python
+
+\ref logging
+
+\ref packaging
+
+
+## Internals
+
+\ref structure
 
 \ref scan_apis
 
 \ref normalized_api
 
+\ref api_multiplexer
+
+\ref behavior_normalizations
+
+\ref workarounds
+
 \ref safebet
 
 \ref gobject_introspection_api
 
-\ref api_multiplexer
 
-\ref workarounds
+## Contributing
 
-\ref behavior_normalizations
-
-\ref logging
+\ref tickets
 
 \ref dev_rules
 

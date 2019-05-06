@@ -2,19 +2,30 @@
 
 \page logging Libinsane logs
 
-# Libinsane
+### Libinsane
 
 By default, all logs from libinsane go to stderr. This may not be what you want
 (debug logs are *very* verbose).
 
-This can be changed by defining a callback to handle logs using functions from \ref log.h.
+This can be changed by defining a callback to handle logs using functions from
+\ref log.h.
 
 
-# Libinsane-gobject
+### Libinsane-gobject
 
 You have to create an object implementing the interface Libinsane.Logger
 and pass it to libinsane_register_loggger().
 
+
+#### Example 1
+
 \snippet subprojects/libinsane-gobject/examples/list_devices.py Logger
+
+
+#### Example 2
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleLogger
+
+\snippet subprojects/libinsane-gobject/examples/scan.py ExampleSetLogger
 
 */

@@ -9,10 +9,11 @@ Universal API for any programming language.
 
 # Detailed documentation
 
-\todo Link to gtk-doc
+[GObject Introspection bindings documentation](libinsane-gobject/index.html)
 
 
 # Usage examples
 
+See the \ref howto_python "Python documentation".
 
 */

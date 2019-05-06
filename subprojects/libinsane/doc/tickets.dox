@@ -1,0 +1,27 @@
+/*!
+\page tickets Bug reports and feature requests
+
+Bug reports and feature requests all go the
+[Gitlab bug tracker of Libinsane](https://gitlab.gnome.org/World/OpenPaperwork/libinsane/issues).
+You can also open tickets if you have questions that are not answered in this
+documentation.
+
+
+### Bug reports
+
+Bug reports *must* include the following information:
+
+- Operating system
+- Libinsane version
+- How did you install Libinsane ?
+- What is the expected behavior ?
+- What behavior did you get ?
+
+
+### Feature requests
+
+You can freely submit feature requests on the bug tracker. Please just keep
+in mind that, even if your feature request is accepted it may never be
+implemented if no one wants to spend time for it.
+
+*/

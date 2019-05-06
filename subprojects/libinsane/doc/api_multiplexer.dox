@@ -2,6 +2,17 @@
 
 \page api_multiplexer API multiplexer
 
+On Windows, there are two possible ways to access scanners: WIA2 and TWAIN.
+In Libinsane, the goal is to keep things as cross-platform as possible, so
+we have to hide them.
+
+The API multiplexer takes 2 or more implementations and wraps them to show them
+as a single one.
+
+When listing devices, the device identifiers are prefixed with the name
+of each wrapped implementation. This way, when we try to open a device, it
+can find back the corresponding implementation quickly and easily.
+
 See \ref multiplexer.h.
 
 */

@@ -1,0 +1,165 @@
+/*!
+ \page install Installing Libinsane
+
+### GNU/Linux
+
+If Libinsane is packaged in your distribution, you're advised to use this
+version by default. Otherwise you can compile it and install yourself.
+
+Libinsane and its gobject bindings are built together. Packagers remain
+free to package them separately.
+
+
+#### Build dependencies for Debian / Ubuntu
+
+```
+sudo apt install \
+        make \
+        meson \
+        gtk-doc-tools doxygen plantuml graphviz \
+        build-essential \
+        libsane-dev \
+        libgirepository1.0-dev gobject-introspection \
+        python3-gi \
+        libcunit1-ncurses-dev \
+        valgrind \
+        valac
+
+# optional dependencies for static analysis
+sudo apt install sparse clang-tidy-7
+```
+
+#### Build dependencies for Fedora
+
+```
+sudo dnf install \
+        make \
+        meson \
+        gtk-doc \
+        doxygen plantuml graphviz \
+        sane-backends-devel \
+        gobject-introspection-devel python3-gobject \
+        CUnit-devel \
+        valgrind \
+        vala
+
+# optional dependencies for static analysis
+sudo dnf install sparse clang-tools-extra python3-pyyaml
+```
+
+
+#### Compilation
+
+```
+git clone https://gitlab.gnome.org/World/OpenPaperwork/libinsane.git
+cd libinsane
+make
+make test  # optional
+```
+
+#### Installation
+
+```
+sudo make install PREFIX=/usr  # PREFIX is optional, default is /usr/local
+```
+
+Important: If you intend to use another programming language than C, you will
+need GObject Introspection. By default, GObject Introspection only looks in
+/usr. If you install it somewhere else (/usr/local for instance), you will
+have to define the following environment variables before running your
+program:
+
+```
+# (values may vary depending on your distribution and version of Meson)
+export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
+export GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
+```
+
+#### Uninstalling
+
+Depending on your versions of Meson and Ninja, the following may or may not
+work:
+
+```
+sudo make uninstall
+```
+
+
+#### Not installing Libinsane
+
+If you do not wish to install Libinsane system-wide, you can use the script
+`activate_test_env.sh`. It will set all the environment variables required
+so you program can find Libinsane.
+
+```
+cd libinsane
+make
+source ./activate_test_env.sh
+```
+
+
+### Windows (Msys2)
+
+To compile Libinsane on Windows, you have first to install
+[MSYS2](https://www.msys2.org/). Libinsane is not packaged in MSYS2.
+Therefore you must compile and install it yourself.
+
+Note that if you intend to build a 32bits executable for your application,
+you have to use `MSYS2 MinGW 32-bit`. For a 64bits executable you must use
+`MSYS2 MinGW 64-bit`.
+
+Once MSYS2 is installed
+and up-to-date (`pacman -Syu`), you can install the required dependencies with
+the following commands.
+
+
+#### Build dependencies
+
+If you plan on compiling your program as a 32bits executable:
+
+```
+pacman -S \
+        make \
+        mingw-w64-i686-cunit \
+        mingw-w64-i686-doxygen \
+        mingw-w64-i686-gcc \
+        mingw-w64-i686-gobject-introspection \
+        mingw-w64-i686-meson \
+        mingw-w64-i686-python3-gobject \
+        mingw-w64-i686-vala
+```
+
+If you plan on compiling your program as a 32bits executable, you just
+have to replace all the `i686` by `x86_64`.
+
+
+#### Compilation
+
+```
+git clone https://gitlab.gnome.org/World/OpenPaperwork/libinsane.git
+cd libinsane
+make
+make test  # optional
+```
+
+
+#### Installation
+
+2018/10/16: User name must not contain any spaces or build will fail.
+
+Depending whether you intend to build a 32bits executable for your application
+or a 64bits executable, you will have to install Libinsane in either `/mingw32`
+or `/mingw64`:
+
+```
+sudo make install PREFIX=/mingw32
+```
+
+
+#### Uninstallation
+
+```
+sudo make uninstall
+```
+
+*/

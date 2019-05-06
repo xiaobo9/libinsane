@@ -1,0 +1,22 @@
+/*!
+\page packaging Including Libinsane in the packaging of your application
+
+### Licence requirements
+
+Please keep in mind that Libinsane is under LGPL. If your program is not
+under LGPL or GPL, you *must* compile against Libinsane dynamically, not
+statically. Whatever the way you chose to package your program, users must
+remain free to modify Libinsane.
+
+
+### Files to include in your packaging
+
+For a C program, only the .so / .dll file is required (libinsane.so /
+libinsane.dll)
+
+For any other programming languages, you must also include the files required
+by GObject introspection:
+- libinsane-gobject.so / libinsane-gobject.dll
+- Libinsane-1.0.typelib
+
+*/
