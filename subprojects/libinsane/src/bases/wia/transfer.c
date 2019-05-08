@@ -472,7 +472,7 @@ static enum lis_error scan_read(
 				self->current.msg = NULL;
 				self->current.already_read = 0;
 			};
-			lis_log_info("scan_read(): Got %ld bytes", (long)(*buffer_size));
+			lis_log_debug("scan_read(): Got %ld bytes", (long)(*buffer_size));
 			return LIS_OK;
 
 		case WIA_MSG_END_OF_PAGE:
