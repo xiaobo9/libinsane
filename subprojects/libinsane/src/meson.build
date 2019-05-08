@@ -77,15 +77,25 @@ else
     )
 endif
 
+if host_machine.system() == 'windows'
+    libinsane = library(
+        'insane', libinsane_srcs, version_h,
+        include_directories: libinsane_inc,
+        dependencies: deps,
+        install: true,
+        c_args: extra_cflags,
+    )
+else
+    libinsane = library(
+        'insane', libinsane_srcs, version_h,
+        include_directories: libinsane_inc,
+        dependencies: deps,
+        version: meson.project_version(),
+        install: true,
+        c_args: extra_cflags,
+    )
+endif
 
-libinsane = library(
-    'insane', libinsane_srcs, version_h,
-    include_directories: libinsane_inc,
-    dependencies: deps,
-    version: meson.project_version(),
-    install: true,
-    c_args: extra_cflags,
-)
 libinsane_dep = declare_dependency(
     include_directories: libinsane_inc,
     link_with: libinsane
