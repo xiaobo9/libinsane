@@ -23,11 +23,19 @@ enums = gnome.mkenums('enums',
 
 ## Build libinsane_gobject itself
 
-libinsane_gobject = library('insane_gobject', INSANE_GOBJECT_SRCS + enums,
-    include_directories: libinsane_gobject_inc,
-    dependencies: [libinsane_dep, GOBJECT],
-    version: meson.project_version(),
-    install: true)
+if host_machine.system() == 'windows'
+    libinsane_gobject = library('insane_gobject', INSANE_GOBJECT_SRCS + enums,
+        include_directories: libinsane_gobject_inc,
+        dependencies: [libinsane_dep, GOBJECT],
+        install: true)
+else
+    libinsane_gobject = library('insane_gobject', INSANE_GOBJECT_SRCS + enums,
+        include_directories: libinsane_gobject_inc,
+        dependencies: [libinsane_dep, GOBJECT],
+        version: meson.project_version(),
+        install: true)
+endif
+
 libinsane_gobject_dep = declare_dependency(
     include_directories: libinsane_gobject_inc,
     link_with: libinsane_gobject,
