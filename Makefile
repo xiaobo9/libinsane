@@ -17,7 +17,7 @@ build_py:
 
 build/build.ninja:
 	mkdir -p build
-	(cd build && meson --werror --warnlevel 3 --prefix=${PREFIX} ..)
+	(cd build && meson --werror --warnlevel 2 --prefix=${PREFIX} ..)
 
 build_c: build/build.ninja
 	(cd build && ninja)
