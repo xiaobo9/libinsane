@@ -34,6 +34,7 @@ static void child_close(struct lis_item *self);
 
 static const struct lis_item g_mos_item_template =
 {
+	.type = LIS_ITEM_UNIDENTIFIED,
 	.get_children = child_get_children,
 	.get_options = item_get_options,
 	.scan_start = item_scan_start,
