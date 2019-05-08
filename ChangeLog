@@ -1,4 +1,19 @@
-2019/0x/xx - 0.9:
+2019/05/08 - 1.0:
+- TWAIN: Add support for frame options (tl-x, tl-y, br-x, br-y)
+- Sane: Fix: 'net' backend: when we get SANE_INFO_RELOAD_OPTIONS, we must call
+  we must first call sane_get_option_descriptor() before sane_control_option()
+  even if we just want to use sane_control_option() to get the number of
+  options.
+- normalizer 'min_one_source': do not use the type of the root item on the
+  child, it's not a good value and prevents 'one_page_flatbed' from working
+  correctly.
+- Documentation updated, completed and clarified
+- Linux: .so files now include the version number (thanks to Eliott Sales de
+  Andrade)
+- Fix various CI issues
+- (unchanged) Known limitation: Only support scan of color images on Windows (24bits)
+
+2019/03/10 - 0.9:
 - First release: Test preview.
 - Support of Sane, WIA2 and TWAIN.
 - Known limitation: Only support scan of color images on Windows (24bits)
