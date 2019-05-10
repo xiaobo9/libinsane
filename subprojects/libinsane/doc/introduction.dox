@@ -30,6 +30,16 @@ other weird thingies that could acquire or generate images.
   [TWAIN](https://www.twain.org/) (Windows).
 - Cross-language: Thanks to [GObject introspection](https://wiki.gnome.org/action/show/Projects/GObjectIntrospection?action=show&redirect=GObjectIntrospection).
 - Cross-scanner and cross-driver: Because a lot of them have their own quirks (and sometimes bugs).
+- Returns the scanned image as the scan goes (whenever the scanner driver permits it)
+
+
+### Out of the scope of this library
+
+This library is *not*:
+
+- a GUI library: No GUI component here
+- an image manipulation library: The image is returned as RAW24. Converting it,
+  saving it and displaying it are your problems.
 
 
 ### Guarantees
