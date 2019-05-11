@@ -156,24 +156,26 @@ def main():
 
     for dev_id in devs:
         print("Will use device {}".format(dev_id))
-        dev = api.get_device(dev_id)
-        try:
-            print("Using device {}".format(dev.get_name()))
-            output_file = clean_filename(dev.get_name() + ".jpeg")
-            output_file = os.path.join(output_dir, output_file)
+        for t in range(0, 3):
+            print("- Test {}".format(t))
+            dev = api.get_device(dev_id)
+            try:
+                print("Using device {}".format(dev.get_name()))
+                output_file = clean_filename(dev.get_name() + ".jpeg")
+                output_file = os.path.join(output_dir, output_file)
 
-            print("Looking for source flatbed ...")
-            src = get_source(dev, "flatbed")
-            list_opts(src)
+                print("Looking for source flatbed ...")
+                src = get_source(dev, "flatbed")
+                list_opts(src)
 
-            # set the options
-            set_opt(src, 'resolution', [150, 200])
+                # set the options
+                set_opt(src, 'resolution', [150, 200])
 
-            print("Scanning ...")
-            scan(src, output_file)
-            print("Scan done")
-        finally:
-            dev.close()
+                print("Scanning ...")
+                scan(src, output_file)
+                print("Scan done")
+            finally:
+                dev.close()
 
     print("All scan done")
 
