@@ -1120,6 +1120,7 @@ static enum lis_error lis_sane_scan_start(struct lis_item *self,
 				sane_err);
 		private->session.end_of_page = 1;
 		private->session.end_of_feed = 1;
+		sane_cancel(private->handle);
 		return LIS_OK;
 	}
 	lis_log_info("Sane: scan_start() OK");
@@ -1184,6 +1185,7 @@ static enum lis_error lis_sane_scan_read(
 				lis_log_warning("sane_start() returned EOF (%d) --> No document in the feeder",
 						sane_err);
 				private->end_of_feed = 1;
+				sane_cancel(private->item->handle);
 				return LIS_OK;
 			}
 
@@ -1197,6 +1199,7 @@ static enum lis_error lis_sane_scan_read(
 				lis_log_warning("sane_start() failed: 0x%X, %s (assuming end of feed)",
 					err, lis_strerror(err));
 				private->end_of_feed = 1;
+				sane_cancel(private->item->handle);
 			}
 			return LIS_OK;
 		case SANE_STATUS_NO_DOCS:
