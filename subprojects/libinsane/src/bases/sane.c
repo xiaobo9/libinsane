@@ -251,7 +251,7 @@ static void lis_sane_cleanup(struct lis_api *impl)
 {
 	struct lis_sane *private = LIS_SANE_PRIVATE(impl);
 
-	lis_log_debug("Sane cleanup ...");
+	lis_log_info("Sane cleanup ...");
 
 	if (!private->is_init) {
 		lis_log_debug("Sane cleanup: not initialized, nothing to do");
@@ -281,7 +281,7 @@ static void lis_sane_cleanup(struct lis_api *impl)
 	lis_sane_cleanup_dev_descriptors(private->dev_descs);
 	private->is_init = 0;
 	free(private);
-	lis_log_debug("Sane implementation cleaned up");
+	lis_log_info("Sane implementation cleaned up");
 }
 
 
@@ -300,6 +300,8 @@ static enum lis_error lis_sane_list_devices(
 	if (LIS_IS_ERROR(err)) {
 		return err;
 	}
+
+	lis_log_info("Sane: list_devices() ...");
 
 	switch(locations) {
 		case LIS_DEVICE_LOCATIONS_ANY:
@@ -352,6 +354,7 @@ static enum lis_error lis_sane_list_devices(
 	 * are called */
 	lis_sane_cleanup_dev_descriptors(private->dev_descs);
 	private->dev_descs = *out_dev_descs;
+	lis_log_info("Sane: list_devices(): %d devices found", nb_devs);
 	return LIS_OK;
 
 error:
@@ -372,6 +375,8 @@ static enum lis_error lis_sane_get_device(struct lis_api *impl, const char *dev_
 		return err;
 	}
 
+	lis_log_info("Sane: get_device(%s) ...", dev_id);
+
 	private = calloc(1, sizeof(struct lis_sane_item));
 	if (private == NULL) {
 		lis_log_debug("out of memory");
@@ -389,6 +394,7 @@ static enum lis_error lis_sane_get_device(struct lis_api *impl, const char *dev_
 	}
 
 	*item = &private->parent;
+	lis_log_info("Sane: get_device(%s): OK", dev_id);
 	return LIS_OK;
 }
 
@@ -531,7 +537,7 @@ static void lis_sane_item_close(struct lis_item *self)
 	struct lis_sane_item *private = LIS_SANE_ITEM_PRIVATE(self);
 
 	cleanup_options(private);
-	lis_log_debug("sane_close()");
+	lis_log_info("Sane: item->close()");
 	free((void *)private->parent.name);
 	sane_close(private->handle);
 	FREE(private);
@@ -1098,6 +1104,8 @@ static enum lis_error lis_sane_scan_start(struct lis_item *self,
 	struct lis_sane_item *private = LIS_SANE_ITEM_PRIVATE(self);
 	SANE_Status sane_err;
 
+	lis_log_info("Sane: scan_start() ...");
+
 	memset(&private->session, 0, sizeof(private->session));
 	memcpy(&private->session.parent, &g_sane_scan_session_template,
 			sizeof(private->session.parent));
@@ -1114,6 +1122,7 @@ static enum lis_error lis_sane_scan_start(struct lis_item *self,
 		private->session.end_of_feed = 1;
 		return LIS_OK;
 	}
+	lis_log_info("Sane: scan_start() OK");
 	return sane_status_to_lis_error(sane_err);
 }
 
@@ -1126,14 +1135,22 @@ static int lis_sane_end_of_feed(struct lis_scan_session *session)
 		// and scan would loop forever
 		private->end_of_page = 0;
 	}
-	return private->end_of_feed;
+	if (private->end_of_feed) {
+		lis_log_info("Sane: end of feed");
+		return 1;
+	}
+	return 0;
 }
 
 
 static int lis_sane_end_of_page(struct lis_scan_session *session)
 {
 	struct lis_sane_scan_session *private = LIS_SANE_SCAN_SESSION_PRIVATE(session);
-	return private->end_of_page;
+	if (private->end_of_page) {
+		lis_log_info("Sane: end of page");
+		return 1;
+	}
+	return 0;
 }
 
 
@@ -1198,6 +1215,7 @@ static enum lis_error lis_sane_scan_read(
 static void lis_sane_cancel(struct lis_scan_session *session)
 {
 	struct lis_sane_scan_session *private = LIS_SANE_SCAN_SESSION_PRIVATE(session);
+	lis_log_info("Sane: session->cancel() (%d)", private->end_of_feed);
 	if (!private->end_of_feed) { // else, it's already cancelled
 		sane_cancel(private->item->handle);
 	}
