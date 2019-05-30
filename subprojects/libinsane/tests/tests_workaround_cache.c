@@ -279,7 +279,7 @@ static void test_cache_set_value_2(void)
 
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 1);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 0);
-	value.string = OPT_VALUE_SOURCE_ADF;
+	value.integer = 240;
 	err = opts[1]->fn.set_value(opts[1], value, &set_flags);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_EQUAL(
@@ -293,7 +293,7 @@ static void test_cache_set_value_2(void)
 	// since we got flag 'reload_options', this get_value() will go through
 	err = opts[1]->fn.get_value(opts[1], &value);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
-	LIS_ASSERT_EQUAL(strcmp(value.string, OPT_VALUE_SOURCE_ADF), 0);
+	LIS_ASSERT_EQUAL(value.integer, 240);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 3);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 1);
 

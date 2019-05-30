@@ -73,8 +73,8 @@ static int tests_init(void)
 		.desc = "source desc",
 		.capabilities = LIS_CAP_SW_SELECT,
 		.value = {
-			.type = LIS_TYPE_INTEGER,
-			.unit = LIS_UNIT_DPI,
+			.type = LIS_TYPE_STRING,
+			.unit = LIS_UNIT_NONE,
 		},
 		.constraint = {
 			.type = LIS_CONSTRAINT_LIST,
