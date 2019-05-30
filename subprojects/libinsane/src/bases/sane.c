@@ -383,7 +383,6 @@ static enum lis_error lis_sane_get_device(struct lis_api *impl, const char *dev_
 		return LIS_ERR_NO_MEM;
 	}
 	memcpy(&private->parent, &g_sane_item_template, sizeof(private->parent));
-	private->parent.name = strdup(dev_id);
 
 	lis_log_debug("sane_open() ...")
 	err = sane_status_to_lis_error(sane_open(dev_id, &private->handle));
@@ -393,6 +392,7 @@ static enum lis_error lis_sane_get_device(struct lis_api *impl, const char *dev_
 		return err;
 	}
 
+	private->parent.name = strdup(dev_id);
 	*item = &private->parent;
 	lis_log_info("Sane: get_device(%s): OK", dev_id);
 	return LIS_OK;

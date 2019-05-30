@@ -468,6 +468,10 @@ static int dumb_end_of_page(struct lis_scan_session *session)
 {
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
 
+	if (private->read_idx >= private->impl->scan.nb_reads) {
+		return 1;
+	}
+
 	if (private->impl->scan.read_contents[private->read_idx].nb_bytes == 0) {
 		return 1;
 	}
