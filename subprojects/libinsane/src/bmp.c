@@ -15,6 +15,7 @@
 
 // XXX(Jflesch): assuming Windows x86 --> little endian
 
+#define le16toh(v) (v)
 #define le32toh(v) (v)
 #define htole32(v) (v)
 #define htole16(v) (v)
