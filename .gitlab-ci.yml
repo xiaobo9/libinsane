@@ -16,15 +16,15 @@ image: debian:stable-slim
 
 .msys: &msys
   before_script:
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S make
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-cunit
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-doxygen
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-gcc
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-gobject-introspection
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-meson
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-python3-gobject
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-python3-pillow
-    - c:\msys32\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-vala
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S make
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-cunit
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-doxygen
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-gcc
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-gobject-introspection
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-meson
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-python3-gobject
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-python3-pillow
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-vala
 
 check:
   # We use buster so we have clang-tidy-7 available
@@ -89,8 +89,8 @@ test_hw_windows:
   # to ask pacman to install them anyway.
   <<: *msys
   script:
-    - c:\msys32\usr\bin\bash -lc "make install PREFIX=/mingw32"
-    - c:\msys32\usr\bin\bash -lc "make test_hw"
+    - c:\msys64\usr\bin\bash -lc "make install PREFIX=/mingw32"
+    - c:\msys64\usr\bin\bash -lc "make test_hw"
   artifacts:
     paths:
       - test_hw_out
