@@ -46,7 +46,7 @@ if ! rsync -rtz "${directory}/" "${DELIVERY_USER}@${DELIVERY_SERVER}:${DELIVERY_
 fi
 
 echo "Updating symlink 'latest': ${out_name} <-- ${DELIVERY_DOC_PATH}/libinsane/${latest_name}"
-if ! ssh "${DELIVERY_USER}@${DELIVERY_SERVER}" -- ln -fs \
+if ! ssh "${DELIVERY_USER}@${DELIVERY_SERVER}" -- ln -nfs \
     ${out_name} \
     ${DELIVERY_DOC_PATH}/libinsane/${latest_name} ; then
   echo ln failed
