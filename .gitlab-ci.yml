@@ -27,6 +27,9 @@ image: debian:stable-slim
     - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-vala
 
 check:
+  only:
+    - branches@World/OpenPaperwork/libinsane
+    - tags@World/OpenPaperwork/libinsane
   # We use buster so we have clang-tidy-7 available
   image: debian:buster-slim
   tags:
@@ -38,6 +41,9 @@ check:
     - make check
 
 test:
+  only:
+    - branches@World/OpenPaperwork/libinsane
+    - tags@World/OpenPaperwork/libinsane
   # WORKAROUND: valgrind from Debian stable doesn't work on armhf.
   image: debian:buster-slim
   tags:
@@ -49,6 +55,9 @@ test:
 
 
 doc:
+  only:
+    - branches@World/OpenPaperwork/libinsane
+    - tags@World/OpenPaperwork/libinsane
   image: debian:buster-slim
   tags:
     - linux
@@ -64,6 +73,9 @@ doc:
 
 
 test_hw_linux:
+  only:
+    - branches@World/OpenPaperwork/libinsane
+    - tags@World/OpenPaperwork/libinsane
   tags:
     - linux
     - testhw
@@ -78,6 +90,9 @@ test_hw_linux:
 
 
 test_hw_windows:
+  only:
+    - branches@World/OpenPaperwork/libinsane
+    - tags@World/OpenPaperwork/libinsane
   variables:
     MSYSTEM: "MINGW32"
     CHERE_INVOKING: "yes"
