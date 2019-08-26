@@ -159,7 +159,9 @@ static void tests_inactive(void)
 	LIS_ASSERT_EQUAL(err, LIS_ERR_ACCESS_DENIED);
 	value.integer = 200;
 	err = opts[0]->fn.set_value(opts[0], value, &set_flags);
-	LIS_ASSERT_EQUAL(err, LIS_ERR_ACCESS_DENIED);
+	// even if inactive, some variable can be written. See
+	// Canon Lide-220 option 'source'
+	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	item->close(item);
 	LIS_ASSERT_EQUAL(tests_cleanup(), 0);
