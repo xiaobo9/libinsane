@@ -29,32 +29,38 @@ identifier can then be used to access the device (with
 
 Libinsane provides an item tree (inspired by WIA2):
 
-- A device is a scanner device in its entirety.
-- A Source is scanner input. Some scanners have only one (usually a flatbed),
-  some have 2 or more (usually a flatbed and an automatic document feeder).
-- An item represents either a device or a source.
+- Items can be devices: A device is a scanner device in its entirety.
+- Items can be sources: A Source is scanner input. Some scanners have only
+  one (usually a flatbed), some have 2 or more (usually a flatbed and an
+  automatic document feeder).
+- Items can have other items as children: The children of device are its
+  sources. All root items are always devices. All their children are always
+  sources.
+- Root items (devices) provide children but children (sources) will always
+  return an empty list of children.
 
-All root items are always devices. All their children are always sources.
-
-All items provide a set of options. Root items provides children but children
-will always return an empty list of children.
+All items provide a set of options.
 
 
 #### Root item / scan device
 
-`implementation.get_device()` will return you a root item. Only this root item
-must be closed. When you close the root item, all the children are closed too.
-You're advised to get a device only just before wanting
-to configure and use it or list its options and close it as soon as you're
-done with it.
+`implementation.get_device()` will return you a root item (aka a device).
+When you're done scanning, only this root item will have to be closed.
+When you close the root item, all the children are closed too and must not
+be used anymore.
 
-`root.get_children()` will provide you all available sources.
+You're advised to get a device only just before wanting to configure and use
+it or list its options and close it as soon as you're done with it. It's not
+recommended nor tested to keep a device opened for a long time.
+
+`root.get_children()` will provide you with all the available sources of the
+device.
 
 
 #### Child item / scan source
 
 Usually you cannot scan using the root item. You should always set the options
-on the source (child item) you want to use.
+on the child item (source) you want to use and use that child.
 
 To simplify the use of root and children, all the options available on the
 root item are also made available on all the children.
@@ -62,10 +68,11 @@ root item are also made available on all the children.
 
 ### Setting the options
 
-Once you have found the child item that you want to use, you have to configure.
-Some options are read-only, some options can be modified. Some can have
-integers as values, some can have strings, etc. Some options have a constraint
-defining what values are allowed. This constraint can be a range or a list.
+Once you have found the child item (source) that you want to use, you have to
+configure it. Some options are read-only, some options can be modified. Some
+can have integers as values, some can have strings, etc. Some options have a
+constraint defining what values are allowed. This constraint can be a range or
+a list.
 
 Only a small subset of options are guaranteed to be found on any child item
 (inspired by [Sane](http://www.sane-project.org/sane2/0.08/doc014.html)):
@@ -89,13 +96,15 @@ Some options, while not guaranteed to be present, are available on most devices:
   - Guarantee: By default, those options will be set so the scanner scans
     the biggest area possible.
 
+Other options are device-dependant and driver-dependant.
+
 Once all the options are set, we can finally scan something.
 
 
 ### Scanning
 
-Using `item.scan_start()`, you can obtain a scan session. From a scan session,
-you can obtain one or more pages / scanner images.
+Using `item.scan_start()` on a child node, you can obtain a scan session.
+From a scan session, you can obtain one or more pages / scanner images.
 
 - `get_scan_parameters()` provides information regarding the page being scanned.
 - `scan_read()` returns the images as raw 24 pixels (even if scanning in

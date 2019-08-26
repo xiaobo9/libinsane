@@ -1,3 +1,11 @@
+2019/08/18 - 1.0.1:
+- Sane: make sure sane_cancel() is called at the end of all scans (required
+  by some drivers)
+- Sane: Fix memory leak when opening an invalid device. (thanks to
+  Elliott Sales de Andrade)
+- WIA/Twain: Fix reading bits-per-pixel from BMP header on big-endian CPU
+  (thanks to Elliott Sales de Andrade)
+
 2019/05/08 - 1.0:
 - TWAIN: Add support for frame options (tl-x, tl-y, br-x, br-y)
 - Sane: Fix: 'net' backend: when we get SANE_INFO_RELOAD_OPTIONS, we must call
