@@ -41,7 +41,10 @@ static enum lis_error set_value(struct lis_option_descriptor *self, union lis_va
 		}
 	}
 
-	if (!LIS_OPT_IS_READABLE(original) || !LIS_OPT_IS_WRITABLE(original)) {
+	// WORKAROUND(Jflesch): Do not check LIS_OPT_IS_READABLE() here
+	// Canon Lide 220 with Sane: option 'source' is marked as INACTIVE (!readable)
+	// but SW_SELECT (writable), and normalizers try to write this option.
+	if (!LIS_OPT_IS_WRITABLE(original)) {
 		lis_log_warning("set_value(%s) -> capabilities prevent setting the value",
 			self->name);
 		return LIS_ERR_ACCESS_DENIED;
