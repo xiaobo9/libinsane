@@ -53,6 +53,27 @@ static struct {
 		.compiled = 0,
 	},
 	{
+		// Sane + plustek (Canon CanoScan N1240U/LiDE30)
+		.regex = "^Normal(.*)",
+		.replacement = OPT_VALUE_SOURCE_FLATBED " (Normal)" REPLACE_STR,
+		.lowercase = 0,
+		.compiled = 0,
+	},
+	{
+		// Sane + plustek (Canon CanoScan N1240U/LiDE30)
+		.regex = "^Transparency(.*)",
+		.replacement = OPT_VALUE_SOURCE_FLATBED " (Transparency)" REPLACE_STR,
+		.lowercase = 0,
+		.compiled = 0,
+	},
+	{
+		// Sane + plustek (Canon CanoScan N1240U/LiDE30)
+		.regex = "^Negative(.*)",
+		.replacement = OPT_VALUE_SOURCE_FLATBED " (Negative)" REPLACE_STR,
+		.lowercase = 0,
+		.compiled = 0,
+	},
+	{
 		// Sane + Epson Perfection v19
 		.regex = "^document table(.*)",
 		.replacement = OPT_VALUE_SOURCE_FLATBED REPLACE_STR,

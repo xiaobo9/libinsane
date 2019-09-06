@@ -28,6 +28,7 @@ static int tests_sn_init(void)
 		{ .string = "Automatic document Feeder TULIPE", },
 		{ .string = "0000\\Root\\Flatbed MEH", },
 		{ .string = "Document Table YOP" },
+		{ .string = "Normal RABIT" },
 	};
 	static const struct lis_option_descriptor opt_source_template = {
 		.name = OPT_NAME_SOURCE,
@@ -106,7 +107,8 @@ static void tests_source_names(void)
 	LIS_ASSERT_EQUAL(strcmp(sources[4]->name, OPT_VALUE_SOURCE_ADF " TULIPE"), 0);
 	LIS_ASSERT_EQUAL(strcmp(sources[5]->name, OPT_VALUE_SOURCE_FLATBED " meh"), 0);
 	LIS_ASSERT_EQUAL(strcmp(sources[6]->name, OPT_VALUE_SOURCE_FLATBED " YOP"), 0);
-	LIS_ASSERT_EQUAL(sources[7], NULL);
+	LIS_ASSERT_EQUAL(strcmp(sources[7]->name, OPT_VALUE_SOURCE_FLATBED " (Normal) RABIT"), 0);
+	LIS_ASSERT_EQUAL(sources[8], NULL);
 
 	root->close(root);
 
