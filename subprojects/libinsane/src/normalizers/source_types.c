@@ -18,7 +18,7 @@ static struct {
 	int compiled;
 	regex_t preg;
 } g_source_type_mappings[] = {
-	{ .regex = "flatbed", .type = LIS_ITEM_FLATBED, .compiled = 0, },
+	{ .regex = ".*flatbed.*", .type = LIS_ITEM_FLATBED, .compiled = 0, },
 	{ .regex = ".*feeder.*", .type = LIS_ITEM_ADF, .compiled = 0 },
 	{ .regex = ".*adf.*", .type = LIS_ITEM_ADF, .compiled = 0 },
 	{ .regex = NULL },

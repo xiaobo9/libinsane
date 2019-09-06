@@ -22,7 +22,7 @@ static struct lis_api *g_st = NULL;
 static int tests_st_init(void)
 {
 	static const union lis_value opt_source_constraint[] = {
-		{ .string = OPT_VALUE_SOURCE_FLATBED, },
+		{ .string = OPT_VALUE_SOURCE_FLATBED " (something)", },
 		{ .string = OPT_VALUE_SOURCE_ADF, },
 		{ .string = "Automatic Document Feeder(left aligned)", } // Brother MFC-7360N
 	};
@@ -44,7 +44,7 @@ static int tests_st_init(void)
 		},
 	};
 	static const union lis_value opt_source_default = {
-		.string = OPT_VALUE_SOURCE_FLATBED
+		.string = OPT_VALUE_SOURCE_FLATBED " (something)"
 	};
 	enum lis_error err;
 
