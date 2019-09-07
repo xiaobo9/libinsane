@@ -14,6 +14,31 @@
 #define NAME "normalizer_resolution"
 #define MIN_RESOLUTION_INTERVAL 25
 
+static const union lis_value DEFAULT_CONSTRAINT[] = {
+	// same range as a simple Brother DS-620
+	{ .integer = 75, },
+	{ .integer = 100, },
+	{ .integer = 125, },
+	{ .integer = 150, },
+	{ .integer = 175, },
+	{ .integer = 200, },
+	{ .integer = 225, },
+	{ .integer = 250, },
+	{ .integer = 275, },
+	{ .integer = 300, },
+	{ .integer = 325, },
+	{ .integer = 350, },
+	{ .integer = 375, },
+	{ .integer = 400, },
+	{ .integer = 425, },
+	{ .integer = 450, },
+	{ .integer = 475, },
+	{ .integer = 500, },
+	{ .integer = 525, },
+	{ .integer = 550, },
+	{ .integer = 575, },
+	{ .integer = 600, },
+};
 
 static enum lis_error opt_get_value(struct lis_option_descriptor *self, union lis_value *int_value)
 {
@@ -208,9 +233,25 @@ static enum lis_error opt_desc_filter(
 	}
 
 	if (opt->constraint.type == LIS_CONSTRAINT_NONE) {
-		lis_log_error("Don't know how to fix constraint of option '" OPT_NAME_RESOLUTION "':"
-				" no constraint available");
-		return LIS_ERR_UNSUPPORTED;
+		if (opt->value.type != LIS_TYPE_INTEGER) {
+			lis_log_error(
+				"Don't know how to fix constraint of option '" OPT_NAME_RESOLUTION "':"
+				" no constraint available and cannot set default constraint list"
+				" because value type is not the one expected: %d != %d",
+				opt->value.type, LIS_TYPE_INTEGER
+			);
+			return LIS_ERR_UNSUPPORTED;
+		}
+		// XXX(Jflesch): See CANON Canon PIXMA MX520 Series
+		// https://openpaper.work/scannerdb/report/51/
+		lis_log_warning(
+			"Don't know how to fix constraint of option '" OPT_NAME_RESOLUTION "':"
+			" no constraint available. Will set DEFAULT CONSTRAINT LIST."
+		);
+		opt->constraint.type = LIS_CONSTRAINT_LIST;
+		opt->constraint.possible.list.nb_values = LIS_COUNT_OF(DEFAULT_CONSTRAINT);
+		opt->constraint.possible.list.values = (union lis_value *)DEFAULT_CONSTRAINT;
+		return LIS_OK;
 	}
 
 	free(lis_bw_item_get_user_ptr(item));

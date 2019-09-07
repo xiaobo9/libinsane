@@ -283,6 +283,62 @@ static void tests_resolution_double_range_getset(void)
 	g_res->cleanup(g_res);
 }
 
+
+static void tests_resolution_no_constraint(void)
+{
+	static const struct lis_option_descriptor opt_resolution = {
+		.name = OPT_NAME_RESOLUTION,
+		.title = "resolution title",
+		.desc = "resolution desc",
+		.capabilities = LIS_CAP_SW_SELECT,
+		.value = {
+			.type = LIS_TYPE_INTEGER,
+			.unit = LIS_UNIT_DPI,
+		},
+		.constraint = {
+			.type = LIS_CONSTRAINT_NONE,
+		},
+	};
+	static const union lis_value opt_resolution_default = {
+		.integer = 125,
+	};
+	struct lis_item *item = NULL;
+	struct lis_option_descriptor **opts = NULL;
+	enum lis_error err;
+
+	g_res = NULL;
+	err = lis_api_dumb(&g_dumb, "dummy0");
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	lis_dumb_set_nb_devices(g_dumb, 2);
+	lis_dumb_add_option(
+		g_dumb, &opt_resolution, &opt_resolution_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
+
+	err = lis_api_normalizer_resolution(g_dumb, &g_res);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = g_res->get_device(g_res, LIS_DUMB_DEV_ID_FIRST, &item);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = item->get_options(item, &opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	LIS_ASSERT_EQUAL(strcmp(opts[0]->name, OPT_NAME_RESOLUTION), 0);
+	LIS_ASSERT_EQUAL(opts[1], NULL);
+
+	LIS_ASSERT_EQUAL(opts[0]->value.type, LIS_TYPE_INTEGER);
+	LIS_ASSERT_EQUAL(opts[0]->constraint.type, LIS_CONSTRAINT_LIST);
+	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.nb_values, 22);
+	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[0].integer, 75);
+	LIS_ASSERT_EQUAL(opts[0]->constraint.possible.list.values[21].integer, 600);
+
+	item->close(item);
+	g_res->cleanup(g_res);
+}
+
+
 int register_tests(void)
 {
 	CU_pSuite suite = NULL;
@@ -299,7 +355,9 @@ int register_tests(void)
 			|| CU_add_test(suite, "tests_resolution_double_range()",
 				tests_resolution_double_range) == NULL
 			|| CU_add_test(suite, "tests_resolution_double_range_getset()",
-				tests_resolution_double_range_getset) == NULL) {
+				tests_resolution_double_range_getset) == NULL
+			|| CU_add_test(suite, "tests_resolution_no_constraint()",
+				tests_resolution_no_constraint) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}
