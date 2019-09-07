@@ -20,7 +20,7 @@ static struct lis_api *g_src = NULL;
 static struct lis_api *g_check = NULL;
 
 
-static int tests_init(int source_single_value, int source_inactive)
+static int tests_init(void)
 {
 	static const struct lis_option_descriptor opt_resolution_inactive = {
 		.name = OPT_NAME_RESOLUTION"_inactive",
@@ -66,50 +66,12 @@ static int tests_init(int source_single_value, int source_inactive)
 	};
 	static const union lis_value opt_source_constraint[] = {
 		{ .string = OPT_VALUE_SOURCE_FLATBED },
-		{ .string = OPT_VALUE_SOURCE_ADF },
-	};
-	static const union lis_value opt_source_constraint_single[] = {
-		{ .string = OPT_VALUE_SOURCE_FLATBED },
 	};
 	static const struct lis_option_descriptor opt_source = {
 		.name = OPT_NAME_SOURCE,
 		.title = "source title",
 		.desc = "source desc",
 		.capabilities = LIS_CAP_SW_SELECT,
-		.value = {
-			.type = LIS_TYPE_STRING,
-			.unit = LIS_UNIT_NONE,
-		},
-		.constraint = {
-			.type = LIS_CONSTRAINT_LIST,
-			.possible.list = {
-				.nb_values = LIS_COUNT_OF(opt_source_constraint),
-				.values = (union lis_value *)&opt_source_constraint,
-			},
-		},
-	};
-	static const struct lis_option_descriptor opt_source_single = {
-		.name = OPT_NAME_SOURCE,
-		.title = "source title",
-		.desc = "source desc",
-		.capabilities = LIS_CAP_SW_SELECT,
-		.value = {
-			.type = LIS_TYPE_STRING,
-			.unit = LIS_UNIT_NONE,
-		},
-		.constraint = {
-			.type = LIS_CONSTRAINT_LIST,
-			.possible.list = {
-				.nb_values = LIS_COUNT_OF(opt_source_constraint_single),
-				.values = (union lis_value *)&opt_source_constraint_single,
-			},
-		},
-	};
-	static const struct lis_option_descriptor opt_source_inactive = {
-		.name = OPT_NAME_SOURCE,
-		.title = "source title",
-		.desc = "source desc",
-		.capabilities = LIS_CAP_SW_SELECT | LIS_CAP_INACTIVE,
 		.value = {
 			.type = LIS_TYPE_STRING,
 			.unit = LIS_UNIT_NONE,
@@ -145,28 +107,10 @@ static int tests_init(int source_single_value, int source_inactive)
 		g_dumb, &opt_resolution_readonly, &opt_resolution_readonly_default,
 		LIS_SET_FLAG_MUST_RELOAD_PARAMS
 	);
-	if (source_single_value) {
-		lis_dumb_add_option(
-			g_dumb,
-			&opt_source_single,
-			&opt_source_default,
-			LIS_SET_FLAG_MUST_RELOAD_PARAMS
-		);
-	} else if (source_inactive) {
-		lis_dumb_add_option(
-			g_dumb,
-			&opt_source_inactive,
-			&opt_source_default,
-			LIS_SET_FLAG_MUST_RELOAD_PARAMS
-		);
-	} else {
-		lis_dumb_add_option(
-			g_dumb,
-			&opt_source,
-			&opt_source_default,
-			LIS_SET_FLAG_MUST_RELOAD_PARAMS
-		);
-	}
+	lis_dumb_add_option(
+		g_dumb, &opt_source, &opt_source_default,
+		LIS_SET_FLAG_MUST_RELOAD_PARAMS
+	);
 
 	err = lis_api_normalizer_min_one_source(g_dumb, &g_src);
 	if (LIS_IS_ERROR(err)) {
@@ -193,7 +137,7 @@ static void tests_inactive(void)
 	union lis_value value;
 	int set_flags;
 
-	LIS_ASSERT_EQUAL(tests_init(0 /* source_single_value */, 0 /* source_inactive */), 0);
+	LIS_ASSERT_EQUAL(tests_init(), 0);
 
 	err = lis_api_workaround_check_capabilities(g_src, &g_check);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -233,7 +177,7 @@ static void tests_read_only(void)
 	union lis_value value;
 	int set_flags;
 
-	LIS_ASSERT_EQUAL(tests_init(0 /* source_single_value */, 0 /* source_inactive */), 0);
+	LIS_ASSERT_EQUAL(tests_init(), 0);
 
 	err = lis_api_workaround_check_capabilities(g_src, &g_check);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -265,7 +209,7 @@ static void tests_single_value(void)
 	union lis_value value;
 	int set_flags;
 
-	LIS_ASSERT_EQUAL(tests_init(1 /* source_single_value */, 0 /* source_inactive */), 0);
+	LIS_ASSERT_EQUAL(tests_init(), 0);
 
 	err = lis_api_workaround_check_capabilities(g_src, &g_check);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -293,48 +237,6 @@ static void tests_single_value(void)
 }
 
 
-static void tests_inactive_source(void)
-{
-	enum lis_error err;
-	struct lis_item *item;
-	struct lis_item **children;
-	struct lis_option_descriptor **opts;
-	union lis_value value;
-	int set_flags;
-
-	LIS_ASSERT_EQUAL(tests_init(0 /* source_single_value */, 1 /* source_inactive */), 0);
-
-	err = lis_api_workaround_check_capabilities(g_src, &g_check);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = g_check->get_device(g_check, LIS_DUMB_DEV_ID_FIRST, &item);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	err = item->get_children(item, &children);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	LIS_ASSERT_NOT_EQUAL(children[0], NULL);
-	LIS_ASSERT_EQUAL(children[1], NULL);
-
-	err = children[0]->get_options(children[0], &opts);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	LIS_ASSERT_EQUAL(strcmp(opts[0]->name, OPT_NAME_RESOLUTION"_inactive"), 0);
-	err = opts[0]->fn.get_value(opts[0], &value);
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-	LIS_ASSERT_EQUAL(value.integer, 120);
-
-	value.integer = 200;
-	err = opts[0]->fn.set_value(opts[0], value, &set_flags);
-	// even if inactive, some variable can be written. See
-	// Canon Lide-220 option 'source'
-	LIS_ASSERT_EQUAL(err, LIS_OK);
-
-	item->close(item);
-	LIS_ASSERT_EQUAL(tests_cleanup(), 0);
-}
-
-
 int register_tests(void)
 {
 	CU_pSuite suite = NULL;
@@ -347,8 +249,7 @@ int register_tests(void)
 
 	if (CU_add_test(suite, "inactive", tests_inactive) == NULL
 			|| CU_add_test(suite, "read_only", tests_read_only) == NULL
-			|| CU_add_test(suite, "single_value", tests_single_value) == NULL
-			|| CU_add_test(suite, "inactive_source", tests_inactive_source) == NULL) {
+			|| CU_add_test(suite, "single_value", tests_single_value) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}

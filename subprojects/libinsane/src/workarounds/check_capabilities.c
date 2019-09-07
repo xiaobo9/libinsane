@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <strings.h>
-
 #include <libinsane/capi.h>
-#include <libinsane/constants.h>
 #include <libinsane/log.h>
 #include <libinsane/workarounds.h>
 #include <libinsane/util.h>
@@ -60,79 +56,10 @@ static enum lis_error set_value(struct lis_option_descriptor *self, union lis_va
 
 static enum lis_error opt_filter(struct lis_item *item, struct lis_option_descriptor *desc, void *user_data)
 {
-	void *check_inactive; // actually a boolean
-
 	LIS_UNUSED(user_data);
-
-	check_inactive = lis_bw_item_get_user_ptr(item);
-
+	LIS_UNUSED(item);
 	desc->fn.set_value = set_value;
-	if (check_inactive) {
-		desc->fn.get_value = get_value;
-	}
-	return LIS_OK;
-}
-
-
-static enum lis_error item_filter(struct lis_item *item, int root, void *user_data)
-{
-	enum lis_error err;
-	struct lis_option_descriptor **opts;
-	struct lis_item *original_item;
-	int i;
-
-	LIS_UNUSED(user_data);
-	LIS_UNUSED(root);
-
-	lis_bw_item_set_user_ptr(item, (void*)0x1);
-
-	original_item = lis_bw_get_original_item(item);
-
-	err = original_item->get_options(original_item, &opts);
-	if (!LIS_IS_OK(err)) {
-		lis_log_warning("Failed to get options. Assuming INACTIVE flags are correctly set");
-		return LIS_OK;
-	}
-
-	for (i = 0 ; opts[i] != NULL ; i++) {
-		if (strcasecmp(opts[i]->name, OPT_NAME_SOURCE) == 0) {
-			if (!(opts[i]->capabilities & LIS_CAP_INACTIVE)) {
-				lis_log_info(
-						"Option 'source' marked as ACTIVE."
-						" Assuming flags INACTIVE are correctly set on other options"
-						);
-				return LIS_OK;
-			}
-
-			if (opts[i]->constraint.type != LIS_CONSTRAINT_LIST) {
-				lis_log_warning(
-						"Unexpected constraint type for option 'source' (%d)."
-						" Assuming flags INACTIVE are correctly set on other options",
-						opts[i]->constraint.type
-						);
-				return LIS_OK;
-			}
-
-			if (opts[i]->constraint.possible.list.nb_values <= 1) {
-				lis_log_warning(
-						"Option 'source' has only one possible value."
-						" Assuming flags INACTIVE are correctly set on other options"
-						);
-				return LIS_OK;
-			}
-
-			lis_log_warning(
-					"Option 'source' is marked INACTIVE but has many possible"
-					" values. Assuming the driver doesn't set the flag INACTIVE"
-					" correctly."
-					);
-
-			lis_bw_item_set_user_ptr(item, NULL);
-			return LIS_OK;
-		}
-	}
-
-	lis_log_warning("Failed to find option 'source'. Assuming INACTIVE flags are correctly set");
+	desc->fn.get_value = get_value;
 	return LIS_OK;
 }
 
@@ -143,7 +70,6 @@ enum lis_error lis_api_workaround_check_capabilities(struct lis_api *to_wrap, st
 
 	err = lis_api_base_wrapper(to_wrap, impl, NAME);
 	if (LIS_IS_OK(err)) {
-		lis_bw_set_item_filter(*impl, item_filter, NULL);
 		lis_bw_set_opt_desc_filter(*impl, opt_filter, NULL);
 	}
 
