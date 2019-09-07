@@ -75,7 +75,7 @@ static int one_end_of_feed(struct lis_scan_session *self)
 			lis_log_warning(
 				"Unexpected source type: %d."
 				" Don't know whether we must stop at the"
-				" first page or not assuming the driver works",
+				" first page or assume the driver works as expected",
 				private->item->type
 			);
 			break;
