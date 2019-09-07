@@ -129,6 +129,9 @@ LibinsaneCapability libinsane_option_descriptor_get_capabilities(LibinsaneOption
 	if (cap & LIS_CAP_SW_SELECT) {
 		out |= LIBINSANE_CAPABILITY_SW_SELECT;
 	}
+	if (cap & LIS_CAP_INACTIVE) {
+		out |= LIBINSANE_CAPABILITY_INACTIVE;
+	}
 	return out;
 }
 
