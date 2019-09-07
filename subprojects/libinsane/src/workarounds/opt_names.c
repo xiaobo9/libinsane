@@ -41,13 +41,38 @@ static enum lis_error opt_desc_filter(
 	)
 {
 	const struct opt_name_mapping *mapping;
+	enum lis_error err;
+	struct lis_option_descriptor **opt_descs;
+	int opt_idx;
+	struct lis_item *original_item;
 
-	LIS_UNUSED(item);
 	LIS_UNUSED(user_data);
 
 	mapping = get_mapping(desc->name);
 	if (mapping == NULL) {
 		return LIS_OK;
+	}
+
+	original_item = lis_bw_get_original_item(item);
+	err = original_item->get_options(original_item, &opt_descs);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_warning(
+			"Failed to get options: %d, %s. Assuming alias option doesn't exist yet",
+			err, lis_strerror(err)
+		);
+	} else {
+		// XXX(Jflesch):
+		// Canon PIXMA MX520 Series + Sane: provide both 'scan-resolution'
+		// and 'resolution'. 'scan-resolution' can safely be ignored.
+		for (opt_idx = 0 ; opt_descs[opt_idx] != NULL ; opt_idx++) {
+			if (strcasecmp(opt_descs[opt_idx]->name, mapping->replacement) == 0) {
+				lis_log_info(
+					"Got both option '%s'and '%s'. Not making any alias",
+					desc->name, mapping->replacement
+				);
+				return LIS_OK;
+			}
+		}
 	}
 
 	lis_log_debug("Renaming option '%s' into '%s'", desc->name, mapping->replacement);
