@@ -104,6 +104,13 @@ extern enum lis_error lis_api_workaround_opt_values(
  * This workaround makes sure the value provided matches the only one possible
  * and doesn't even set it.
  *
+ * ## Ignore the fact that option is inactive if 'source' is inactive
+ *
+ * - API: Sane
+ * - Seen on: [Canon LiDE 220](https://openpaper.work/scannerdb/report/295/)
+ *
+ * Some scanners just flag all options as inactive
+ *
  * \param[in] to_wrap Base implementation to wrap.
  * \param[out] out_impl Implementation of the out_impl including the workaround.
  */
