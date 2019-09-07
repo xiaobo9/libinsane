@@ -305,6 +305,20 @@ static enum lis_error set_source(struct lis_sn_item_private *private)
 	if (LIS_IS_OK(err)) {
 		lis_log_info("Source set to '%s'", private->item.name);
 	} else {
+		if (!LIS_OPT_IS_READABLE(opts[source_opt_idx])
+				|| !LIS_OPT_IS_WRITABLE(opts[source_opt_idx])) {
+			// XXX(Jflesch): Sane + Canon LiDE 220 (genesys)
+			// https://openpaper.work/en-us/scanner_db/report/318/
+			// We have 2 possible sources, the option is SW_SELECT,
+			// but inactive, so we can't select any ...
+			lis_log_warning(
+				"Failed to set source: 0x%X, %s."
+				" Option is inactive/read-only so we will try to keep going anyway.",
+				err, lis_strerror(err)
+			);
+			return LIS_OK;
+		}
+
 		lis_log_error("Failed to set source: 0x%X, %s", err, lis_strerror(err));
 	}
 	return err;
