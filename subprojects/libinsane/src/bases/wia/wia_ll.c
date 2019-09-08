@@ -524,7 +524,7 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 		{
 			.ulKind = PRSPEC_PROPID,
 			.propid = LIS_WIA_IPA_ITEM_CATEGORY,
-		}
+		},
 	};
 	PROPVARIANT output[LIS_COUNT_OF(input)] = {0};
 
@@ -592,11 +592,21 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 			|| compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER_BACK)) {
 		private->parent.type = LIS_ITEM_ADF;
 	} else {
-		private->parent.type = LIS_ITEM_UNIDENTIFIED;
+		// XXX(Jflesch): On the Canon Pixma MG6850, this the item
+		// '0000\\Root\\Auto'. It doesn't provide any of the required options
+		// for Libinsane (xres, yres, etc). --> We want to drop it.
+		// https://openpaper.work/scannerdb/report/313/
+		// This is unfortunately the best way I've found to drop it.
+		// I hope it won't drop any other source that could be used with
+		// Libinsane :/
 		lis_log_warning(
-			"Unknown source type for child '%s'",
+			"Unknown source type for child '%s'. Ignoring it",
 			private->parent.name
 		);
+		private->wia_props->lpVtbl->Release(private->wia_props);
+		private->wia_props = NULL;
+		err = LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
+		goto err;
 	}
 
 	err = LIS_OK;
