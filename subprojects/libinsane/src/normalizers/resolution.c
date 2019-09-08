@@ -242,8 +242,6 @@ static enum lis_error opt_desc_filter(
 			);
 			return LIS_ERR_UNSUPPORTED;
 		}
-		// XXX(Jflesch): See CANON Canon PIXMA MX520 Series
-		// https://openpaper.work/scannerdb/report/51/
 		lis_log_warning(
 			"Don't know how to fix constraint of option '" OPT_NAME_RESOLUTION "':"
 			" no constraint available. Will set DEFAULT CONSTRAINT LIST."
