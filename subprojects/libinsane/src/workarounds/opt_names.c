@@ -123,7 +123,7 @@ static enum lis_error opt_desc_filter(
 }
 
 
-void on_close_item(struct lis_item *item, int root, void *user_data)
+static void on_close_item(struct lis_item *item, int root, void *user_data)
 {
 	int *enabled_mappings;
 
