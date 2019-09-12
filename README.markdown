@@ -1,12 +1,18 @@
 Libinsane
 ---------
 
-Libinsane is *the* library to access scanners on both Linux and Windows. It's
-cross-platform, cross-programming languages, cross-scanners :-). It takes care
-of all the quirks of all the platforms and scanners.
+Libinsane is *the* library to access scanners on both Linux and Windows.
 
-API is also designed so the application can display the scan as it goes if
-it wishes to.
+Its main features are:
+- Cross-platform: tested on Linux and Windows.
+- Cross-API: supports Sane (Linux), WIA2 (Windows) and TWAIN (Windows)
+- Cross-scanners: takes care of all the quirks of all the platforms and
+  scanners to provide a consistent behaviour everywhere.
+- Cross-programming languages: Libinsane a pure C library. It is provided
+  with Libinsane-GObject that acts as bindings for many programming.
+  languages thanks to [GObject Introspection](https://gi.readthedocs.io/en/latest/).
+- Returns the scan as it goes: whenever possible, the image returned by the
+  scanner is returned to the application as the scan goes.
 
 It has however some limitations:
 - It is only designed to work with *scanners*, not webcams, not USB keys, etc
