@@ -26,7 +26,7 @@ Its main features are:
   the strict minimum of runtime dependencies. Only Libinsane-Gobject depends
   on the [GLib](https://developer.gnome.org/glib/).
 
-It has however some limitations:
+However it has some limitations:
 - It is only designed to work with *scanners*, not webcams, not USB keys, etc
   (think paper-eaters only)
 - TWAIN API or drivers may display some dialogs. Libinsane cannot prevent them.
