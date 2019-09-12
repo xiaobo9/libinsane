@@ -4,15 +4,25 @@ Libinsane
 Libinsane is *the* library to access scanners on both Linux and Windows.
 
 Its main features are:
-- Cross-platform: tested on Linux and Windows.
-- Cross-API: supports Sane (Linux), WIA2 (Windows) and TWAIN (Windows)
-- Cross-scanners: takes care of all the quirks of all the platforms and
-  scanners to provide a consistent behaviour everywhere.
-- Cross-programming languages: Libinsane a pure C library. It is provided
-  with Libinsane-GObject that acts as bindings for many programming.
-  languages thanks to [GObject Introspection](https://gi.readthedocs.io/en/latest/).
+- Cross-platform: tested on Linux and Windows,
+  [by CI](https://gitlab.gnome.org/World/OpenPaperwork/libinsane/pipelines) and
+  [by users](https://openpaper.work/scanner_db/).
+- [Cross-API](https://doc.openpaper.work/libinsane/latest/libinsane/scan_apis.html):
+  supports Sane (Linux), WIA2 (Windows) and TWAIN (Windows)
+- Cross-scanners: takes care of all the
+  [quirks](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds.html)
+  of all the platforms and scanners to provide a
+  [consistent behaviour](https://doc.openpaper.work/libinsane/latest/libinsane/behavior_normalizations.html)
+  everywhere.
+- Cross-programming languages:
+  [Libinsane-GObject](https://doc.openpaper.work/libinsane/latest/libinsane-gobject/index.html)
+  provides bindings for many programming languages thanks to
+  [GObject Introspection](https://gi.readthedocs.io/en/latest/).
 - Returns the scan as it goes: whenever possible, the image returned by the
   scanner is returned to the application as the scan goes.
+- Very few runtime dependencies: Libinsane itself is a pure C library with
+  the strict minimum of runtime dependencies. Only Libinsane-Gobject depends
+  on the [GLib](https://developer.gnome.org/glib/).
 
 It has however some limitations:
 - It is only designed to work with *scanners*, not webcams, not USB keys, etc
