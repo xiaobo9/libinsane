@@ -16,7 +16,9 @@ Its main features are:
   everywhere.
 - Cross-programming languages:
   [Libinsane-GObject](https://doc.openpaper.work/libinsane/latest/libinsane-gobject/index.html)
-  provides bindings for many programming languages thanks to
+  provides bindings for
+  [many programming languages](https://wiki.gnome.org/Projects/GObjectIntrospection/Users)
+  (Python, Java, Ruby, etc) thanks to
   [GObject Introspection](https://gi.readthedocs.io/en/latest/).
 - Returns the scan as it goes: whenever possible, the image returned by the
   scanner is returned to the application as the scan goes.
