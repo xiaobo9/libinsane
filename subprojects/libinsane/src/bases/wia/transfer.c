@@ -1012,9 +1012,11 @@ static HRESULT WINAPI wia_stream_seek(
 
 	switch(dwOrigin) {
 		case STREAM_SEEK_SET:
-			if (dlibMove.QuadPart == 0 && self->scan.written == 0) {
+			if (dlibMove.QuadPart == self->scan.written) {
 				/* Epson WorkForce ES-300W */
-				plibNewPosition->QuadPart = 0;
+				/* HP Photosmart C4200 */
+				/* Epson Perfection V30/v300 */
+				plibNewPosition->QuadPart = dlibMove.QuadPart;
 				return S_OK;
 			}
 			break;
