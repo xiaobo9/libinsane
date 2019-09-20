@@ -129,7 +129,7 @@ pacman -S \
         mingw-w64-i686-vala
 ```
 
-If you plan on compiling your program as a 32bits executable, you just
+If you plan on compiling your program as a 64bits executable, you just
 have to replace all the `i686` by `x86_64`.
 
 
