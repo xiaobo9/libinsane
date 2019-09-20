@@ -89,7 +89,7 @@ sudo make uninstall
 
 If you do not wish to install Libinsane system-wide, you can use the script
 `activate_test_env.sh`. It will set all the environment variables required
-so you program can find Libinsane.
+so your program can find Libinsane.
 
 ```
 cd libinsane
