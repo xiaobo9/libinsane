@@ -121,7 +121,7 @@ black&white or grayscale).
   cancel a scan while it's running, you're advised to simply let it end.
   The session cannot be used once this function has been called.
 
-Those function are intended to be called in the following order:
+Those functions are intended to be called in the following order:
 
 ```
 session = item.scan_start()
