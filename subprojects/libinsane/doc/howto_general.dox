@@ -6,7 +6,7 @@
 Libinsane provides a single API but
 \ref structure "has many implementations for it". Most of the time, you will
 only want the implementation "safebet". It is a composition of many other
-implementations that will provide you a consistent behaviour across all
+implementations that will provide a consistent behaviour across all
 platform and devices.
 
 You're advised to get an implementation when your application starts
@@ -44,7 +44,10 @@ All items provide a set of options.
 
 #### Root item / scan device
 
-`implementation.get_device()` will return you a root item (aka a device).
+`implementation.list_devices()` will return you a list of device name and ID.
+Depending of the environment, this function can take up to 30 seconds.
+
+`implementation.get_device(device_id)` will return a root item (aka a device).
 When you're done scanning, only this root item will have to be closed.
 When you close the root item, all the children are closed too and must not
 be used anymore.
@@ -53,8 +56,9 @@ You're advised to get a device only just before wanting to configure and use
 it or list its options and close it as soon as you're done with it. It's not
 recommended nor tested to keep a device opened for a long time.
 
-`root.get_children()` will provide you with all the available sources of the
-device.
+Note that `implementation.get_device()` may take a few seconds.
+
+`root.get_children()` will return all the available sources of the device.
 
 
 #### Child item / scan source
@@ -78,7 +82,7 @@ Only a small subset of options are guaranteed to be found on any child item
 (inspired by [Sane](http://www.sane-project.org/sane2/0.08/doc014.html)):
 
 - `mode`: value is guaranteed to be a string. guaranteed possible values:
-  `Color`, `LineArt` (black & white), `Gray (grayscale)
+  `Color`, `LineArt` (black & white), `Gray (grayscale)`
 - `resolution`: value is guaranteed to be an integer. Constraint is guaranteed
   to be expressed as a list of integer values.
 
