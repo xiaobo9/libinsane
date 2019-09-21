@@ -360,7 +360,9 @@ enum lis_error lis_api_dumb(struct lis_api **out_impl, const char *name)
 }
 
 
-void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices)
+void lis_dumb_set_nb_devices_with_type(
+		struct lis_api *self, int nb_devices, enum lis_item_type item_type
+	)
 {
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
 	int i;
@@ -384,12 +386,17 @@ void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices)
 	for (i = 0 ; i < nb_devices ; i++) {
 		item = calloc(1, sizeof(struct lis_dumb_item));
 		memcpy(&item->base, &g_dumb_item_template, sizeof(item->base));
+		item->base.type = item_type;
 		item->impl = private;
 		item->dev_id = private->descs[i]->dev_id;
 		private->devices[i] = item;
 	}
 }
 
+void lis_dumb_set_nb_devices(struct lis_api *self, int nb_devices)
+{
+	lis_dumb_set_nb_devices_with_type(self, nb_devices, LIS_ITEM_UNIDENTIFIED);
+}
 
 void lis_dumb_set_dev_descs(struct lis_api *self, struct lis_device_descriptor **descs)
 {

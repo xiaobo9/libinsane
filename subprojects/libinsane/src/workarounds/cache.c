@@ -416,6 +416,7 @@ static enum lis_error cache_get_children(
 		);
 		private->children[i].impl = private->impl;
 		private->children[i].parent.name = children[i]->name;
+		private->children[i].parent.type = children[i]->type;
 		private->children[i].wrapped = children[i];
 		private->children[i].refcount = 1;
 		private->children_ptrs[i] = &private->children[i].parent;
@@ -573,6 +574,7 @@ static enum lis_error cache_get_device(
 		return err;
 	}
 	item->parent.name = item->wrapped->name;
+	item->parent.type = item->wrapped->type;
 
 	add_device(private, item);
 

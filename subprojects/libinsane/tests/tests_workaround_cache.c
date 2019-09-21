@@ -77,7 +77,7 @@ static int tests_cache_init(void)
 		return -1;
 	}
 
-	lis_dumb_set_nb_devices(g_dumb, 2);
+	lis_dumb_set_nb_devices_with_type(g_dumb, 2, LIS_ITEM_ADF);
 	lis_dumb_add_option(
 		g_dumb, &opt_source_template, &opt_source_default,
 		LIS_SET_FLAG_MUST_RELOAD_PARAMS
@@ -130,6 +130,8 @@ static void test_cache_list_options(void)
 	);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(device, NULL);
+
+    LIS_ASSERT_EQUAL(device->type, LIS_ITEM_ADF);
 
 	err = device->get_children(device, &sources);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));

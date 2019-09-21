@@ -76,7 +76,7 @@ static enum lis_error item_filter(struct lis_item *item, int root, void *user_da
 	LIS_UNUSED(user_data);
 
 	if (item->type != LIS_ITEM_UNIDENTIFIED) {
-		lis_log_debug("Item '%s' has already a type: %d'", item->name, item->type);
+		lis_log_info("Item '%s' has already a type: %d'", item->name, item->type);
 		return LIS_OK;
 	}
 

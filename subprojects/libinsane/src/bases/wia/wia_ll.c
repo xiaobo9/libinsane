@@ -586,10 +586,12 @@ static enum lis_error fill_in_item_infos(struct wiall_item_private *private)
 		err = LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
 		goto err;
 	} else if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FLATBED)) {
+		lis_log_info("Child '%s' is a flatbed", private->parent.name);
 		private->parent.type = LIS_ITEM_FLATBED;
 	} else if (compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER)
 			|| compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER_FRONT)
 			|| compare_guid(output[1].puuid, &LIS_WIA_CATEGORY_FEEDER_BACK)) {
+		lis_log_info("Child '%s' is an ADF", private->parent.name);
 		private->parent.type = LIS_ITEM_ADF;
 	} else {
 		// XXX(Jflesch): On the Canon Pixma MG6850, this the item
