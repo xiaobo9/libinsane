@@ -352,7 +352,7 @@ static void tests_sane_scan_multiple(void)
 	} while (!session->end_of_feed(session));
 	/* number of pages returned depends whether the test "tests_sane_scan_single"
 	 * was run before this one or not. Nevermind the fact that we changed source ... */
-	LIS_ASSERT_TRUE(nb_pages == 8 || nb_pages == 10);
+	LIS_ASSERT_TRUE(nb_pages == 9 || nb_pages == 10);
 
 	/* set resolution back to default for other tests */
 	value.dbl = 100.0;

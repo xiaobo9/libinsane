@@ -40,6 +40,7 @@ struct lis_sane_scan_session
 	struct lis_scan_session parent;
 	struct lis_sane_item *item;
 
+	int need_sane_start;
 	int end_of_page;
 	int end_of_feed;
 };
@@ -1111,6 +1112,7 @@ static enum lis_error lis_sane_scan_start(struct lis_item *self,
 			sizeof(private->session.parent));
 	private->session.item = private;
 	*session = &private->session.parent;
+	private->session.need_sane_start = 0;;
 
 	lis_log_debug("sane_start() ...");
 	sane_err = sane_start(private->handle);
@@ -1128,15 +1130,57 @@ static enum lis_error lis_sane_scan_start(struct lis_item *self,
 }
 
 
+static void do_sane_start(struct lis_scan_session *session)
+{
+	SANE_Status sane_err;
+	enum lis_error err;
+	struct lis_sane_scan_session *private = LIS_SANE_SCAN_SESSION_PRIVATE(session);
+
+	if (!private->need_sane_start) {
+		return;
+	}
+
+	private->need_sane_start = 0;
+
+	lis_log_debug("sane_start() ...");
+	sane_err = sane_start(private->item->handle);
+	lis_log_debug("sane_start(): %d", sane_err);
+	if (sane_err == SANE_STATUS_EOF || sane_err == SANE_STATUS_NO_DOCS) {
+		lis_log_warning("sane_start() returned EOF (%d) --> No document in the feeder",
+				sane_err);
+		private->end_of_feed = 1;
+		sane_cancel(private->item->handle);
+		return;
+	}
+
+	err = sane_status_to_lis_error(sane_err);
+	if (LIS_IS_ERROR(err)) {
+		// WORKAROUND(Jflesch): Epson XP-425:
+		// Only has a Flatbed. First call to sane_start() + sane_read()
+		// work fine. Second call sane_start() return .. I/O error.
+		// Unfortunately, this can hardly be managed in a dedicated
+		// workaround reliably.
+		lis_log_warning("sane_start() failed: 0x%X, %s (assuming end of feed)",
+			err, lis_strerror(err));
+		private->end_of_feed = 1;
+		sane_cancel(private->item->handle);
+	}
+}
+
+
+
 static int lis_sane_end_of_feed(struct lis_scan_session *session)
 {
 	struct lis_sane_scan_session *private = LIS_SANE_SCAN_SESSION_PRIVATE(session);
+
+	if (!private->end_of_feed) {
+		do_sane_start(session);
+	}
 	if (!private->end_of_feed) {
 		// otherwise the next call to end_of_page() would return 1
 		// and scan would loop forever
 		private->end_of_page = 0;
-	}
-	if (private->end_of_feed) {
+	} else {
 		lis_log_info("Sane: end of feed");
 		return 1;
 	}
@@ -1154,7 +1198,6 @@ static int lis_sane_end_of_page(struct lis_scan_session *session)
 	return 0;
 }
 
-
 static enum lis_error lis_sane_scan_read(
 		struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
 	)
@@ -1163,6 +1206,12 @@ static enum lis_error lis_sane_scan_read(
 	SANE_Int len = 0;
 	struct lis_sane_scan_session *private = LIS_SANE_SCAN_SESSION_PRIVATE(session);
 	enum lis_error err;
+
+	do_sane_start(session);
+
+	if (private->end_of_feed) {
+		return LIS_OK;
+	}
 
 	lis_log_debug("sane_read() ...");
 	sane_err = sane_read(private->item->handle, out_buffer, (int)(*buffer_size), &len);
@@ -1177,30 +1226,7 @@ static enum lis_error lis_sane_scan_read(
 			return LIS_OK;
 		case SANE_STATUS_EOF:
 			private->end_of_page = 1;
-
-			lis_log_debug("sane_start() ...");
-			sane_err = sane_start(private->item->handle);
-			lis_log_debug("sane_start(): %d", sane_err);
-			if (sane_err == SANE_STATUS_EOF || sane_err == SANE_STATUS_NO_DOCS) {
-				lis_log_warning("sane_start() returned EOF (%d) --> No document in the feeder",
-						sane_err);
-				private->end_of_feed = 1;
-				sane_cancel(private->item->handle);
-				return LIS_OK;
-			}
-
-			err = sane_status_to_lis_error(sane_err);
-			if (LIS_IS_ERROR(err)) {
-				// WORKAROUND(Jflesch): Epson XP-425:
-				// Only has a Flatbed. First call to sane_start() + sane_read()
-				// work fine. Second call sane_start() return .. I/O error.
-				// Unfortunately, this can hardly be managed in a dedicated
-				// workaround reliably.
-				lis_log_warning("sane_start() failed: 0x%X, %s (assuming end of feed)",
-					err, lis_strerror(err));
-				private->end_of_feed = 1;
-				sane_cancel(private->item->handle);
-			}
+			private->need_sane_start = 1;
 			return LIS_OK;
 		case SANE_STATUS_NO_DOCS:
 			private->end_of_page = 1;
