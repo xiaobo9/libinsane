@@ -133,7 +133,7 @@ static void tests_xpos_xextent(void)
 		.constraint = {
 			.type = LIS_CONSTRAINT_RANGE,
 			.possible.range = {
-				.min.integer = 0,
+				.min.integer = 10,
 				.max.integer = 250,
 				.interval.integer = 1,
 			},
@@ -155,7 +155,7 @@ static void tests_xpos_xextent(void)
 			.type = LIS_CONSTRAINT_RANGE,
 			.possible.range = {
 				.min.integer = 50,
-				.max.integer = 250,
+				.max.integer = 500,
 				.interval.integer = 1,
 			},
 		},
@@ -197,6 +197,16 @@ static void tests_xpos_xextent(void)
 	LIS_ASSERT_EQUAL(strcmp(opts[2]->name, OPT_NAME_TL_X), 0);
 	LIS_ASSERT_EQUAL(strcmp(opts[3]->name, OPT_NAME_BR_X), 0);
 	LIS_ASSERT_EQUAL(opts[4], NULL);
+
+	LIS_ASSERT_EQUAL(opts[2]->constraint.type, LIS_CONSTRAINT_RANGE);
+	LIS_ASSERT_EQUAL(opts[2]->constraint.possible.range.min.integer, 10);
+	LIS_ASSERT_EQUAL(opts[2]->constraint.possible.range.max.integer, 250);
+	LIS_ASSERT_EQUAL(opts[2]->constraint.possible.range.interval.integer, 1);
+
+	LIS_ASSERT_EQUAL(opts[3]->constraint.type, LIS_CONSTRAINT_RANGE);
+	LIS_ASSERT_EQUAL(opts[3]->constraint.possible.range.min.integer, 50);
+	LIS_ASSERT_EQUAL(opts[3]->constraint.possible.range.max.integer, 500);
+	LIS_ASSERT_EQUAL(opts[3]->constraint.possible.range.interval.integer, 1);
 
 	err = opts[2]->fn.get_value(opts[2], &value);
 	LIS_ASSERT_EQUAL(err, LIS_OK);

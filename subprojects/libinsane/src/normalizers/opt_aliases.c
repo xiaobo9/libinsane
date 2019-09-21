@@ -17,6 +17,8 @@ struct alias
 		ALIAS_REQ_ALL_OPTIONS,
 	} requires;
 
+	int constraint_minmax; /* 0 for non-range constraints, -1 for min, 1 for max */
+
 	enum lis_error (*get_value)(
 		struct lis_option_descriptor *opt,
 		const struct alias *alias,
@@ -117,6 +119,7 @@ static const struct alias g_aliases[] = {
 			"x_resolution", "y_resolution", // TWAIN
 			NULL
 		},
+		.constraint_minmax = -1,
 		.get_value = simple_alias_get_value,
 		.set_value = simple_alias_set_value,
 	},
@@ -124,6 +127,7 @@ static const struct alias g_aliases[] = {
 		.opt_name = OPT_NAME_TL_X,
 		.requires = ALIAS_REQ_ALL_OPTIONS,
 		.alias_for = (const char *[]) { "xpos", "xextent", NULL },
+		.constraint_minmax = -1,
 		.get_value = tl_get_value,
 		.set_value = tl_set_value,
 	},
@@ -131,6 +135,7 @@ static const struct alias g_aliases[] = {
 		.opt_name = OPT_NAME_TL_Y,
 		.requires = ALIAS_REQ_ALL_OPTIONS,
 		.alias_for = (const char *[]) { "ypos", "yextent", NULL },
+		.constraint_minmax = -1,
 		.get_value = tl_get_value,
 		.set_value = tl_set_value,
 	},
@@ -138,6 +143,7 @@ static const struct alias g_aliases[] = {
 		.opt_name = OPT_NAME_BR_X,
 		.requires = ALIAS_REQ_ALL_OPTIONS,
 		.alias_for = (const char *[]) { "xpos", "xextent", NULL },
+		.constraint_minmax = 1,
 		.get_value = br_get_value,
 		.set_value = br_set_value,
 	},
@@ -145,6 +151,7 @@ static const struct alias g_aliases[] = {
 		.opt_name = OPT_NAME_BR_Y,
 		.requires = ALIAS_REQ_ALL_OPTIONS,
 		.alias_for = (const char *[]) { "ypos", "yextent", NULL },
+		.constraint_minmax = 1,
 		.get_value = br_get_value,
 		.set_value = br_set_value,
 	},
@@ -341,6 +348,193 @@ static enum lis_error opt_set_value(struct lis_option_descriptor *self, union li
 }
 
 
+static int has_all_aliased_opts(
+		const struct alias *alias, struct lis_option_descriptor **opts
+	)
+{
+	int aliased_idx;
+	int got_all = 1;
+	struct lis_option_descriptor *opt;
+
+	for (aliased_idx = 0 ; alias->alias_for[aliased_idx] != NULL ; aliased_idx++) {
+		opt = get_option(opts, alias->alias_for[aliased_idx]);
+		if (opt != NULL) {
+			continue;
+		}
+		got_all = 0;
+		break;
+	}
+
+	return got_all;
+}
+
+
+static int has_all_range_integer_constraints(
+		const struct alias *alias, struct lis_option_descriptor **opts
+	)
+{
+	int aliased_idx;
+	struct lis_option_descriptor *opt;
+	int has_all_integer_constraints = 1;
+
+	for (aliased_idx = 0 ; alias->alias_for[aliased_idx] != NULL ; aliased_idx++) {
+		opt = get_option(opts, alias->alias_for[aliased_idx]);
+		if (opt == NULL) {
+			continue;
+		}
+
+		if (opt->value.type != LIS_TYPE_INTEGER
+				|| opt->constraint.type != LIS_CONSTRAINT_RANGE) {
+			has_all_integer_constraints = 0;
+			break;
+		}
+	}
+
+	return has_all_integer_constraints;
+}
+
+
+static int has_one_aliased_opt(
+		const struct alias *alias, struct lis_option_descriptor **opts
+	)
+{
+	int got_one = 0;
+	int aliased_idx;
+	struct lis_option_descriptor *opt;
+
+	for (aliased_idx = 0 ; alias->alias_for[aliased_idx] != NULL ; aliased_idx++) {
+		opt = get_option(opts, alias->alias_for[aliased_idx]);
+		if (opt == NULL) {
+			continue;
+		}
+
+		got_one = 1;
+		break;
+	}
+
+	return got_one;
+}
+
+
+static void compute_range(
+		const struct alias *alias, struct lis_option_descriptor **opts,
+		struct lis_option_descriptor *out_alias_opt
+	)
+{
+	int aliased_idx;
+	struct lis_option_descriptor *opt;
+
+	if (alias->constraint_minmax > 0) {
+		out_alias_opt->constraint.possible.range.min.integer = -999999999;
+		out_alias_opt->constraint.possible.range.max.integer = -999999999;
+	} else {
+		out_alias_opt->constraint.possible.range.min.integer = 999999999;
+		out_alias_opt->constraint.possible.range.max.integer = 999999999;
+	}
+
+	for (aliased_idx = 0 ; alias->alias_for[aliased_idx] != NULL ; aliased_idx++) {
+		opt = get_option(opts, alias->alias_for[aliased_idx]);
+		if (opt == NULL) {
+			continue;
+		}
+
+		out_alias_opt->constraint.possible.range.interval = (
+			opt->constraint.possible.range.interval
+		);
+
+		assert(alias->constraint_minmax != 0);
+		if (alias->constraint_minmax > 0) {
+			out_alias_opt->constraint.possible.range.min.integer = MAX(
+				out_alias_opt->constraint.possible.range.min.integer,
+				opt->constraint.possible.range.min.integer
+			);
+			out_alias_opt->constraint.possible.range.max.integer = MAX(
+				out_alias_opt->constraint.possible.range.max.integer,
+				opt->constraint.possible.range.max.integer
+			);
+		} else {
+			out_alias_opt->constraint.possible.range.min.integer = MIN(
+				out_alias_opt->constraint.possible.range.min.integer,
+				opt->constraint.possible.range.min.integer
+			);
+			out_alias_opt->constraint.possible.range.max.integer = MIN(
+				out_alias_opt->constraint.possible.range.max.integer,
+				opt->constraint.possible.range.max.integer
+			);
+		}
+	}
+}
+
+static void set_first_constraint(
+		const struct alias *alias, struct lis_option_descriptor **opts,
+		struct lis_option_descriptor *alias_opt
+	)
+{
+	int aliased_idx;
+	struct lis_option_descriptor *opt;
+
+	for (aliased_idx = 0 ; alias->alias_for[aliased_idx] != NULL ; aliased_idx++) {
+		opt = get_option(opts, alias->alias_for[aliased_idx]);
+		if (opt == NULL) {
+			continue;
+		}
+
+		// ASSUMPTION(Jflesch): All options are compatible
+		memcpy(
+			&alias_opt->constraint, &opt->constraint,
+			sizeof(alias_opt->constraint)
+		);
+		break;
+	}
+}
+
+
+static int get_caps(
+		const struct alias *alias, struct lis_option_descriptor **opts
+	)
+{
+	int caps = LIS_CAP_EMULATED;
+	int aliased_idx;
+	struct lis_option_descriptor *opt;
+
+	for (aliased_idx = 0 ; alias->alias_for[aliased_idx] != NULL ; aliased_idx++) {
+		opt = get_option(opts, alias->alias_for[aliased_idx]);
+		if (opt == NULL) {
+			continue;
+		}
+
+		caps |= opt->capabilities;
+	}
+
+	return caps;
+}
+
+
+static void set_alias_default_content(
+		const struct alias *alias, struct lis_option_descriptor **opts,
+		struct lis_option_descriptor *out_alias_opt
+	)
+{
+	int aliased_idx;
+	struct lis_option_descriptor *opt;
+
+	for (aliased_idx = 0 ; alias->alias_for[aliased_idx] != NULL ; aliased_idx++) {
+		opt = get_option(opts, alias->alias_for[aliased_idx]);
+		if (opt == NULL) {
+			continue;
+		}
+
+		memcpy(out_alias_opt, opt, sizeof(*out_alias_opt));
+		break;
+	}
+
+	out_alias_opt->name = alias->opt_name;
+	out_alias_opt->capabilities = get_caps(alias, opts);
+	out_alias_opt->fn.set_value = opt_set_value;
+	out_alias_opt->fn.get_value = opt_get_value;
+}
+
+
 static enum lis_error aliases_get_options(
 		struct lis_item *self, struct lis_option_descriptor ***out_descs
 	)
@@ -348,12 +542,8 @@ static enum lis_error aliases_get_options(
 	struct aliases_item *private = ALIASES_ITEM_PRIVATE(self);
 	enum lis_error err;
 	struct lis_option_descriptor **descs;
-	struct lis_option_descriptor *opt;
 	int nb_opts;
-	int aliased_idx;
 	unsigned int alias_idx;
-	int caps;
-	int got_one, got_all;
 
 	err = private->wrapped->get_options(private->wrapped, &descs);
 	if (!LIS_IS_OK(err)) {
@@ -382,51 +572,43 @@ static enum lis_error aliases_get_options(
 	}
 
 	for (alias_idx = 0 ; alias_idx < LIS_COUNT_OF(g_aliases) ; alias_idx++) {
-		got_one = 0;
-		got_all = 1;
-		caps = 0;
-		for (aliased_idx = 0 ; g_aliases[alias_idx].alias_for[aliased_idx] != NULL ; aliased_idx++) {
-			opt = get_option(descs, g_aliases[alias_idx].alias_for[aliased_idx]);
-			if (opt == NULL) {
-				got_all = 0;
-			} else {
-				got_one = 1;
-				caps |= opt->capabilities;
-				// ASSUMPTION(Jflesch): All options are compatible
-				memcpy(
-					&private->opts[alias_idx].parent, opt,
-					sizeof(private->opts[alias_idx].parent)
-				);
-			}
+		if (!has_one_aliased_opt(&g_aliases[alias_idx], descs)) {
+			lis_log_debug(
+				"No aliased option for '%s' -> alias not created",
+				g_aliases[alias_idx].opt_name
+			);
+			continue;
 		}
 
-		if (!got_one) {
-			got_all = 0;
+		if (g_aliases[alias_idx].requires == ALIAS_REQ_ALL_OPTIONS
+				&& !has_all_aliased_opts(&g_aliases[alias_idx], descs)) {
+			lis_log_debug(
+				"Not all required aliased options available for for '%s'"
+				" -> alias not created",
+				g_aliases[alias_idx].opt_name
+			);
+			continue;
 		}
 
-		caps |= LIS_CAP_EMULATED;
+		lis_log_debug("Creating alias '%s'", g_aliases[alias_idx].opt_name);
+
 		private->opts[alias_idx].item = private;
 		private->opts[alias_idx].opts = descs;
 		private->opts[alias_idx].alias = &g_aliases[alias_idx];
-		private->opts[alias_idx].parent.name = g_aliases[alias_idx].opt_name;
-		private->opts[alias_idx].parent.capabilities = caps;
-		private->opts[alias_idx].parent.fn.set_value = opt_set_value;
-		private->opts[alias_idx].parent.fn.get_value = opt_get_value;
 
-		switch(g_aliases[alias_idx].requires) {
-			case ALIAS_REQ_ANY_OPTIONS:
-				if (!got_one) {
-					continue;
-				}
-				break;
-			case ALIAS_REQ_ALL_OPTIONS:
-				if (!got_all) {
-					continue;
-				}
-				break;
+		set_alias_default_content(
+			&g_aliases[alias_idx], descs, &private->opts[alias_idx].parent
+		);
+
+		if (has_all_range_integer_constraints(&g_aliases[alias_idx], descs)) {
+			compute_range(&g_aliases[alias_idx], descs, &private->opts[alias_idx].parent);
+		} else {
+			set_first_constraint(
+				&g_aliases[alias_idx], descs, &private->opts[alias_idx].parent
+			);
 		}
 
-		lis_log_info("Adding alias option '%s'", g_aliases[alias_idx].opt_name);
+		lis_log_info("Alias option '%s' added", g_aliases[alias_idx].opt_name);
 		private->opts_ptr[nb_opts] = &private->opts[alias_idx].parent;
 		nb_opts++;
 	}
