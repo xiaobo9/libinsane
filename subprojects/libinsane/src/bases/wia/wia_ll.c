@@ -241,6 +241,22 @@ static void wiall_cleanup(struct lis_api *self)
 }
 
 
+static char *custom_strchr(char *input, char *separators)
+{
+	char *s;
+
+	for (; (*input) != '\0' ; input++) {
+		for (s = separators ; (*s) != '\0' ; s++) {
+			if ((*input) == (*s)) {
+				return input;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+
 #define compare_guid(a, b) (memcmp((a), (b), sizeof(*(a))) == 0)
 
 
@@ -249,6 +265,8 @@ static enum lis_error get_device_descriptor(
 		struct lis_device_descriptor *out_props
 	)
 {
+	char *dev_name;
+	char *model;
 	enum lis_error err;
 	HRESULT hr;
 	unsigned int i;
@@ -276,11 +294,7 @@ static enum lis_error get_device_descriptor(
 	};
 	PROPVARIANT output[LIS_COUNT_OF(input)];
 
-	hr = in_props->lpVtbl->ReadMultiple(
-		in_props,
-		LIS_COUNT_OF(output),
-		input, output
-	);
+	hr = in_props->lpVtbl->ReadMultiple(in_props, LIS_COUNT_OF(output), input, output);
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
 		lis_log_error(
@@ -289,8 +303,6 @@ static enum lis_error get_device_descriptor(
 		);
 		return err;
 	}
-
-	out_props->model = lis_propvariant2char(&output[2]);
 
 	assert(output[3].vt == VT_I4);
 
@@ -312,7 +324,23 @@ static enum lis_error get_device_descriptor(
 	}
 
 	out_props->dev_id = lis_propvariant2char(&output[0]);
-	out_props->vendor = lis_propvariant2char(&output[1]);
+
+	// ASSUMPTION(Jflesch): only the property 'dev_name' seems to be
+	// reliable to get the manufacturer name and model name.
+	// See: https://openpaper.work/fr/scanner_db/report/337/
+	// --> we assume the first word in dev_name is the manufacturer
+	// and the rest is the model name, unless there is only one word
+	// in dev_name.
+	dev_name = lis_propvariant2char(&output[2]);
+	model = custom_strchr(dev_name, " 0123456789-_");
+	if (model != NULL) {
+		model[0] = '\0';
+		out_props->model = strdup(model + 1);
+		out_props->vendor = dev_name;
+	} else {
+		out_props->vendor = lis_propvariant2char(&output[1]);
+		out_props->model = dev_name;
+	}
 
 	err = LIS_OK;
 
