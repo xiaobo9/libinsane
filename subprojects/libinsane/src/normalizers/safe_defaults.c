@@ -107,7 +107,7 @@ static const struct safe_setter g_safe_setters[] = {
 
 	// WIA2:
 	{
-		. opt_name = "pages", .cb = set_int,
+		.opt_name = "pages", .cb = set_int,
 		.cb_data = &g_numbers[2], /* 0 = infinite */
 		.flags = SET_IMMEDIATELY,
 	},
@@ -342,8 +342,11 @@ static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, 
 	}
 
 	if (opt->constraint.type != LIS_CONSTRAINT_LIST || opt->constraint.possible.list.nb_values <= 0) {
-		lis_log_warning("Unexpected constraint type (%d) for option '%s'. Cannot adjust value.",
-			opt->constraint.type, opt->name);
+		lis_log_info(
+			"Constraint for the option '%s' is not a range (%d)':"
+			" will try to set value as it.",
+			opt->name, opt->constraint.type
+		);
 	} else {
 		closest = 0;
 		closest_distance = 999999;
