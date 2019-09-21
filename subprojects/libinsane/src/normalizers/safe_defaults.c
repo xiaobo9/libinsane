@@ -159,12 +159,57 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 	enum lis_error err;
 	const char *minmax_str = minmax > 0 ? "max" : "min";
 
-	value = minmax > 0 ? opt->constraint.possible.range.max : opt->constraint.possible.range.min;
-
 	if (opt->constraint.type != LIS_CONSTRAINT_RANGE) {
 		lis_log_warning("Unexpected constraint type for option '%s': %d instead of %d",
 			opt->name, opt->constraint.type, LIS_CONSTRAINT_RANGE);
 		return LIS_ERR_UNSUPPORTED;
+	}
+
+	if (opt->value.type != LIS_TYPE_INTEGER && opt->value.type != LIS_TYPE_DOUBLE) {
+		lis_log_warning(
+			"Unexpected value type for option '%s': %d",
+			opt->name, opt->value.type
+		);
+		return LIS_ERR_UNSUPPORTED;
+	}
+
+	// check the current value to see if it's currently in the range or
+	// not
+	err = opt->fn.get_value(opt, &value);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_warning(
+			"Failed to get current value of '%s': %d, %s",
+			opt->name, err, lis_strerror(err)
+		);
+		value = (
+			minmax > 0
+			? opt->constraint.possible.range.max
+			: opt->constraint.possible.range.min
+		);
+	} else {
+		lis_log_info("Current value of option '%s' = %d", opt->name, value.integer);
+		// Sane + Epson Perfection 1250
+		// https://gitlab.gnome.org/World/OpenPaperwork/libinsane/issues/17
+		// https://openpaper.work/en-us/scanner_db/report/328/
+		if (opt->value.type == LIS_TYPE_INTEGER) {
+			if (minmax > 0) {
+				// if the current value is already above the max, we keep it as it
+				value.integer = MAX(value.integer, opt->constraint.possible.range.max.integer);
+			} else {
+				// if the current value is already below the min, we keep it as it
+				value.integer = MIN(value.integer, opt->constraint.possible.range.min.integer);
+			}
+		} else if (opt->value.type == LIS_TYPE_DOUBLE) {
+			if (minmax > 0) {
+				// if the current value is already above the max, we keep it as it
+				value.dbl = MAX(value.dbl, opt->constraint.possible.range.max.dbl);
+			} else {
+				// if the current value is already below the min, we keep it as it
+				value.dbl = MIN(value.dbl, opt->constraint.possible.range.min.dbl);
+			}
+		} else {
+			assert(0);
+		}
 	}
 
 	lis_log_info("Setting option '%s' to %s", opt->name, minmax_str);

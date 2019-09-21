@@ -313,6 +313,50 @@ static void tests_opt_defaults_before_scan2(void)
 	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
 }
 
+
+static void tests_opt_default_out_of_range(void)
+{
+	enum lis_error err;
+	struct lis_item *dumb_item = NULL;
+	struct lis_item *opt_item = NULL;
+	struct lis_option_descriptor **dumb_opts = NULL;
+	struct lis_option_descriptor **opt_opts = NULL;
+	union lis_value value;
+	int set_flags;
+
+	LIS_ASSERT_EQUAL(tests_opt_init(), 0);
+
+	err = lis_api_normalizer_safe_defaults(g_dumb, &g_opt);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = g_dumb->get_device(g_dumb, LIS_DUMB_DEV_ID_FIRST, &dumb_item);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	// set the value to a value out of range
+	err = dumb_item->get_options(dumb_item, &dumb_opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	value.integer = 50;
+	err = dumb_opts[1]->fn.set_value(dumb_opts[1], value, &set_flags);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = g_opt->get_device(g_opt, LIS_DUMB_DEV_ID_FIRST, &opt_item);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+
+	err = opt_item->get_options(opt_item, &opt_opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(strcasecmp(opt_opts[1]->name, OPT_NAME_TL_X), 0);
+
+	// since the value was out of range, safe_defaults should have kept it as
+	// it
+	err = opt_opts[1]->fn.get_value(opt_opts[1], &value);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(value.integer, 50);
+
+	opt_item->close(opt_item);
+	LIS_ASSERT_EQUAL(tests_opt_clean(), 0);
+}
+
+
 int register_tests(void)
 {
 	CU_pSuite suite = NULL;
@@ -327,7 +371,9 @@ int register_tests(void)
 			|| CU_add_test(suite, "opt_defaults_before_scan()",
 				tests_opt_defaults_before_scan) == NULL
 			|| CU_add_test(suite, "opt_defaults_before_scan2()",
-				tests_opt_defaults_before_scan2) == NULL) {
+				tests_opt_defaults_before_scan2) == NULL
+			|| CU_add_test(suite, "opt_default_out_of_range()",
+				tests_opt_default_out_of_range) == NULL) {
 		fprintf(stderr, "CU_add_test() has failed\n");
 		return 0;
 	}
