@@ -94,7 +94,7 @@ static const struct safe_setter g_safe_setters[] = {
 
 	{
 		.opt_name = "page-width", .cb = set_to_limit,
-		.cb_data = &g_numbers[5], // close to max
+		.cb_data = &g_numbers[1], // max
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 	{
