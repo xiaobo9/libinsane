@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,8 @@
 #define NAME "twain"
 #define TWAIN_DSM_DLL "twaindsm.dll"
 #define TWAIN_DSM_ENTRY_FN_NAME "DSM_Entry"
+
+#define ENABLE_TWAIN2 TRUE
 
 #define MAX_ID_LENGTH 64 // is manufacturer name + model. TWAIN limits both to 32
 #define MAX_MSG 16
@@ -121,7 +124,7 @@ static const TW_IDENTITY g_libinsane_identity_template = {
 	},
 	.ProtocolMajor = TWON_PROTOCOLMAJOR,
 	.ProtocolMinor = TWON_PROTOCOLMINOR,
-	.SupportedGroups = DF_APP2 | DG_IMAGE | DG_CONTROL,
+	.SupportedGroups = DG_IMAGE | DG_CONTROL,
 	.Manufacturer = "OpenPaper.work",
 	.ProductFamily = "Libinsane",
 	.ProductName = "Libinsane",
@@ -482,6 +485,9 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		&g_app_id, &g_libinsane_identity_template,
 		sizeof(g_app_id)
 	);
+	if (ENABLE_TWAIN2) {
+		g_app_id.SupportedGroups |= DF_APP2;
+	}
 	private->parent_hnd = GetConsoleWindow();
 	if (private->parent_hnd == NULL) {
 		private->parent_hnd = GetDesktopWindow();
@@ -496,22 +502,18 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		return err;
 	}
 
-	if(g_app_id.SupportedGroups & DF_DSM2) {
-		private->entry_points.Size = sizeof(private->entry_points);
-		twrc = DSM_ENTRY(
-			NULL, DG_CONTROL, DAT_ENTRYPOINT, MSG_GET,
-			&private->entry_points
+	private->entry_points.Size = sizeof(private->entry_points);
+	twrc = DSM_ENTRY(
+		NULL, DG_CONTROL, DAT_ENTRYPOINT, MSG_GET,
+		&private->entry_points
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_warning(
+			"Failed to get TWAIN entry points:"
+			" 0x%X -> 0x%X, %s",
+			twrc, err, lis_strerror(err)
 		);
-		if (twrc != TWRC_SUCCESS) {
-			err = twrc_to_lis_error(twrc);
-			lis_log_error(
-				"Failed to get TWAIN entry points:"
-				" 0x%X -> 0x%X, %s",
-				twrc, err, lis_strerror(err)
-			);
-			return err;
-		}
-	} else {
 		private->entry_points.DSM_MemLock = default_memlock;
 		private->entry_points.DSM_MemUnlock = default_memunlock;
 		private->entry_points.DSM_MemAllocate = default_memallocate;
@@ -848,24 +850,20 @@ static enum lis_error twain_get_device(
 	item->use_callback = (
 		(g_app_id.SupportedGroups & DF_DSM2)
 			&& (item->twain_id.SupportedGroups & DF_DS2)
-	);
+	) && ENABLE_TWAIN2;
 	lis_log_info("Twain source: use callback = %d", item->use_callback);
 
-	if (item->use_callback) {
-		twrc = DSM_ENTRY(
-			&item->twain_id, DG_CONTROL, DAT_CALLBACK,
-			MSG_REGISTER_CALLBACK, &callback
+	twrc = DSM_ENTRY(
+		&item->twain_id, DG_CONTROL, DAT_CALLBACK,
+		MSG_REGISTER_CALLBACK, &callback
+	);
+	if (twrc != TWRC_SUCCESS) {
+		err = twrc_to_lis_error(twrc);
+		lis_log_warning(
+			"Failed to register callback for datasource"
+			" '%s': 0x%X -> 0x%X, %s",
+			dev_id, twrc, err, lis_strerror(err)
 		);
-		if (twrc != TWRC_SUCCESS) {
-			err = twrc_to_lis_error(twrc);
-			lis_log_error(
-				"Failed to register callback for datasource"
-				" '%s': 0x%X -> 0x%X, %s",
-				dev_id, twrc, err, lis_strerror(err)
-			);
-			twain_close(&item->parent);
-			return err;
-		}
 	}
 
 	*out_item = &item->parent;
@@ -1113,6 +1111,7 @@ static enum lis_error get_simple_constraint(
 		const void *twain_container
 	)
 {
+	enum lis_error err;
 	union {
 		const TW_ARRAY *array;
 		const TW_ENUMERATION *enumeration;
@@ -1138,12 +1137,15 @@ static enum lis_error get_simple_constraint(
 				container.array->ItemType
 			);
 			for (i = 0 ; i < container.array->NumItems ; i++) {
-				twain_cap_to_lis(
+				err = twain_cap_to_lis(
 					container.array->ItemType, twain_cap_def,
 					((char *)(&container.array->ItemList)) + (i * el_size),
 					&(opt->constraint.possible.list.values[i])
 				);
-				// TODO: check twain_value_to_lis()
+				if (LIS_IS_ERROR(err)) {
+					FREE(opt->constraint.possible.list.values);
+					return err;
+				}
 			}
 			return LIS_OK;
 		case TWON_ENUMERATION:
@@ -1161,12 +1163,15 @@ static enum lis_error get_simple_constraint(
 				container.enumeration->ItemType
 			);
 			for (i = 0 ; i < container.enumeration->NumItems ; i++) {
-				twain_cap_to_lis(
+				err = twain_cap_to_lis(
 					container.enumeration->ItemType, twain_cap_def,
 					((char *)(&container.enumeration->ItemList)) + (i * el_size),
 					&(opt->constraint.possible.list.values[i])
 				);
-				// TODO: check twain_value_to_lis()
+				if (LIS_IS_ERROR(err)) {
+					FREE(opt->constraint.possible.list.values);
+					return err;
+				}
 			}
 			return LIS_OK;
 		case TWON_ONEVALUE:
@@ -1176,13 +1181,16 @@ static enum lis_error get_simple_constraint(
 			opt->constraint.possible.list.values =
 				calloc(1, sizeof(union lis_value));
 			// TODO: check calloc
-			twain_cap_to_lis(
+			err = twain_cap_to_lis(
 				container.one->ItemType,
 				twain_cap_def,
 				&container.one->Item,
 				&opt->constraint.possible.list.values[0]
 			);
-			// TODO: check twain_value_to_lis()
+			if (LIS_IS_ERROR(err)) {
+				FREE(opt->constraint.possible.list.values);
+				return err;
+			}
 			return LIS_OK;
 		case TWON_RANGE:
 			container.range = twain_container;
@@ -1861,6 +1869,8 @@ static enum lis_error make_simple_option(
 		int *nb_opts
 	)
 {
+	enum lis_error err;
+
 	opt->twain_cap = lis_cap;
 	opt->item = item;
 
@@ -1877,7 +1887,10 @@ static enum lis_error make_simple_option(
 	opt->parent.fn.get_value = twain_simple_get_value;
 	opt->parent.fn.set_value = twain_simple_set_value;
 
-	get_simple_constraint(&opt->parent, lis_cap, twain_cap, container);
+	err = get_simple_constraint(&opt->parent, lis_cap, twain_cap, container);
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
 
 	(*nb_opts)++;
 	return LIS_OK;
@@ -2316,14 +2329,21 @@ static enum lis_error wait_ready(struct lis_twain_item *private)
 	MSG win_msg;
 	TW_UINT16 twrc, msg;
 	TW_EVENT event;
+	DWORD r;
 
-	if (private->use_callback) {
-		lis_log_info("Twain scan: Waiting for DSM callback ...");
-		while(TRUE) {
-			WaitForSingleObject(
-				private->dsm2app.sem, INFINITE /* timeout */
-			);
-
+	lis_log_info("Twain scan: Waiting for DSM callback or GetMessage...");
+	while(TRUE) {
+		// XXX(JFlesch):
+		// Fujitsu fi-6130: We must keep reading Windows messages (see
+		// PeekMessage()) even if we actually wait for a reply through
+		// the callback.
+		r = MsgWaitForMultipleObjects(
+			1 /* count */, &private->dsm2app.sem, FALSE /* wait all */,
+			INFINITE /* timeout */,
+			QS_ALLINPUT | QS_ALLEVENTS | QS_ALLPOSTMESSAGE
+		);
+		if (r == WAIT_OBJECT_0) {
+			lis_log_debug("Got Message from callback ...");
 			msg = private->dsm2app.msgs[private->dsm2app.read_idx];
 			private->dsm2app.read_idx++;
 			private->dsm2app.read_idx %= MAX_MSG;
@@ -2334,9 +2354,14 @@ static enum lis_error wait_ready(struct lis_twain_item *private)
 					return LIS_OK;
 				case MSG_CLOSEDSREQ:
 				case MSG_CLOSEDSOK:
-				case MSG_NULL:
 					lis_log_warning(
 						"Unexpected event: 0x%X",
+						(int)msg
+					);
+					break;
+				case MSG_NULL:
+					lis_log_debug(
+						"NULL event: 0x%X",
 						(int)msg
 					);
 					break;
@@ -2347,13 +2372,16 @@ static enum lis_error wait_ready(struct lis_twain_item *private)
 					);
 					return LIS_ERR_IO_ERROR;
 			}
-		}
-		return LIS_OK;
-	} else {
-		lis_log_debug("GetMessage() ...");
-		while (GetMessage(&win_msg, NULL /* handle */,
-				0 /* min msg */, 0 /* max msg */)) {
-			lis_log_debug("GetMessage() !");
+		} else {
+			lis_log_debug("PeekMessage() (0x%lX) ...", r);
+			if (!PeekMessage(&win_msg, NULL /* handle */,
+					0 /* min msg */, 0 /* max msg */,
+					PM_REMOVE)) {
+				lis_log_debug("PeekMessage(): no message");
+				continue;
+			}
+			lis_log_debug("PeekMessage() !");
+
 			memset(&event, 0, sizeof(event));
 			event.pEvent = &win_msg;
 			event.TWMessage = MSG_NULL;
@@ -2386,8 +2414,6 @@ static enum lis_error wait_ready(struct lis_twain_item *private)
 				DispatchMessage(&win_msg);
 			}
 		}
-		lis_log_warning("Got message WM_QUIT");
-		return LIS_ERR_CANCELLED;
 	}
 }
 
