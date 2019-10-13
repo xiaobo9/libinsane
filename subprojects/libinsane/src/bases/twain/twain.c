@@ -38,6 +38,8 @@ struct lis_twain_private {
 
 	TW_ENTRYPOINT entry_points;
 
+	HANDLE parent_hnd;
+
 	struct lis_twain_dev_desc *devices;
 	struct lis_device_descriptor **device_ptrs;
 };
@@ -412,7 +414,6 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 {
 	TW_UINT16 twrc;
 	enum lis_error err;
-	HANDLE hnd;
 
 	if (private->init) {
 		return LIS_OK;
@@ -464,9 +465,9 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 		&g_app_id, &g_libinsane_identity_template,
 		sizeof(g_app_id)
 	);
-	hnd = GetConsoleWindow();
-	if (hnd == NULL) {
-		hnd = GetDesktopWindow();
+	private->parent_hnd = GetConsoleWindow();
+	if (private->parent_hnd == NULL) {
+		private->parent_hnd = GetDesktopWindow();
 	}
 	twrc = DSM_ENTRY(NULL, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, NULL);
 	if (twrc != TWRC_SUCCESS) {
@@ -2124,7 +2125,7 @@ check_end:
 	memset(&ui, 0, sizeof(ui));
 	ui.ShowUI = FALSE;
 	ui.ModalUI = TRUE;
-	ui.hParent = GetDesktopWindow();
+	ui.hParent = private->item->impl->parent_hnd;
 
 	if (private->cancelled || !private->xfer_pending) {
 		lis_log_info("End of scan --> disabling DS");
@@ -2312,6 +2313,10 @@ static enum lis_error wait_ready(struct lis_twain_item *private)
 				case MSG_CLOSEDSREQ:
 				case MSG_CLOSEDSOK:
 				case MSG_NULL:
+					lis_log_warning(
+						"Unexpected event: 0x%X",
+						(int)msg
+					);
 					break;
 				default:
 					lis_log_error(
@@ -2375,6 +2380,7 @@ static enum lis_error twain_scan_start(
 	TW_UINT16 twrc;
 	enum lis_error err;
 
+	lis_log_info("scan_start()");
 	session = calloc(1, sizeof(struct lis_twain_session));
 	if (session == NULL) {
 		lis_log_error("Out of memory");
@@ -2402,7 +2408,7 @@ static enum lis_error twain_scan_start(
 	memset(&ui, 0, sizeof(ui));
 	ui.ShowUI = FALSE;
 	ui.ModalUI = TRUE;
-	ui.hParent = GetDesktopWindow();
+	ui.hParent = private->impl->parent_hnd;
 
 	twrc = DSM_ENTRY(
 		&private->twain_id, DG_CONTROL, DAT_USERINTERFACE,
