@@ -410,6 +410,23 @@ static TW_UINT16 _dsm_entry(
 }
 
 
+static TW_HANDLE TW_CALLINGSTYLE default_memallocate(TW_UINT32 size) {
+	return GlobalAlloc(GPTR, size);
+}
+
+static void TW_CALLINGSTYLE default_memfree(TW_HANDLE handle) {
+	GlobalFree(handle);
+}
+
+static TW_MEMREF TW_CALLINGSTYLE default_memlock(TW_HANDLE handle) {
+	return handle;
+}
+
+static void TW_CALLINGSTYLE default_memunlock(TW_HANDLE handle) {
+	LIS_UNUSED(handle);
+}
+
+
 static enum lis_error twain_init(struct lis_twain_private *private)
 {
 	TW_UINT16 twrc;
@@ -494,6 +511,11 @@ static enum lis_error twain_init(struct lis_twain_private *private)
 			);
 			return err;
 		}
+	} else {
+		private->entry_points.DSM_MemLock = default_memlock;
+		private->entry_points.DSM_MemUnlock = default_memunlock;
+		private->entry_points.DSM_MemAllocate = default_memallocate;
+		private->entry_points.DSM_MemFree = default_memfree;
 	}
 
 	lis_log_info("TWAIN DSM init successful");
