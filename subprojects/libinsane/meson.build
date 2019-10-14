@@ -1,5 +1,5 @@
 project('libinsane', 'c',
-    version: '1.0.1',
+    version: '1.0.2',
     license: 'LGPLv3+',
     meson_version: '>=0.37.1')
 

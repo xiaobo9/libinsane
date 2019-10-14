@@ -1,3 +1,55 @@
+2019/10/14 - 1.0.2:
+- Libinsane/gobject: Added mising flag Libinsane.CAPABILITY_INACTIVE.
+
+- Sane: when the application expect one page, do not request a second one
+  (fix unittests timeout).
+
+- WIA2: Use the option 'dev_name' to figure out the manufacturer name and the
+  device name. It is the only reliable option.
+- WIA2: HP Photosmart C4200, Epson Perfection V30/V300:
+  When getting the scanned image, allow calls to
+  `seek(SEEK_SET, current_position)`.
+  https://openpaper.work/scannerdb/report/280/
+  https://openpaper.work/scannerdb/report/350/
+- WIA2: Ignore sources that are not explicitely a flatbed or an ADF
+  (for instance 0000\\Root\\Auto: It is simply not supported by Libinsane).
+
+- TWAIN: Fujitsu fi-6130 / fi-6130dj:
+  Keep reading Windows message queue while waiting for the DSM callback
+  to be called with the value 'ready'. If we don't, the DSM callback never gets
+  called.
+
+- normalizers/opt_aliases: Fix: When using option aliases 'tl-x', 'tl-y',
+  'br-x' and 'br-y', with WIA2, if the lowest values for 'xpos', 'ypos',
+  'xextent' and 'yextent' don't have (0, 0) as minimum values, inaccurate
+  values were set in WIA2 frame options.
+  https://openpaper.work/fr/scanner_db/report/335/
+- workarounds/cache: Fix: do not drop the item type (root, adf, flatbed, etc).
+- normalizers/resolution: If the driver does not specify any constraint
+  for the option 'resolution', put one default constraint.
+
+- normalizers/safe_defaults: Sane + Fujitsu fi-6130dj:
+  Cannot set the option 'page-height' to the maximum: Scanner rejects it.
+  Option must be set to slightly less than the maximum.
+  https://openpaper.work/fr/scanner_db/report/392/
+- normalizers/safe_default: Sane + Epson Perfection 1250:
+  If the default value for an option is out of the range specified by the
+  option constraint, do not change it.
+  https://openpaper.work/fr/scanner_db/report/328/
+- workaround/opt_names: Sane + Canon Pixma MX520:
+  Take into account that somes backend provide both an option 'resolution'
+  and 'scan-resolution'. In that case, do not generate an option 'resolution'
+  that would be an alias for 'scan-resolution', just keep 'resolution' as is.
+- normalizers/source_names: Sane + Canon CanoScan Lide 30:
+  Normalize the weird source names specified by the plustek driver.
+  https://openpaper.work/fr/scanner_db/report/298/
+- Sane + Canon Lide 220:
+  * https://openpaper.work/fr/scanner_db/report/279/
+  * workarounds/check_capabilty: Some options are marked as unreadable
+    (INACTIVE) but may still be writable (for instance the option 'source').
+  * normalizers/source_nodes: If the option 'source' is marked inactive, still
+    try to set it, but do not return an error if setting it fails.
+
 2019/08/18 - 1.0.1:
 - Sane: make sure sane_cancel() is called at the end of all scans (required
   by some drivers)
