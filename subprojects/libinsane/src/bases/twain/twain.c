@@ -1269,8 +1269,8 @@ static enum lis_error get_frame_constraint(
 			return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;
 	}
 
-	min = (TW_FIX32 *)(ptr + ((int)min_struct_offset));
-	max = (TW_FIX32 *)(ptr + ((int)max_struct_offset));
+	min = (TW_FIX32 *)(ptr + ((intptr_t)min_struct_offset));
+	max = (TW_FIX32 *)(ptr + ((intptr_t)max_struct_offset));
 
 	opt->constraint.type = LIS_CONSTRAINT_RANGE;
 	opt->constraint.possible.range.min.dbl = twain_unfix(min);
@@ -1642,7 +1642,7 @@ static enum lis_error twain_frame_get_value(
 	frame_ptr = (char *)(&container->Item);
 	// in this case, 'extra' does not contain an actual pointer, but
 	// an offset in the TW_FRAME structure (in bytes)
-	frame_ptr += ((int)(private->extra));
+	frame_ptr += ((intptr_t)(private->extra));
 	value = (TW_FIX32 *)frame_ptr;
 	out->dbl = twain_unfix(value);
 
@@ -1724,7 +1724,7 @@ static enum lis_error twain_frame_set_value(
 	frame_ptr = (char *)&frame;
 	// in this case, 'extra' does not contain an actual pointer, but
 	// an offset in the TW_FRAME structure (in bytes)
-	frame_ptr += ((int)private->extra);
+	frame_ptr += ((intptr_t)private->extra);
 	*((TW_FIX32 *)frame_ptr) = twain_fix(in_value.dbl);
 
 	memset(&cap, 0, sizeof(cap));
