@@ -26,6 +26,18 @@ image: debian:stable-slim
     - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-python3-pillow
     - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-i686-vala
 
+.msys64: &msys64
+  before_script:
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S make
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-cunit
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-doxygen
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-gcc
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-gobject-introspection
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-meson
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-python3-gobject
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-python3-pillow
+    - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-vala
+
 check:
   only:
     - branches@World/OpenPaperwork/libinsane
@@ -105,6 +117,29 @@ test_hw_windows:
   <<: *msys
   script:
     - c:\msys64\usr\bin\bash -lc "make install PREFIX=/mingw32"
+    - c:\msys64\usr\bin\bash -lc "make test_hw"
+  artifacts:
+    paths:
+      - test_hw_out
+    expire_in: 2 days
+
+
+test_hw_windows64:
+  only:
+    - branches@World/OpenPaperwork/libinsane
+    - tags@World/OpenPaperwork/libinsane
+  variables:
+    MSYSTEM: "MINGW64"
+    CHERE_INVOKING: "yes"
+  tags:
+    - windows
+    - testhw
+  # This one is a real system too, but it's a Windows, so nobody cares.
+  # Dependencies should already be installed, but still it's simpler and safer
+  # to ask pacman to install them anyway.
+  <<: *msys64
+  script:
+    - c:\msys64\usr\bin\bash -lc "make install PREFIX=/mingw64"
     - c:\msys64\usr\bin\bash -lc "make test_hw"
   artifacts:
     paths:
