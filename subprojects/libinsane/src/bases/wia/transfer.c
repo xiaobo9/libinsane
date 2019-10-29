@@ -1003,6 +1003,16 @@ static HRESULT WINAPI wia_stream_seek(
 			break;
 	}
 
+	if (plibNewPosition == NULL) {
+		// Canon i-SENSYS MF3010
+		lis_log_info(
+			"IStream->Seek(%ld, %s, NULL) (written=%ld B)",
+			(long)dlibMove.QuadPart, origin,
+			self->scan.written
+		);
+		return S_OK;
+	}
+
 	lis_log_info(
 		"IStream->Seek(%ld, %s, %lu) (written=%ld B)",
 		(long)dlibMove.QuadPart, origin,
