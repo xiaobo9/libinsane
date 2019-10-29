@@ -1,5 +1,14 @@
 image: debian:stable-slim
 
+stages:
+  - build
+  - test
+  # Do not run Linux and Windows tests at the same time. Test rigs share some scanners
+  # and both systems cannot access a scanner at the same time.
+  - test_hw_linux
+  - test_hw_windows
+  - deploy
+
 .apt: &apt
   before_script:
     - apt-get update
@@ -39,6 +48,7 @@ image: debian:stable-slim
     - c:\msys64\usr\bin\pacman --needed --noconfirm -S mingw-w64-x86_64-vala
 
 check:
+  stage: test
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
@@ -53,6 +63,7 @@ check:
     - make check
 
 test:
+  stage: test
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
@@ -67,6 +78,7 @@ test:
 
 
 doc:
+  stage: deploy
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
@@ -85,6 +97,7 @@ doc:
 
 
 test_hw_linux:
+  stage: test_hw_linux
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
@@ -102,6 +115,7 @@ test_hw_linux:
 
 
 test_hw_windows:
+  stage: test_hw_windows
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
@@ -125,6 +139,7 @@ test_hw_windows:
 
 
 test_hw_windows64:
+  stage: test_hw_windows
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
