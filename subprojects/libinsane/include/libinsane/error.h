@@ -41,7 +41,7 @@ enum lis_error {
  * \brief returns an English message corresponding to the error code.
  * \return a constant (no need to free).
  */
-const char *lis_strerror(enum lis_error);
+extern const char *lis_strerror(enum lis_error);
 
 #ifdef __cplusplus
 }
