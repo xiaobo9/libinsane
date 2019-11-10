@@ -116,6 +116,7 @@ enum lis_error lis_api_multiplexer(
 		&private->parent
 	);
 	if (LIS_IS_ERROR(err)) {
+		free(private);
 		return err;
 	}
 
