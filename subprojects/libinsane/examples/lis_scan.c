@@ -162,6 +162,7 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 	size_t obtained = 0;
 
 	CHECK_ERR(lis_safebet(&impl));
+	printf("Will use API %s\n", impl->base_name);
 
 	if (dev_id != NULL) {
 		printf("Will use device %s\n", dev_id);

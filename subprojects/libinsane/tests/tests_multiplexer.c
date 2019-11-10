@@ -32,6 +32,7 @@ static int tests_multiplexer_init(void)
 	lis_dumb_set_nb_devices(g_dumbs[1], 2);
 
 	err = lis_api_multiplexer(g_dumbs, LIS_COUNT_OF(g_dumbs), &g_multiplexer);
+
 	ret = LIS_IS_OK(err) ? 0 : -1;
 
 end:
@@ -43,6 +44,16 @@ static int tests_multiplexer_clean(void)
 	g_multiplexer->cleanup(g_multiplexer);
 	return 0;
 }
+
+
+static void test_base_name(void)
+{
+	LIS_ASSERT_EQUAL(
+		strcmp(g_multiplexer->base_name, "dummy0:dummy1"),
+		0
+	);
+}
+
 
 static void test_list_devices_prefix(void)
 {
@@ -154,7 +165,8 @@ int register_tests(void)
 		return 0;
 	}
 
-	if (CU_add_test(suite, "list_devices() prefix", test_list_devices_prefix) == NULL
+	if (CU_add_test(suite, "base_name", test_base_name) == NULL
+			|| CU_add_test(suite, "list_devices() prefix", test_list_devices_prefix) == NULL
 			|| CU_add_test(suite, "list_devices() ko", test_list_devices_ko) == NULL
 			|| CU_add_test(suite, "get_device() ok", test_get_device_ok) == NULL
 			|| CU_add_test(suite, "get_device() not found",

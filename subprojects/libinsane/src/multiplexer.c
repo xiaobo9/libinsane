@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -45,12 +47,47 @@ static struct lis_api g_multi_impl_template = {
 };
 
 
+static enum lis_error build_base_name(
+		struct lis_api **input_implementations, int nb_input_implementations,
+		struct lis_api *output_implementation
+	)
+{
+	int i;
+	char *base_name = NULL;
+	char *n_base_name = NULL;
+
+	for (i = 0 ; i < nb_input_implementations ; i++) {
+		if (base_name == NULL) {
+			n_base_name = strdup(
+				input_implementations[i]->base_name
+			);
+		} else {
+			n_base_name = NULL;
+			asprintf(
+				&n_base_name, "%s:%s", base_name,
+				input_implementations[i]->base_name
+			);
+			free(base_name);
+		}
+		if (n_base_name == NULL) {
+			lis_log_error("Out of memory");
+			return LIS_ERR_NO_MEM;
+		}
+		base_name = n_base_name;
+	}
+
+	output_implementation->base_name = base_name;
+	return LIS_OK;
+}
+
+
 enum lis_error lis_api_multiplexer(
 		struct lis_api **input_implementations, int nb_input_implementations,
 		struct lis_api **output_implementation
 	)
 {
 	struct lis_multi *private;
+	enum lis_error err;
 
 	if (nb_input_implementations > MAX_APIS || nb_input_implementations == 0) {
 		lis_log_error("Too many implementations to manage ! (%d > %d)",
@@ -73,6 +110,15 @@ enum lis_error lis_api_multiplexer(
 	memcpy(&private->parent, &g_multi_impl_template, sizeof(private->parent));
 	memcpy(private->impls, input_implementations, nb_input_implementations * sizeof(struct lis_api*));
 	private->nb_impls = nb_input_implementations;
+
+	err = build_base_name(
+		input_implementations, nb_input_implementations,
+		&private->parent
+	);
+	if (LIS_IS_ERROR(err)) {
+		return err;
+	}
+
 	*output_implementation = &private->parent;
 	return LIS_OK;
 }
@@ -97,6 +143,7 @@ static void lis_multi_cleanup(struct lis_api *impl)
 	struct lis_multi *private = LIS_MULTI_PRIVATE(impl);
 	int i;
 
+	free((char *)private->parent.base_name /* drop the const */);
 	lis_multi_cleanup_dev_descs(private->merged_devs);
 	for (i = 0 ; i < private->nb_impls ; i++) {
 		private->impls[i]->cleanup(private->impls[i]);
