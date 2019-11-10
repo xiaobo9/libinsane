@@ -626,7 +626,8 @@ static void scan_cancel(struct lis_scan_session *_self)
 
 	self->wia_item->lpVtbl->Release(self->wia_item);
 	self->wia_props->lpVtbl->Release(self->wia_props);
-	GlobalFree(self);
+	// XXX(Jflesch): Crashes on 64bits sometimes. disabled for now.
+	// GlobalFree(self);
 }
 
 
