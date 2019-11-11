@@ -971,6 +971,8 @@ static enum lis_error load_opt_constraints(
 				propvariants[i],
 				&private->opts[i].parent.constraint.possible.list
 			);
+		} else {
+			continue;
 		}
 		if (LIS_IS_ERROR(err)) {
 			lis_log_error(
