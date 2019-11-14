@@ -8,11 +8,8 @@ if [ -z "$RCLONE_CONFIG_OVHSWIFT_USER" ] ; then
 fi
 
 if ! which rclone; then
-  echo "rclone not available. Installing"
-  if ! (apt-get update -y && apt-get install rsync -y) && ! pacman --needed --noconfirm -S rsync ; then
-    echo "Failed to install rsync"
-    exit 1
-  fi
+  echo "rclone not available."
+  exit 1
 fi
 
 echo "Delivering: ${directory} (${CI_COMMIT_REF_NAME} - ${CI_COMMIT_SHORT_SHA})"

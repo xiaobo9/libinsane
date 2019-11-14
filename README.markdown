@@ -7,15 +7,15 @@ Its main features are:
 - Cross-platform: tested on Linux and Windows,
   [by CI](https://gitlab.gnome.org/World/OpenPaperwork/libinsane/pipelines) and
   [by users](https://openpaper.work/scanner_db/).
-- [Cross-API](https://documentation.openpaper.work/libinsane/latest/libinsane/scan_apis.html):
+- [Cross-API](http://documentation.openpaper.work/libinsane/latest/libinsane/scan_apis.html):
   supports Sane (Linux), WIA2 (Windows) and TWAIN (Windows)
 - Cross-scanners: takes care of all the
-  [quirks](https://documentation.openpaper.work/libinsane/latest/libinsane/workarounds.html)
+  [quirks](http://documentation.openpaper.work/libinsane/latest/libinsane/workarounds.html)
   of all the platforms and scanners to provide a
-  [consistent behaviour](https://documentation.openpaper.work/libinsane/latest/libinsane/behavior_normalizations.html)
+  [consistent behaviour](http://documentation.openpaper.work/libinsane/latest/libinsane/behavior_normalizations.html)
   everywhere.
 - Cross-programming languages:
-  [Libinsane-GObject](https://documentation.openpaper.work/libinsane/latest/libinsane-gobject/index.html)
+  [Libinsane-GObject](http://documentation.openpaper.work/libinsane/latest/libinsane-gobject/index.html)
   provides bindings for
   [many programming languages](https://wiki.gnome.org/Projects/GObjectIntrospection/Users)
   (Python, Java, Ruby, etc) thanks to
@@ -43,6 +43,6 @@ It is the successor of [Pyinsane2](https://gitlab.gnome.org/World/OpenPaperwork/
 
 It is released under [LGPL v3+](https://www.gnu.org/licenses/lgpl-3.0.en.html).
 
-- [Documentation](https://documentation.openpaper.work/libinsane/latest/)
+- [Documentation](http://documentation.openpaper.work/libinsane/latest/)
 - [Bug tracker](https://gitlab.gnome.org/World/OpenPaperwork/libinsane/issues)
 - [Mailing-list](https://gitlab.gnome.org/World/OpenPaperwork/paperwork/wikis/Contact)
