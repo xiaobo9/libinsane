@@ -2,8 +2,8 @@
 
 directory=doc/build
 
-if [ -z "$RCLONE_CONFIG_DOCUMENTATION_USER" ] ; then
-  echo "Delivery: No ssh private key provided."
+if [ -z "$RCLONE_CONFIG_OVHSWIFT_USER" ] ; then
+  echo "Delivery: No rclone credentials provided."
   exit 0
 fi
 
