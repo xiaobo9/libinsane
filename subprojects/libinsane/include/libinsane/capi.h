@@ -212,7 +212,7 @@ struct lis_option_descriptor {
 		 * \brief set the option value.
 		 *
 		 * \param[in] opt option for which we want the value.
-		 * \param[out] value option value. Type is defined by
+		 * \param[in] value option value. Type is defined by
 		 *		\ref lis_option_descriptor.type.
 		 * \param[out] set_flags (can be NULL). Indicates side effect of setting this value.
 		 * \retval LIS_OK value has been successfully set. See \ref LIS_IS_OK.
