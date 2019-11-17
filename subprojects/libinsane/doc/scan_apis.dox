@@ -60,7 +60,7 @@ Sane on MacOSX is not supported by Libinsane. Contributions are welcome.
 Please note that I (Jerome Flesch) don't own a Mac so if you do add this
 support, you will have to:
 
-- Deploy a [buildslave](https://buildbot.net/) to run the tests automatically.
+- Deploy a gitlab-runner to run the tests automatically.
 - Maintain it.
 
 
@@ -83,11 +83,11 @@ Limitations of Libinsane support:
 
 TWAIN on Linux is not supported by Libinsane. Contributions are welcome.
 
-Sane on MacOSX is not supported by Libinsane. Contributions are welcome.
+TWAIN on MacOSX is not supported by Libinsane. Contributions are welcome.
 Please note that I (Jerome Flesch) don't own a Mac so if you do add this
 support, you will have to:
 
-- Deploy a [buildslave](https://buildbot.net/) to run the tests automatically.
+- Deploy a gitlab-runner to run the tests automatically.
 - Maintain it.
 
 
@@ -154,7 +154,7 @@ There are actually 2 implementations for the WIA API:
   actually a hack reading the file as it is being written.
   This implementation is not used by Libinsane.
 
-WIA2 provide also features that Libinsane doesn't support:
+WIA2 provides also features that Libinsane doesn't support:
 
 - Access to devices other than scanners (camera, etc)
 - Access to file storages on devices
@@ -172,7 +172,7 @@ Not supported by Libinsane. Contributions are welcome.
 Please note that I (Jerome Flesch) don't own a Mac so if you do add this
 support, you will have to:
 
-- Deploy a [buildslave](https://buildbot.net/) to run the tests automatically.
+- Deploy a gitlab-runner to run the tests automatically.
 - Maintain it.
 
 */
