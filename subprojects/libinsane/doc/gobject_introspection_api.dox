@@ -9,7 +9,7 @@ Universal API for any programming language.
 
 # Detailed documentation
 
-[GObject Introspection bindings documentation](libinsane-gobject/index.html)
+[GObject Introspection bindings documentation](../libinsane-gobject/index.html)
 
 
 # Usage examples
