@@ -566,11 +566,21 @@ static enum lis_error get_scan_parameters(
 		return err;
 	}
 
-	assert(output[0].vt == VT_I4);
-	assert(output[1].vt == VT_I4);
-	assert(output[2].vt == VT_I4);
-	assert(output[3].vt == VT_I4);
-	assert(output[4].vt == VT_CLSID);
+	if (output[0].vt != VT_I4 || output[1].vt != VT_I4
+			|| output[2].vt != VT_I4 || output[3].vt != VT_I4) {
+		lis_log_error(
+			"Got unexpected value types for scan frame: %d %d %d %d",
+			output[0].vt, output[1].vt, output[2].vt, output[3].vt
+		);
+		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+	}
+	if (output[4].vt != VT_CLSID) {
+		lis_log_error(
+			"Got unexpected value type for scan image format: %d",
+			output[4].vt
+		);
+		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+	}
 
 	parameters->width = output[1].lVal - output[0].lVal + 1;
 	parameters->height = output[3].lVal - output[2].lVal + 1;
