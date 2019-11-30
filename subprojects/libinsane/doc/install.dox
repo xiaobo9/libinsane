@@ -53,8 +53,10 @@ sudo dnf install sparse clang-tools-extra python3-pyyaml
 ```
 git clone https://gitlab.gnome.org/World/OpenPaperwork/libinsane.git
 cd libinsane
-make
-make test  # optional
+# prefix must be set immediately (because of the way Meson and Ninja do things)
+# (see below)
+make PREFIX=/usr
+make test PREFIX=/usr  # optional
 ```
 
 #### Installation
