@@ -93,9 +93,9 @@ Some options, while not guaranteed to be present, are available on most devices:
     No guarantees regarding the type of its value.
   - `tl-y`: Top left corner of the area that will be scanner. Y coordinates.
     No guarantees regarding the type of its value.
-  - `br-x`: Bottom left corner of the area that will be scanner. X coordinates.
+  - `br-x`: Bottom right corner of the area that will be scanner. X coordinates.
     No guarantees regarding the type of its value.
-  - `br-y`: Bottom left corner of the area that will be scanner. Y coordinates.
+  - `br-y`: Bottom right corner of the area that will be scanner. Y coordinates.
     No guarantees regarding the type of its value.
   - Guarantee: By default, those options will be set so the scanner scans
     the biggest area possible.
