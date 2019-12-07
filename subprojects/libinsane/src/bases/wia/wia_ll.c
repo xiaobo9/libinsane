@@ -1174,7 +1174,7 @@ static enum lis_error wiall_get_device(
 		return LIS_ERR_NO_MEM;
 	}
 
-	lis_log_debug("WiaItem2->CreateDevice(%s) ...", in_dev_id);
+	lis_log_debug("WiaDevMgr2->CreateDevice(%s) ...", in_dev_id);
 	hr = private->wia_dev_mgr->lpVtbl->CreateDevice(
 		private->wia_dev_mgr,
 		0, // reserved
@@ -1183,13 +1183,13 @@ static enum lis_error wiall_get_device(
 	);
 	SysFreeString(dev_id);
 	lis_log_debug(
-		"WiaItem2->CreateDevice(%s): 0x%lX",
+		"WiaDevMgr2->CreateDevice(%s): 0x%lX",
 		in_dev_id, hr
 	);
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
 		lis_log_error(
-			"WiaItem2->CreateDevice(%s) failed: 0x%lX -> 0x%X, %s",
+			"WiaDevMgr2->CreateDevice(%s) failed: 0x%lX -> 0x%X, %s",
 			in_dev_id, hr, err, lis_strerror(err)
 		);
 		lis_log_error("wiall_get_device(%s) failed", in_dev_id);
