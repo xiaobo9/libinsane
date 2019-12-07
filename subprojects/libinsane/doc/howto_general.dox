@@ -142,4 +142,31 @@ while not session.end_of_feed()
 session.cancel()
 ```
 
+
+### Choosing a buffer size for `scan_read()`
+
+On GNU/Linux (Sane), `scan_read()` is pretty much a direct call to `sane_read()`,
+which itself is almost a direct call the backend `read()` function. So during
+a scan, when you are not calling `scan_read()`,  backend may be unable to
+do anything. If the backend doesn't communicate with the scanner for too long,
+communication may time out.
+
+On Windows (WIA/TWAIN), data from the scanner are immediately handled by a
+dedicated thread and stored in a queue. When you call `scan_read()`, you are
+actually getting data from this queue. If you don't call `scan_read()` often
+enough, raw data may accumulate in this in-memory queue. This may not be what
+you want.
+
+Therefore the buffer size depends on what you can process quickly.
+You don't want to spend too much time processing the data
+`scan_read()` returns before calling it again.
+
+On the other end, using a buffer too small means calling `scan_read()` much
+more often, which will decrease performances.
+
+The recommended range for the buffer size is 4kB-128kB. By default 64kB
+is suggested. If you have to do some heavy processing on the chunks coming
+from the scanner (for instance to display them), you may want to consider
+doing it in a separated thread.
+
 */
