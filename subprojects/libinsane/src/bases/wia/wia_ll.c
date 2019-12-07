@@ -653,6 +653,8 @@ static enum lis_error wiall_item_get_children(
 		struct lis_item *self, struct lis_item ***out_children
 	)
 {
+	static const struct lis_item *empty_list[] = { NULL };
+
 	struct wiall_item_private *private = WIALL_ITEM_PRIVATE(self);
 	HRESULT hr;
 	enum lis_error err;
@@ -675,10 +677,19 @@ static enum lis_error wiall_item_get_children(
 		&item_enum
 	);
 	lis_log_debug("%s->EnumChildItems(): 0x%lX", self->name, hr);
+
+	if (hr != E_INVALIDARG) {
+		// E_INVALIDARG is the WIA2 reply we get when we call EnumChildItems()
+		// on child items.
+		// But Libinsane replies with an empty list in that case.
+		*out_children = (struct lis_item **)empty_list;
+		return LIS_OK;
+	}
+
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
 		lis_log_error(
-			"%s->EnumChjldItems() failed: 0x%lX -> 0x%X, %s",
+			"%s->EnumChildItems() failed: 0x%lX -> 0x%X, %s",
 			self->name, hr, err, lis_strerror(err)
 		);
 		lis_log_debug("wiall_item_get_children() failed");
@@ -689,7 +700,7 @@ static enum lis_error wiall_item_get_children(
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
 		lis_log_error(
-			"%s->EnumChjldItems()->GetCount() failed:"
+			"%s->EnumChildItems()->GetCount() failed:"
 			" 0x%lX -> 0x%X, %s",
 			self->name, hr, err, lis_strerror(err)
 		);
