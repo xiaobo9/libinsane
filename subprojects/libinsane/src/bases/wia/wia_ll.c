@@ -678,7 +678,7 @@ static enum lis_error wiall_item_get_children(
 	);
 	lis_log_debug("%s->EnumChildItems(): 0x%lX", self->name, hr);
 
-	if (hr != E_INVALIDARG) {
+	if (hr == E_INVALIDARG) {
 		// E_INVALIDARG is the WIA2 reply we get when we call EnumChildItems()
 		// on child items.
 		// But Libinsane replies with an empty list in that case.
