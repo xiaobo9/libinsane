@@ -22,6 +22,10 @@ a device type name, and more importantly a device identifier. The device
 identifier can then be used to access the device (with
 `implementation.get_device()`).
 
+LibInsane tries to return only devices that are actually configured and
+online. If the scanner is shut down or disconnected, it is not returned.
+However this behaviour is (not yet) guaranteed.
+
 
 ### Items, devices and sources
 
