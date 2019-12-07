@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <wia.h>
+
 #include <libinsane/log.h>
 #include <libinsane/util.h>
 
@@ -78,6 +80,9 @@ char *lis_propvariant2char(PROPVARIANT *prop)
 enum lis_error hresult_to_lis_error(HRESULT hr) {
 	switch (hr) {
 		case S_OK: return LIS_OK;
+
+		/* code we get when calling get_device() with an invalid ID */
+		case WIA_S_NO_DEVICE_AVAILABLE: return LIS_ERR_INVALID_VALUE;
 
 		case E_INVALIDARG: return LIS_ERR_INVALID_VALUE;
 		case E_NOTIMPL: return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;

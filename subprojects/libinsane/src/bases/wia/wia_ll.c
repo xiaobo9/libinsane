@@ -1177,11 +1177,11 @@ static enum lis_error wiall_get_device(
 	);
 	if (FAILED(hr)) {
 		err = hresult_to_lis_error(hr);
-		lis_log_debug(
+		lis_log_error(
 			"WiaItem2->CreateDevice(%s) failed: 0x%lX -> 0x%X, %s",
 			in_dev_id, hr, err, lis_strerror(err)
 		);
-		lis_log_debug("wiall_get_device(%s) failed", in_dev_id);
+		lis_log_error("wiall_get_device(%s) failed", in_dev_id);
 		FREE(item);
 		return err;
 	}
