@@ -512,7 +512,11 @@ static enum lis_error lis_sane_item_get_scan_parameters(
 
 	switch(p.format) {
 		case SANE_FRAME_GRAY:
-			out_p->format = LIS_IMG_FORMAT_GRAYSCALE_8;
+			if (p.depth == 1) {
+				out_p->format = LIS_IMG_FORMAT_BW_1;
+			} else {
+				out_p->format = LIS_IMG_FORMAT_GRAYSCALE_8;
+			}
 			break;
 		case SANE_FRAME_RGB:
 			out_p->format = LIS_IMG_FORMAT_RAW_RGB_24;
