@@ -38,6 +38,8 @@ Libinsane provides an item tree (inspired by WIA2):
   sources.
 - Root items (devices) provide children but children (sources) will always
   return an empty list of children.
+- Child items (sources) never have any children.
+- On a given device, child items (sources) names are always unique.
 
 All items provide a set of options.
 
