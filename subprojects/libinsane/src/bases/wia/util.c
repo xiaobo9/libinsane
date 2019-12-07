@@ -77,6 +77,30 @@ char *lis_propvariant2char(PROPVARIANT *prop)
 }
 
 
+static void print_unknown_hresult(HRESULT hr) {
+	LPTSTR errorText = NULL;
+
+	FormatMessage(
+		FORMAT_MESSAGE_FROM_SYSTEM
+		| FORMAT_MESSAGE_ALLOCATE_BUFFER
+		| FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		hr,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&errorText, 0,
+		NULL
+	);
+
+	if (errorText == NULL)
+	{
+		lis_log_error("Unknown Windows error code: 0x%lX", hr);
+	} else {
+		lis_log_error("Unknown Windows error code: 0x%lX, %s", hr, errorText);
+		LocalFree(errorText);
+		errorText = NULL;
+	}
+}
+
 enum lis_error hresult_to_lis_error(HRESULT hr) {
 	switch (hr) {
 		case S_OK: return LIS_OK;
@@ -94,9 +118,7 @@ enum lis_error hresult_to_lis_error(HRESULT hr) {
 			);
 			break;
 		default:
-			lis_log_warning(
-				"Unknown Windows error code: 0x%lX", hr
-			);
+			print_unknown_hresult(hr);
 			break;
 	}
 
