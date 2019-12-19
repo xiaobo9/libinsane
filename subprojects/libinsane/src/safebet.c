@@ -40,12 +40,6 @@ static const struct {
 		.enabled_by_default = 1,
 	},
 	{
-		.name = "normalizer_all_opts_on_all_sources",
-		.env = "LIBINSANE_NORMALIZER_ALL_OPTS_ON_ALL_SOURCES",
-		.wrap_cb = lis_api_normalizer_all_opts_on_all_sources,
-		.enabled_by_default = 1,
-	},
-	{
 		.name = "normalizer_opt_aliases",
 		.env = "LIBINSANE_NORMALIZER_OPT_ALIASES",
 		.wrap_cb = lis_api_normalizer_opt_aliases,
@@ -133,6 +127,12 @@ static const struct {
 		.name = "workaround_one_page_flatbed",
 		.env = "LIBINSANE_WORKAROUND_ONE_PAGE_FLATBED",
 		.wrap_cb = lis_api_workaround_one_page_flatbed,
+		.enabled_by_default = 1,
+	},
+	{
+		.name = "normalizer_all_opts_on_all_sources",
+		.env = "LIBINSANE_NORMALIZER_ALL_OPTS_ON_ALL_SOURCES",
+		.wrap_cb = lis_api_normalizer_all_opts_on_all_sources,
 		.enabled_by_default = 1,
 	},
 	{	// dedicated thread wrapper should be loaded last
