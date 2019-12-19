@@ -73,10 +73,11 @@ static int one_end_of_feed(struct lis_scan_session *self)
 		case LIS_ITEM_DEVICE:
 		case LIS_ITEM_UNIDENTIFIED:
 			lis_log_warning(
-				"Unexpected source type: %d."
+				"Unexpected source type: %d (%s)."
 				" Don't know whether we must stop at the"
-				" first page or assume the driver works as expected",
-				private->item->type
+				" first page."
+				" Assuming the driver works as expected",
+				private->item->type, private->item->name
 			);
 			break;
 	}
