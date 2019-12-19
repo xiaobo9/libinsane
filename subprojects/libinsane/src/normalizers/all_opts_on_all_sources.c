@@ -238,12 +238,9 @@ static enum lis_error opts_source_get_options(
 	int dev_opt_idx, source_opt_idx;
 	int nb_opts;
 
-	err = private->dev->wrapped->get_options(private->dev->wrapped, &dev_opts);
-	if (LIS_IS_ERROR(err)) {
-		lis_log_error("Failed to get options from root item: 0x%X, %s",
-			err, lis_strerror(err));
-		return err;
-	}
+	/* we need to figure out how manu option description pointers
+	 * we must allocate.
+	 */
 
 	err = private->wrapped->get_options(private->wrapped, &source_opts);
 	if (LIS_IS_ERROR(err)) {
@@ -252,10 +249,15 @@ static enum lis_error opts_source_get_options(
 		return err;
 	}
 
-	free_options(private);
-
 	for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) { }
 	nb_opts = source_opt_idx;
+
+	err = private->dev->wrapped->get_options(private->dev->wrapped, &dev_opts);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("Failed to get options from root item: 0x%X, %s",
+			err, lis_strerror(err));
+		return err;
+	}
 
 	for (dev_opt_idx = 0 ; dev_opts[dev_opt_idx] != NULL ; dev_opt_idx++) {
 		for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) {
@@ -272,6 +274,8 @@ static enum lis_error opts_source_get_options(
 		}
 	}
 
+	free_options(private);
+
 	if (nb_opts == 0) {
 		*out_descs = source_opts;
 		return LIS_OK;
@@ -283,11 +287,32 @@ static enum lis_error opts_source_get_options(
 		return LIS_ERR_NO_MEM;
 	}
 
+	/* now we can actually copy the options.
+	 *
+	 * Keep in mind that in some cases, calling get_options() may
+	 * free the previous results of get_options
+	 */
+
+	err = private->wrapped->get_options(private->wrapped, &source_opts);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("Failed to get options from child item [%s]: 0x%X, %s",
+			self->name, err, lis_strerror(err));
+		return err;
+	}
+
 	nb_opts = 0;
 	for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) {
 		private->opts[nb_opts] = source_opts[source_opt_idx];
 		nb_opts++;
 	}
+
+	err = private->dev->wrapped->get_options(private->dev->wrapped, &dev_opts);
+	if (LIS_IS_ERROR(err)) {
+		lis_log_error("Failed to get options from root item: 0x%X, %s",
+			err, lis_strerror(err));
+		return err;
+	}
+
 	for (dev_opt_idx = 0 ; dev_opts[dev_opt_idx] != NULL ; dev_opt_idx++) {
 		for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) {
 			if (strcasecmp(dev_opts[dev_opt_idx]->name,
