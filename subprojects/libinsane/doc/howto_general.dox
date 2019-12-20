@@ -94,31 +94,50 @@ a list.
 Only a small subset of options are guaranteed to be found on any child item
 (inspired by [Sane](http://www.sane-project.org/sane2/0.08/doc014.html)):
 
-- `mode`: value is guaranteed to be a string. guaranteed possible values:
-  `Color`, `LineArt` (black & white), `Gray (grayscale)`
-- `resolution`: value is guaranteed to be an integer. Constraint is guaranteed
-  to be expressed as a list of integer values.
+LibInsane offers guarantees only on the options below. All the other options
+are device-dependant and driver-dependant.
 
-Some options, while not guaranteed to be present, are available on most devices:
 
-- Scan area options:
-  - `tl-x`: Top left corner of the area that will be scanner. X coordinates.
-    No guarantees regarding the type of its value.
-  - `tl-y`: Top left corner of the area that will be scanner. Y coordinates.
-    No guarantees regarding the type of its value.
-  - `br-x`: Bottom right corner of the area that will be scanner. X coordinates.
-    No guarantees regarding the type of its value.
-  - `br-y`: Bottom right corner of the area that will be scanner. Y coordinates.
-    No guarantees regarding the type of its value.
-  - Guarantee: By default, those options will be set so the scanner scans
-    the biggest area possible.
+#### Option 'mode'
 
-Other options are device-dependant and driver-dependant.
+While option 'mode' is not guaranteed to be present on all scanners, it has
+been seen on all scanners up to now.
 
-Once all the options are set, we can finally scan something.
+If present, Libinsane will normalize 3 of the possibles values:
+`Color` (24bits RGB), `Gray` (grayscale), `LineArt` (black & white).
+Other values may be available depending on the scanner and its driver.
+
+If you set `mode` to `Lineart`, there may also be an option `depth` that you
+must set to 1. This is (not yet) done automatically by Libinsane.
+
+
+#### Option 'resolution'
+
+While option `resolution` is not guaranteed to be present on all scanners, it
+has been seen on all scanners up to now.
+
+Value is guaranteed by Libinsane to be an integer. Unit is always DPI.
+Constraint is guaranteed by Libinsane to be expressed as a list of integer
+values.
+
+
+#### Scan area
+
+Scan area is defined as the value of 4 options:
+
+- `tl-x`: Top left corner of the area that will be scanner. X coordinates.
+- `tl-y`: Top left corner of the area that will be scanner. Y coordinates.
+- `br-x`: Bottom right corner of the area that will be scanner. X coordinates.
+- `br-y`: Bottom right corner of the area that will be scanner. Y coordinates.
+- Guarantee: By default, those options will be set so the scanner scans
+  the biggest area possible.
+- Not guaranteed: Those options may not be present at all. There is unit is
+  (not yet) guaranteed.
 
 
 ### Scanning
+
+Once all the options are set, we can finally scan something.
 
 Using `item.scan_start()` on a child node, you can obtain a scan session.
 From a scan session, you can obtain one or more pages / scanner images.
@@ -152,6 +171,8 @@ while not session.end_of_feed()
 
 session.cancel()
 ```
+
+Duplex scans are simply provided as 2 pages.
 
 
 ### Choosing a buffer size for `scan_read()`
