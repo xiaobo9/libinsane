@@ -1,3 +1,29 @@
+2019/12/20 - 1.0.3:
+- Various documentation improvements (many thanks to Vasilii Blazhnov
+  questions)
+- Sane: Fix: When getting number lists (for instance the possible resolutions),
+  do not drop the last value.
+- Safebet: Fix support of Canon Lide 30 (driver Sane plustek ; and possibly
+  other scanners with a similar problem): Reorder the workaround/normalizers
+  to make sure the Libinsane does not switch the option 'source' too many
+  times. Otherwise the (buggy) driver ends up using the wrong source, with a
+  wrong scan area.
+- WIA2: Fix: Canon i-SENSYS MF3010: IStream.seek() can be called with argument
+  'plibNewPosition' set to NULL.
+- WIA2: Fix crashes caused by drivers that keeps using the IStream after
+  releasing it (implies a small memory leak at each scanned page ... :/).
+- WIA2: Fix: When an invalid device ID is passed as argument of
+  impl->get_device(), it now returns INVALID_VALUE instead of UNKNOWN_ERROR.
+- WIA2: Fix: When requesting the children of a child item, return an empty list
+  instead of an error (like other implementations)
+- WIA2: Handle correctly some other error codes that may be returned by the
+  driver.
+- Sane: Fix support of Black&White output (mode=Lineart).
+- All APIs: Fix impl->base_name (previously, multiplexer always set it to
+  NULL).
+- Fix compilation as a 64bits library on Windows.
+
+
 2019/10/14 - 1.0.2:
 - Libinsane/gobject: Added mising flag Libinsane.CAPABILITY_INACTIVE.
 
