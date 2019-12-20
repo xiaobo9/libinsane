@@ -693,9 +693,9 @@ static struct lis_value_list sane_word_list_to_lis_list(enum lis_value_type type
 		lis_log_error("Out of memory");
 		return lis_list;
 	}
-	lis_list.nb_values = sane_list[0] - 1;
+	lis_list.nb_values = sane_list[0];
 
-	for (i = 1 ; i < sane_list[0] ; i++) {
+	for (i = 1 ; i < sane_list[0] + 1 ; i++) {
 		switch(type) {
 			case LIS_TYPE_BOOL:
 				lis_list.values[i - 1].boolean = sane_list[i];
