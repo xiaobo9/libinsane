@@ -26,6 +26,13 @@ LibInsane tries to return only devices that are actually configured and
 online. If the scanner is shut down or disconnected, it is not returned.
 However this behaviour is (not yet) guaranteed.
 
+Beware that device IDs may change over time. For instance, with Sane drivers,
+some IDs include the bus and device numbers: `sane:plustek:libusb:002:079`,
+after disconnecting/reconnecting the scanner, may become
+`sane:plustek:libusb:002:080`. There is not much Libinsane can do about that.
+If the scanner ID you're looking for is not available anymore, you may want
+your application to look for the closest scanner ID it can find.
+
 
 ### Items, devices and sources
 
