@@ -139,6 +139,10 @@ Scan area is defined as the value of 4 options:
 
 Once all the options are set, we can finally scan something.
 
+While scanning, your application *must* *not* try to list devices nor access
+any other device nor change the options. If it does, the behaviour of Libinsane
+and the underlying is undefined.
+
 Using `item.scan_start()` on a child node, you can obtain a scan session.
 From a scan session, you can obtain one or more pages / scanner images.
 
