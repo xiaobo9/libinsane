@@ -688,7 +688,7 @@ static struct lis_value_list sane_word_list_to_lis_list(enum lis_value_type type
 		return lis_list;
 	}
 
-	lis_list.values = calloc(sane_list[0] - 1, sizeof(union lis_value));
+	lis_list.values = calloc(sane_list[0], sizeof(union lis_value));
 	if (lis_list.values == NULL) {
 		lis_log_error("Out of memory");
 		return lis_list;
