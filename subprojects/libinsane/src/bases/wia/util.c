@@ -107,6 +107,11 @@ enum lis_error hresult_to_lis_error(HRESULT hr) {
 
 		/* code we get when calling get_device() with an invalid ID */
 		case WIA_S_NO_DEVICE_AVAILABLE: return LIS_ERR_INVALID_VALUE;
+		case WIA_ERROR_PAPER_JAM: return LIS_ERR_JAMMED;
+		case WIA_ERROR_PAPER_PROBLEM: return LIS_ERR_JAMMED;
+		case WIA_ERROR_BUSY: return LIS_ERR_DEVICE_BUSY;
+		case WIA_ERROR_WARMING_UP: return LIS_WARMING_UP;
+		case WIA_ERROR_DEVICE_LOCKED: return LIS_ERR_HW_IS_LOCKED;
 
 		case E_INVALIDARG: return LIS_ERR_INVALID_VALUE;
 		case E_NOTIMPL: return LIS_ERR_INTERNAL_NOT_IMPLEMENTED;

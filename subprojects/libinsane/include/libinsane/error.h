@@ -20,7 +20,7 @@ enum lis_error {
 	LIS_ERR_UNSUPPORTED, /*!< Operation is not supported. */
 	LIS_ERR_INVALID_VALUE, /*!< Invalid value. */
 	LIS_ERR_JAMMED, /*!< Your scanner is a mess. Go unmess it first. */
-	LIS_ERR_COVER_OPEN, /*!< Scanner cover is opened. Pleae close the scanner first. */
+	LIS_ERR_COVER_OPEN, /*!< Scanner cover is opened. Please close the scanner first. */
 	LIS_ERR_IO_ERROR, /*!< Basically, things didn't work and we don't know why. */
 	LIS_ERR_NO_MEM, /*!< Out of memory */
 	LIS_ERR_ACCESS_DENIED, /*!< Operation not allowed. */
