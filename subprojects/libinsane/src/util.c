@@ -103,7 +103,7 @@ union lis_value lis_sub(enum lis_value_type type, union lis_value a, union lis_v
 			return out;
 	}
 
-	lis_log_error("Can't substract type %d", type);
+	lis_log_error("Can't subtract type %d", type);
 	assert(0);
 	out.integer = 0;
 	return out;
