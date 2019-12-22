@@ -40,15 +40,21 @@ def get_source(dev, source_name):
     print("Looking for scan sources ...")
     sources = dev.get_children()
     print("Found {} scan sources:".format(len(sources)))
+
     for src in sources:
         print("- {}".format(src.get_name()))
+
+    for src in sources:
         if src.get_name().lower() == source_name.lower():
-            source = src
-            break
-    else:
-        raise Exception("Source '{}' not found".format(source_name))
-    print("Will use scan source {}".format(source.get_name()))
-    return source
+            print("Will use scan source {}".format(src.get_name()))
+            return src
+
+    for src in sources:
+        if src.get_name().lower().startswith(source_name.lower()):
+            print("Will use scan source {}".format(src.get_name()))
+            return src
+
+    raise Exception("Source '{}' not found".format(source_name))
 
 
 def list_opts(item):
