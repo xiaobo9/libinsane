@@ -188,25 +188,42 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 			: opt->constraint.possible.range.min
 		);
 	} else {
-		lis_log_info("Current value of option '%s' = %d", opt->name, value.integer);
 		// Sane + Epson Perfection 1250
 		// https://gitlab.gnome.org/World/OpenPaperwork/libinsane/issues/17
 		// https://openpaper.work/en-us/scanner_db/report/328/
 		if (opt->value.type == LIS_TYPE_INTEGER) {
+			lis_log_info("Current value of option '%s' = %d", opt->name, value.integer);
 			if (minmax > 0) {
 				// if the current value is already above the max, we keep it as it
-				value.integer = MAX(value.integer, opt->constraint.possible.range.max.integer);
+				if (value.integer >= opt->constraint.possible.range.max.integer) {
+					lis_log_info("Option '%s' already to the max", opt->name);
+					return LIS_OK;
+				}
+				value.integer = opt->constraint.possible.range.max.integer;
 			} else {
 				// if the current value is already below the min, we keep it as it
-				value.integer = MIN(value.integer, opt->constraint.possible.range.min.integer);
+				if (value.integer <= opt->constraint.possible.range.min.integer) {
+					lis_log_info("Option '%s' already to the min", opt->name);
+					return LIS_OK;
+				}
+				value.integer = opt->constraint.possible.range.min.integer;
 			}
 		} else if (opt->value.type == LIS_TYPE_DOUBLE) {
+			lis_log_info("Current value of option '%s' = %f", opt->name, value.dbl);
 			if (minmax > 0) {
 				// if the current value is already above the max, we keep it as it
-				value.dbl = MAX(value.dbl, opt->constraint.possible.range.max.dbl);
+				if (value.dbl >= opt->constraint.possible.range.max.dbl) {
+					lis_log_info("Option '%s' already to the max", opt->name);
+					return LIS_OK;
+				}
+				value.dbl = opt->constraint.possible.range.max.dbl;
 			} else {
 				// if the current value is already below the min, we keep it as it
-				value.dbl = MIN(value.dbl, opt->constraint.possible.range.min.dbl);
+				if (value.dbl <= opt->constraint.possible.range.min.dbl) {
+					lis_log_info("Option '%s' already to the min", opt->name);
+					return LIS_OK;
+				}
+				value.dbl = opt->constraint.possible.range.min.dbl;
 			}
 		} else {
 			assert(0);
