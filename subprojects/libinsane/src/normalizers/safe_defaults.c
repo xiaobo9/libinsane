@@ -87,11 +87,6 @@ static const struct safe_setter g_safe_setters[] = {
 	// page-height: Specifies the height of the media.
 	// ==> Default values are crap.
 	// ==> Since this feature is Fujistu-specific, here we disable automatic centering.
-	// WORKAROUND(Jflesch): Sane + FUJITSU fi-6130dj
-	// https://openpaper.work/fr/scanner_db/report/392
-	// page-width / page-height must not be set to the
-	// max because scanner will deny it.
-
 	{
 		.opt_name = "page-width", .cb = set_to_limit,
 		.cb_data = &g_numbers[1], // max
@@ -99,7 +94,7 @@ static const struct safe_setter g_safe_setters[] = {
 	},
 	{
 		.opt_name = "page-height", .cb = set_to_limit,
-		.cb_data = &g_numbers[5], // close to max
+		.cb_data = &g_numbers[1], // max
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 
@@ -206,9 +201,7 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 				value.integer = MIN(value.integer, opt->constraint.possible.range.min.integer);
 			}
 		} else if (opt->value.type == LIS_TYPE_DOUBLE) {
-			if (minmax >= 2) {
-				value.dbl -= opt->constraint.possible.range.interval.dbl;
-			} else if (minmax > 0) {
+			if (minmax > 0) {
 				// if the current value is already above the max, we keep it as it
 				value.dbl = MAX(value.dbl, opt->constraint.possible.range.max.dbl);
 			} else {
