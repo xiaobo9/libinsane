@@ -38,6 +38,11 @@ struct safe_setter {
 	int flags;
 };
 
+struct limit_data {
+	int minmax;
+	double offset;
+};
+
 
 static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
 static enum lis_error set_str(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
@@ -45,7 +50,19 @@ static enum lis_error set_preview(struct lis_option_descriptor *opt, void *cb_da
 static enum lis_error set_int(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
 static enum lis_error set_boolean(struct lis_option_descriptor *opt, void *cb_data, int *set_flags);
 
-static int g_numbers[] = { -1, 1, 0, 300, 24, 2 };
+static int g_numbers[] = {
+	[0] = 0,
+	[1] = 1,
+	[2] = -1,
+	[3] = 300,
+	[4] = 24,
+};
+
+static struct limit_data g_limit_data[] = {
+	[0] = { .minmax = -1, .offset = 0.0 },
+	[1] = { .minmax = 1, .offset = 0.0 },
+	[2] = { .minmax = 1, .offset = -1.0 },
+};
 
 static const struct safe_setter g_safe_setters[] = {
 	// all backends:
@@ -55,7 +72,7 @@ static const struct safe_setter g_safe_setters[] = {
 	},
 	{
 		.opt_name = OPT_NAME_PREVIEW, .cb = set_preview,
-		.cb_data = &g_numbers[2] /* false */, .flags = SET_IMMEDIATELY,
+		.cb_data = &g_numbers[0] /* false */, .flags = SET_IMMEDIATELY,
 	},
 	{
 		.opt_name = OPT_NAME_RESOLUTION, .cb = set_int,
@@ -63,22 +80,22 @@ static const struct safe_setter g_safe_setters[] = {
 	},
 	{
 		.opt_name = OPT_NAME_TL_X, .cb = set_to_limit,
-		.cb_data = &g_numbers[0], // min
+		.cb_data = &g_limit_data[0], // min
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 	{
 		.opt_name = OPT_NAME_TL_Y, .cb = set_to_limit,
-		.cb_data = &g_numbers[0], // min
+		.cb_data = &g_limit_data[0], // min
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 	{
 		.opt_name = OPT_NAME_BR_X, .cb = set_to_limit,
-		.cb_data = &g_numbers[1], // max
+		.cb_data = &g_limit_data[1], // max
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 	{
 		.opt_name = OPT_NAME_BR_Y, .cb = set_to_limit,
-		.cb_data = &g_numbers[1], // max
+		.cb_data = &g_limit_data[1], // max
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 
@@ -89,11 +106,14 @@ static const struct safe_setter g_safe_setters[] = {
 	// ==> Since this feature is Fujistu-specific, here we disable automatic centering.
 	{
 		.opt_name = "page-width", .cb = set_to_limit,
-		.cb_data = &g_numbers[1], // max
+		.cb_data = &g_limit_data[1], // max
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 	{
 		.opt_name = "page-height", .cb = set_to_limit,
+		// WORKAROUND(Jflesch): Fujitsu Fi-6130:
+		// page-height must not be set to max, but to very slightly
+		// less. If set to max, scan_start() fails in most cases.
 		.cb_data = &g_numbers[1], // max
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
@@ -109,14 +129,14 @@ static const struct safe_setter g_safe_setters[] = {
 	// WIA2:
 	{
 		.opt_name = "pages", .cb = set_int,
-		.cb_data = &g_numbers[2], /* 0 = infinite */
+		.cb_data = &g_numbers[0], /* 0 = infinite */
 		.flags = SET_IMMEDIATELY,
 	},
 
 	// TWAIN:
 	{
 		.opt_name = "transfer_count", .cb = set_int,
-		.cb_data = &g_numbers[0], /* -1 */
+		.cb_data = &g_numbers[2], /* -1 */
 		.flags = SET_IMMEDIATELY,
 	},
 	{
@@ -155,10 +175,10 @@ static const struct safe_setter g_safe_setters[] = {
 
 static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_data, int *set_flags)
 {
-	int minmax = *((int *)cb_data);
+	const struct limit_data *data = cb_data;
 	union lis_value value;
 	enum lis_error err;
-	const char *minmax_str = minmax > 0 ? "max" : "min";
+	const char *minmax_str = data->minmax > 0 ? "max" : "min";
 
 	if (opt->constraint.type != LIS_CONSTRAINT_RANGE) {
 		lis_log_warning("Unexpected constraint type for option '%s': %d instead of %d",
@@ -183,7 +203,7 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 			opt->name, err, lis_strerror(err)
 		);
 		value = (
-			minmax > 0
+			data->minmax > 0
 			? opt->constraint.possible.range.max
 			: opt->constraint.possible.range.min
 		);
@@ -193,7 +213,7 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 		// https://openpaper.work/en-us/scanner_db/report/328/
 		if (opt->value.type == LIS_TYPE_INTEGER) {
 			lis_log_info("Current value of option '%s' = %d", opt->name, value.integer);
-			if (minmax > 0) {
+			if (data->minmax > 0) {
 				// if the current value is already above the max, we keep it as it
 				if (value.integer >= opt->constraint.possible.range.max.integer) {
 					lis_log_info("Option '%s' already to the max", opt->name);
@@ -208,9 +228,11 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 				}
 				value.integer = opt->constraint.possible.range.min.integer;
 			}
+
+			value.integer += data->offset;
 		} else if (opt->value.type == LIS_TYPE_DOUBLE) {
 			lis_log_info("Current value of option '%s' = %f", opt->name, value.dbl);
-			if (minmax > 0) {
+			if (data->minmax > 0) {
 				// if the current value is already above the max, we keep it as it
 				if (value.dbl >= opt->constraint.possible.range.max.dbl) {
 					lis_log_info("Option '%s' already to the max", opt->name);
@@ -225,6 +247,8 @@ static enum lis_error set_to_limit(struct lis_option_descriptor *opt, void *cb_d
 				}
 				value.dbl = opt->constraint.possible.range.min.dbl;
 			}
+
+			value.dbl += data->offset;
 		} else {
 			assert(0);
 		}
