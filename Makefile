@@ -1,9 +1,17 @@
+UNAME := $(shell uname)
+
 PYTHON ?= python3
 VERBOSE ?=
 PREFIX ?= /usr/local
 
 SRCS = $(wildcard src/libinsane/*.c)
 HEADERS = $(wildcard include/libinsane/*.h)
+
+ifeq ($(UNAME), Linux)
+CFLAGS=-O2 -D_FORTIFY_SOURCE=2
+else
+CFLAGS=
+endif
 
 all: build check test
 
@@ -17,7 +25,9 @@ build_py:
 
 build/build.ninja:
 	mkdir -p build
-	(cd build && meson --werror --warnlevel 2 --prefix=${PREFIX} ..)
+	echo "Uname: " $(UNAME)
+	echo "CFLAGS: " $(CFLAGS)
+	(cd build && CFLAGS="$(CFLAGS)" meson --werror --warnlevel 2 --prefix=${PREFIX} ..)
 
 build_c: build/build.ninja
 	(cd build && ninja)

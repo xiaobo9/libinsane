@@ -55,6 +55,7 @@ static enum lis_error build_base_name(
 	int i;
 	char *base_name = NULL;
 	char *n_base_name = NULL;
+	int r = 0;
 
 	for (i = 0 ; i < nb_input_implementations ; i++) {
 		if (base_name == NULL) {
@@ -63,13 +64,13 @@ static enum lis_error build_base_name(
 			);
 		} else {
 			n_base_name = NULL;
-			asprintf(
+			r = asprintf(
 				&n_base_name, "%s:%s", base_name,
 				input_implementations[i]->base_name
 			);
 			free(base_name);
 		}
-		if (n_base_name == NULL) {
+		if (r < 0 || n_base_name == NULL) {
 			lis_log_error("Out of memory");
 			return LIS_ERR_NO_MEM;
 		}
