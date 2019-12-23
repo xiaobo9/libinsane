@@ -157,8 +157,7 @@ extern enum lis_error lis_api_workaround_one_page_flatbed(
  *
  * - API: Sane (maybe others)
  * - Culprit: HP drivers + sane backend 'net' (+ difference of versions
- *   between servers and clients) (maybe
- *   others)
+ *   between servers and clients) (maybe others)
  *
  * Some drivers or combinations of drivers seem to be very touchy. This
  * workaround aim to reduce to a strict minimum all the calls to
@@ -171,6 +170,21 @@ extern enum lis_error lis_api_workaround_one_page_flatbed(
  * (even more when using the GObject layer).
  */
 extern enum lis_error lis_api_workaround_cache(
+	struct lis_api *to_wrap, struct lis_api **out_impl
+);
+
+
+/*!
+ * \brief Turns the lamp off at the end of the scan
+ *
+ * - API: Sane
+ * - Culprit: Canon Lide 30 + Sane backend Plustek
+ *
+ * When scanning with the Canon Lide 30, the driver doesn't turn off the
+ * lamp at the end of the scan. Without this workaround, the lamp remains
+ * on until the scanner is powered down.
+ */
+extern enum lis_error lis_api_workaround_lamp(
 	struct lis_api *to_wrap, struct lis_api **out_impl
 );
 

@@ -25,6 +25,7 @@ LIBINSANE_VALGRIND_TESTS = [
     'workaround_cache',
     'workaround_check_capabilities',
     'workaround_dedicated_thread',
+    'workaround_lamp',
     'workaround_one_page_flatbed',
     'workaround_opt_names',
     'workaround_opt_values',

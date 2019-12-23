@@ -190,6 +190,7 @@ def main():
         os.environ['LIBINSANE_WORKAROUND_CACHE'] = "0"
         os.environ['LIBINSANE_WORKAROUND_CHECK_CAPABILITIES'] = "0"
         os.environ['LIBINSANE_WORKAROUND_DEDICATED_THREAD'] = "0"
+        os.environ['LIBINSANE_WORKAROUND_LAMP'] = "0"
         os.environ['LIBINSANE_WORKAROUND_ONE_PAGE_FLATBED'] = "0"
         os.environ['LIBINSANE_WORKAROUND_OPT_NAMES'] = "0"
         os.environ['LIBINSANE_WORKAROUND_OPT_VALUES'] = "0"

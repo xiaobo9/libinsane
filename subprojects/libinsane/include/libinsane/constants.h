@@ -21,5 +21,6 @@
 #define OPT_NAME_BR_Y "br-y"
 
 #define OPT_NAME_PREVIEW "preview"
+#define OPT_NAME_LAMP_SWITCH "lamp-switch"
 
 #endif
