@@ -277,10 +277,7 @@ static HRESULT add_msg(
 }
 
 
-static HRESULT add_error(
-		struct wia_transfer *self,
-		enum lis_error error
-	)
+static HRESULT add_error(struct wia_transfer *self, enum lis_error error)
 {
 	struct wia_msg *msg;
 
@@ -344,7 +341,8 @@ static struct wia_msg *pop_msg(struct wia_transfer *self, bool wait)
 
 	LeaveCriticalSection(&self->scan.critical_section);
 
-	if (msg->type == WIA_MSG_END_OF_FEED || msg->type == WIA_MSG_ERROR) {
+	if (msg->type == WIA_MSG_END_OF_FEED) {
+		lis_log_info("end_of_feed = 1");
 		self->end_of_feed = 1;
 	}
 
@@ -442,7 +440,7 @@ static enum lis_error scan_read(
 
 	lis_log_debug("scan_read() ...");
 
-	if (self->end_of_feed || self->scan.thread == NULL) {
+	if (self->end_of_feed) {
 		lis_log_error("scan_read(): End of feed. Shouldn't be called");
 		return LIS_ERR_INVALID_VALUE;
 	}
@@ -482,6 +480,7 @@ static enum lis_error scan_read(
 			break;
 
 		case WIA_MSG_END_OF_FEED:
+			lis_log_info("end_of_feed = 1");
 			self->end_of_feed = 1;
 			self->scan.read = 0;
 			lis_log_error("scan_read(): Unexpected end of feed");
@@ -493,6 +492,7 @@ static enum lis_error scan_read(
 				self->current.msg->content.error,
 				lis_strerror(self->current.msg->content.error)
 			);
+			self->end_of_feed = 1;
 			return self->current.msg->content.error;
 
 	}
@@ -1286,10 +1286,7 @@ static DWORD WINAPI thread_download(void *_self)
 		0, /* unused */
 		&self->transfer_callback
 	);
-	lis_log_debug(
-		"WiaTransfer->Download(): 0x%lX",
-		download_hr
-	);
+	lis_log_debug("WiaTransfer->Download(): 0x%lX", download_hr);
 	lis_log_info("Written by WIA driver: %ld B", self->scan.written);
 
 	if (!FAILED(download_hr)) {
