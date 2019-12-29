@@ -21,6 +21,7 @@ endif
 
 subdir('include')
 subdir('src')
+subdir('bmp')
 
 subdir('doc')
 subdir('examples')
