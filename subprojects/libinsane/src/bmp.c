@@ -8,29 +8,7 @@
 #include <libinsane/util.h>
 
 #include "bmp.h"
-
-#ifdef OS_LINUX
-#include <endian.h>
-#else
-
-// XXX(Jflesch): assuming Windows x86 --> little endian
-
-#define le16toh(v) (v)
-#define le32toh(v) (v)
-#define htole32(v) (v)
-#define htole16(v) (v)
-
-static inline uint16_t be16toh(uint16_t v)
-{
-	return ((v << 8) | (v >> 8));
-}
-
-static inline uint16_t htobe16(uint16_t v)
-{
-	return ((v << 8) | (v >> 8));
-}
-
-#endif
+#include "endianess.h"
 
 
 enum lis_error lis_bmp2scan_params(
@@ -99,7 +77,8 @@ enum lis_error lis_bmp2scan_params(
 
 void lis_scan_params2bmp(
 		const struct lis_scan_parameters *params,
-		void *_header
+		void *_header,
+		int nb_bits_per_pixel
 	)
 {
 	struct bmp_header *header = _header;
@@ -107,7 +86,7 @@ void lis_scan_params2bmp(
 	size_t line_length;
 	size_t padding;
 
-	line_length = params->width * 3;
+	line_length = params->width * nb_bits_per_pixel / 8;
 	padding = 4 - (line_length % 4);
 	if (padding == 4) {
 		padding = 0;
@@ -118,7 +97,7 @@ void lis_scan_params2bmp(
 	header->offset_to_data = htole32(BMP_HEADER_SIZE);
 	header->remaining_header = htole32(0x28);
 	header->nb_color_planes = htole16(1);
-	header->nb_bits_per_pixel = htole16(24);
+	header->nb_bits_per_pixel = htole16(nb_bits_per_pixel);
 	// we always work from top to bottom: use negative height
 	// to indicate that
 	header->height = htole32(-1 * params->height);

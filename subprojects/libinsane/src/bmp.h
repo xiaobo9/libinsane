@@ -45,7 +45,8 @@ enum lis_error lis_bmp2scan_params(
 
 void lis_scan_params2bmp(
 	const struct lis_scan_parameters *params,
-	void *header
+	void *header,
+	int nb_bits_per_pixels
 );
 
 #endif

@@ -80,7 +80,7 @@ static void write_header(struct bmp *out, const struct lis_scan_parameters *para
 		out->line_padding = 0;
 	}
 
-	lis_scan_params2bmp(params, header);
+	lis_scan_params2bmp(params, header, 24 /* assuming RGB24 */);
 
 	fwrite(header, sizeof(header), 1, out->fp);
 
