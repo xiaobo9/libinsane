@@ -87,6 +87,10 @@ void lis_scan_params2bmp(
 	size_t padding;
 
 	line_length = params->width * nb_bits_per_pixel / 8;
+	if (nb_bits_per_pixel % 8 != 0) {
+		line_length += 1;
+	}
+
 	padding = 4 - (line_length % 4);
 	if (padding == 4) {
 		padding = 0;

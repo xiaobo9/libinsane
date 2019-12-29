@@ -2083,16 +2083,22 @@ static enum lis_error next_page(struct lis_twain_session *private)
 	);
 
 	// take into account a palette color if there is one
-	private->img.header.offset_to_data += htole32(le32toh(
-		private->img.header.nb_colors_in_palette
-	) * 4);
+	private->img.header.offset_to_data = htole32(
+		le32toh(private->img.header.offset_to_data)
+		+ (le32toh(private->img.header.nb_colors_in_palette) * 4)
+	);
+	private->img.header.file_size = htole32(
+		le32toh(private->img.header.file_size)
+		+ (le32toh(private->img.header.nb_colors_in_palette) * 4)
+	);
 
 	lis_hexdump(&private->img.header, BMP_HEADER_SIZE);
 
 	// From TWAIN example
 	// If the driver did not fill in the biSizeImage field, then compute it
 	// Each scan line of the image is aligned on a DWORD (32bit) boundary
-	if(private->img.header.pixel_data_size == 0) {
+	if (private->img.header.pixel_data_size == 0
+			&& private->img.infos.BitsPerPixel >= 24) {
 		private->img.header.pixel_data_size = htole32(
 			(
 				(
@@ -2116,8 +2122,18 @@ static enum lis_error next_page(struct lis_twain_session *private)
 
 	private->img.header_size = BMP_HEADER_SIZE;
 	private->img.header_read = 0;
-	// TODO(Jflesch): endianess of BMP header
-	private->img.img_size = private->img.header.pixel_data_size;
+	if (private->img.header.pixel_data_size != 0) {
+		private->img.img_size = htole32(
+			le32toh(private->img.header.pixel_data_size)
+			+ (le32toh(private->img.header.nb_colors_in_palette) * 4)
+		);
+	} else {
+		private->img.img_size = htole32(
+			le32toh(private->img.header.file_size)
+			- le32toh(private->img.header.offset_to_data)
+			+ (le32toh(private->img.header.nb_colors_in_palette) * 4)
+		);
+	}
 	lis_log_info(
 		"Expecting %d bytes of data", private->img.img_size
 	);
