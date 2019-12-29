@@ -50,7 +50,7 @@ static int print_hex(int offset, void *_data, size_t nb_bytes)
 }
 
 
-static void *load_file(const char *filepath, size_t *file_size)
+static void *load_file(const char *filepath, unsigned int *file_size)
 {
     struct stat st;
     FILE *fp;
@@ -269,6 +269,27 @@ static int dump_bmp_header(union bmp bmp, size_t file_size)
 
     offset = print_hex(offset, &bmp.header->nb_colors_in_palette, sizeof(bmp.header->nb_colors_in_palette));
     printf("Number of colors in palette: %u\n", le32toh(bmp.header->nb_colors_in_palette));
+    expected_pixels = le32toh(bmp.header->nb_colors_in_palette) * 4;
+    expected_pixels2 = le32toh(bmp.header->offset_to_data) - BMP_HEADER_SIZE;
+    print_hex(-1, NULL, 0);
+    if (expected_pixels == expected_pixels2) {
+        printf(
+            "Expected palette size (%s%u%s B)"
+            " and the space left for the palette (%s%u%s B) do %smatch%s\n",
+            ANSI_GREEN, expected_pixels, ANSI_RST,
+            ANSI_GREEN, expected_pixels2, ANSI_RST,
+            ANSI_GREEN, ANSI_RST
+        );
+    } else {
+        printf(
+            "%sMISMATCH%s between"
+            " the expected palette size (%s%u%s B)"
+            " and the space left for the palette (%s%u%s B)\n",
+            ANSI_RED, ANSI_RST,
+            ANSI_RED, expected_pixels, ANSI_RST,
+            ANSI_RED, expected_pixels2, ANSI_RST
+        );
+    }
 
     offset = print_hex(offset, &bmp.header->important_colors, sizeof(bmp.header->important_colors));
     printf("Important colors: %u\n", le32toh(bmp.header->important_colors));
@@ -280,7 +301,7 @@ static int dump_bmp_header(union bmp bmp, size_t file_size)
 int main(int argc, char **argv)
 {
     union bmp bmp;
-    size_t file_size;
+    unsigned int file_size;
     int offset;
     int remaining;
 
