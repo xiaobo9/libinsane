@@ -93,7 +93,7 @@ static void *load_file(const char *filepath, unsigned int *file_size)
 }
 
 
-static int dump_bmp_header(union bmp bmp, size_t file_size)
+static int dump_bmp_header(union bmp bmp, unsigned int file_size)
 {
     int offset = 0;
     uint32_t expected_pixels = 0;
