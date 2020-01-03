@@ -624,8 +624,6 @@ static void scan_cancel(struct lis_scan_session *_self)
 		_self, struct wia_transfer, scan_session
 	);
 
-	// TODO(Jflesch): Call IWiaTransfer->Cancel()
-
 	if (self->scan.thread != NULL) {
 		WaitForSingleObject(self->scan.thread, INFINITE);
 		CloseHandle(self->scan.thread);
@@ -1238,7 +1236,7 @@ static HRESULT WINAPI wia_transfer_cb_get_next_stream(
 	item_name = lis_bstr2cstr(bstrItemName);
 	full_item_name = lis_bstr2cstr(bstrFullItemName);
 	lis_log_info(
-		"WiaTransfer->GetNextStream(0x%lX, %s, %s)",
+		"WiaTransferCallback->GetNextStream(0x%lX, %s, %s)",
 		lFlags,
 		(item_name != NULL ? item_name : NULL),
 		(full_item_name != NULL ? full_item_name : NULL)
@@ -1261,7 +1259,7 @@ static DWORD WINAPI thread_download(void *_self)
 	enum lis_error err;
 
 	lis_log_info("Starting scan thread ...");
-	lis_log_debug("WiaItem->QueryInterfae(WiaTransfer) ...");
+	lis_log_debug("WiaItem->QueryInterface(WiaTransfer) ...");
 	hr = self->wia_item->lpVtbl->QueryInterface(
 		self->wia_item,
 		&IID_LisWiaTransfer,
@@ -1317,6 +1315,8 @@ end:
 	lis_log_info("End of scan thread");
 	if (wia_transfer != NULL) {
 		lis_log_debug("WiaTransfer->Release() ...");
+		hr = wia_transfer->lpVtbl->Cancel(wia_transfer);
+		lis_log_debug("IWiaTransfer->Cancel(): 0x%lX", hr);
 		wia_transfer->lpVtbl->Release(wia_transfer);
 		lis_log_debug("WiaTransfer->Release() done");
 	}
