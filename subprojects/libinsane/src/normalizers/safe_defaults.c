@@ -114,7 +114,7 @@ static const struct safe_setter g_safe_setters[] = {
 		// WORKAROUND(Jflesch): Fujitsu Fi-6130:
 		// page-height must not be set to max, but to very slightly
 		// less. If set to max, scan_start() fails in most cases.
-		.cb_data = &g_numbers[1], // max
+		.cb_data = &g_limit_data[2], // max
 		.flags = SET_IMMEDIATELY | SET_BEFORE_SCAN,
 	},
 
