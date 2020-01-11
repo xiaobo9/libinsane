@@ -11,7 +11,7 @@ Its main features are:
   supports Sane (Linux), WIA2 (Windows) and TWAIN (Windows)
 - Cross-scanners: takes care of all the
   [quirks](https://doc.openpaper.work/libinsane/latest/libinsane/workarounds.html)
-  of all the platforms and scanners to provide a
+  of all the platforms and all the scanners to provide a
   [consistent behaviour](https://doc.openpaper.work/libinsane/latest/libinsane/behavior_normalizations.html)
   everywhere.
 - Cross-programming languages:
@@ -35,9 +35,10 @@ However it has some limitations:
   in your own application (see [Paperwork](https://openpaper.work) for example).
 - 24 bits color scans only (may be fixed later)
 - On Windows (both with WIA2 or TWAIN), images are often rotated by 180°. This
-  is because both APIs return the scan as BMP (DIB), and by default, BMP start
-  by the bottom of the image. Since the application must be able to display the
-  scan as it goes, Libinsane has to return the image rotated.
+  is because both APIs return the scan as a BMP (DIB), and by default, BMPs start
+  by the bottom of the image. Libinsane returns the top of the image first
+  (as Sane does). Since we want applications to be able to display the
+  scan as it goes, Libinsane has to rotate the image.
 
 It is the successor of [Pyinsane2](https://gitlab.gnome.org/World/OpenPaperwork/pyinsane) but shares no code with it.
 
