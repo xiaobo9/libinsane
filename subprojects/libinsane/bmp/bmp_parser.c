@@ -98,6 +98,7 @@ static int dump_bmp_header(union bmp bmp, unsigned int file_size)
     int offset = 0;
     uint32_t expected_pixels = 0;
     uint32_t expected_pixels2 = 0;
+    uint16_t bits_per_pixel = 0;
 
     offset = print_hex(offset, &bmp.header->magic, sizeof(bmp.header->magic));
     if (le16toh(bmp.header->magic) == 0x4D42) {
@@ -172,7 +173,8 @@ static int dump_bmp_header(union bmp bmp, unsigned int file_size)
     printf("Number of color planes: %u\n", le16toh(bmp.header->nb_color_planes));
 
     offset = print_hex(offset, &bmp.header->nb_bits_per_pixel, sizeof(bmp.header->nb_bits_per_pixel));
-    printf("Number of bits per pixel: %u\n", le32toh(bmp.header->nb_bits_per_pixel));
+    bits_per_pixel = le16toh(bmp.header->nb_bits_per_pixel);
+    printf("Number of bits per pixel: %u\n", bits_per_pixel);
 
     offset = print_hex(offset, &bmp.header->compression, sizeof(bmp.header->compression));
     if (le32toh(bmp.header->compression) == 0) {
@@ -186,8 +188,8 @@ static int dump_bmp_header(union bmp bmp, unsigned int file_size)
 
 
     // compute expected line lengths
-    expected_pixels2 = le32toh(bmp.header->width) * le16toh(bmp.header->nb_bits_per_pixel) / 8;
-    if (bmp.header->nb_bits_per_pixel % 8 != 0) {
+    expected_pixels2 = le32toh(bmp.header->width) * bits_per_pixel / 8;
+    if (bits_per_pixel % 8 != 0) {
         expected_pixels2 += 1;
     }
     if (expected_pixels2 % 4 != 0) {
@@ -196,7 +198,7 @@ static int dump_bmp_header(union bmp bmp, unsigned int file_size)
     print_hex(-1, NULL, 0);
     printf(
         "Expected line length: %u px * %u bits => %u B (%u KB)\n",
-        le32toh(bmp.header->width), le16toh(bmp.header->nb_bits_per_pixel),
+        le32toh(bmp.header->width), bits_per_pixel,
         expected_pixels2, expected_pixels2 / 1024
     );
 
@@ -269,6 +271,14 @@ static int dump_bmp_header(union bmp bmp, unsigned int file_size)
 
     offset = print_hex(offset, &bmp.header->nb_colors_in_palette, sizeof(bmp.header->nb_colors_in_palette));
     printf("Number of colors in palette: %u\n", le32toh(bmp.header->nb_colors_in_palette));
+    if (bits_per_pixel <= 8 && bmp.header->nb_colors_in_palette == 0) {
+        print_hex(-1, NULL, 0);
+        printf(
+            "Number of bits per pixel <= 8 (%d) but color palette is %sMISSING%s\n",
+            bits_per_pixel, ANSI_RED, ANSI_RST
+        );
+    }
+
     expected_pixels = le32toh(bmp.header->nb_colors_in_palette) * 4;
     expected_pixels2 = le32toh(bmp.header->offset_to_data) - BMP_HEADER_SIZE;
     print_hex(-1, NULL, 0);
