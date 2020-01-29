@@ -37,6 +37,7 @@ struct lis_dumb_scan_session {
 	struct lis_scan_session parent;
 	struct lis_dumb_private *impl;
 	int read_idx;
+	int read_offset;
 };
 #define LIS_DUMB_SCAN_SESSION(scan_session) ((struct lis_dumb_scan_session *)(scan_session));
 
@@ -494,25 +495,29 @@ static enum lis_error dumb_scan_read(
 		struct lis_scan_session *session, void *out_buffer, size_t *buffer_size
 	)
 {
+	size_t max_read;
 	struct lis_dumb_scan_session *private = LIS_DUMB_SCAN_SESSION(session);
 
 	while(private->impl->scan.read_contents[private->read_idx].nb_bytes == 0) {
 		private->read_idx++;
 	}
 
-	*buffer_size = MIN(private->impl->scan.read_contents[private->read_idx].nb_bytes, *buffer_size);
-	if (*buffer_size < private->impl->scan.read_contents[private->read_idx].nb_bytes) {
-		/* not supported because I'm too lazy */
-		lis_log_error("TESTS: DUMB IMPLEMENTATION: TRUNCATED READ: %ld instead of %ld",
-				((long)(*buffer_size)),
-				((long)(private->impl->scan.read_contents[private->read_idx].nb_bytes))
-		);
-		return LIS_ERR_INVALID_VALUE;
+	max_read = private->impl->scan.read_contents[private->read_idx].nb_bytes - private->read_offset;
+
+	*buffer_size = MIN(*buffer_size, max_read);
+	assert(*buffer_size > 0);
+
+	memcpy(
+		out_buffer,
+		private->impl->scan.read_contents[private->read_idx].content + private->read_offset,
+		*buffer_size
+	);
+
+	if (*buffer_size >= max_read) {
+		private->read_idx++;
+	} else {
+		private->read_offset += *buffer_size;
 	}
-	if (*buffer_size > 0) {
-		memcpy(out_buffer, private->impl->scan.read_contents[private->read_idx].content, *buffer_size);
-	}
-	private->read_idx++;
 	return LIS_OK;
 }
 
@@ -525,6 +530,7 @@ static void dumb_cancel(struct lis_scan_session *session)
 	impl = private->impl;
 
 	private->read_idx = 0xFFFFFFFF;
+	private->read_offset = 0xFFFFFFFF;
 	FREE(impl->scan.session);
 	impl->scan.is_scanning = 0;
 }

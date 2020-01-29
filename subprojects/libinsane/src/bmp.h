@@ -39,7 +39,9 @@ struct bmp_header {
 enum lis_error lis_bmp2scan_params(
 	const void *bmp,
 	size_t *header_size,
-	struct lis_scan_parameters *params
+	struct lis_scan_parameters *params,
+	int *depth,
+	unsigned int *nb_colors_in_palette
 );
 
 

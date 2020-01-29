@@ -14,7 +14,9 @@
 enum lis_error lis_bmp2scan_params(
 		const void *bmp,
 		size_t *header_size,
-		struct lis_scan_parameters *params
+		struct lis_scan_parameters *params,
+		int *depth,
+		unsigned int *nb_colors_in_palette
 	)
 {
 	const struct bmp_header *header;
@@ -46,18 +48,28 @@ enum lis_error lis_bmp2scan_params(
 		);
 		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
 	}
-	if (le16toh(header->nb_bits_per_pixel) != 24) {
-		lis_log_error("BMP: Unexpected nb bits per pixel: %u (0x%X)",
-				le16toh(header->nb_bits_per_pixel),
-				header->nb_bits_per_pixel);
-		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
-	}
 	if (header->compression != 0) {
-		lis_log_error("BMP: Don't know how to handle compression: 0x%"PRIX32, le32toh(header->compression));
+		lis_log_error(
+			"BMP: Don't know how to handle compression: 0x%"PRIX32,
+			le32toh(header->compression)
+		);
 		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
 	}
 
+	*depth = le16toh(header->nb_bits_per_pixel);
+	if (*depth != 1 && *depth != 8 && *depth != 24) {
+		lis_log_error(
+			"BMP: Unexpected nb bits per pixel: %u (0x%X)",
+			le16toh(header->nb_bits_per_pixel),
+			header->nb_bits_per_pixel
+		);
+		return LIS_ERR_INTERNAL_IMG_FORMAT_NOT_SUPPORTED;
+	}
+
+	*nb_colors_in_palette = le32toh(header->nb_colors_in_palette);
+
 	params->format = LIS_IMG_FORMAT_RAW_RGB_24;
+
 	params->width = le32toh(header->width);
 	// params->image_size = header->file_size - header->offset_to_data;
 	params->image_size = le32toh(header->pixel_data_size);
@@ -66,8 +78,8 @@ enum lis_error lis_bmp2scan_params(
 	params->width = le32toh(header->width);
 
 	lis_log_info(
-		"BMP header says: %d x %d = %lu",
-		params->width, params->height,
+		"BMP header says: %d x %d x %db = %lu",
+		params->width, params->height, *depth,
 		(long unsigned)params->image_size
 	);
 
