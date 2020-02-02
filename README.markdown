@@ -46,3 +46,5 @@ It is released under [LGPL v3+](https://www.gnu.org/licenses/lgpl-3.0.en.html).
 - [Documentation](https://doc.openpaper.work/libinsane/latest/)
 - [Forum](https://forum.openpaper.work/)
 - [Bug tracker](https://gitlab.gnome.org/World/OpenPaperwork/libinsane/issues)
+- [Donate](https://www.patreon.com/openpaper) (I also accept hardware donations
+  to fix specific issues)
