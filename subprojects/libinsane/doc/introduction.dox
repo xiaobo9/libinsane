@@ -55,12 +55,8 @@ platform:
   - Automatic Document Feeder
 - Scan area set to the maximum size
 - Mode:
-  - 24 bits colors (any platform)
-  - Grayscale
-    - GNU/Linux: yes
-    - Windows: not supported yet
-  - Black & white:
-    - GNU/Linux: yes
-    - Windows: not supported yet
+  - 24 bits colors
+  - Grayscale (converted on-the-fly to raw rgb24)
+  - Black & white (converted on-the-fly to raw rgb24)
 
 */

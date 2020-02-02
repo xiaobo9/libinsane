@@ -33,7 +33,6 @@ However it has some limitations:
 - Full page scan only: Presence of the options to set the scan area and their
   consistency cannot be guaranteed. You are advised to crop the image later
   in your own application (see [Paperwork](https://openpaper.work) for example).
-- 24 bits color scans only (may be fixed later)
 - On Windows (both with WIA2 or TWAIN), images are often rotated by 180°. This
   is because both APIs return the scan as a BMP (DIB), and by default, BMPs start
   by the bottom of the image. Libinsane returns the top of the image first
