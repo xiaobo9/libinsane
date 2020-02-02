@@ -131,8 +131,12 @@ Scan area is defined as the value of 4 options:
 - `br-y`: Bottom right corner of the area that will be scanner. Y coordinates.
 - Guarantee: By default, those options will be set so the scanner scans
   the biggest area possible.
-- Not guaranteed: Those options may not be present at all. There is unit is
+- Not guaranteed: Those options may not be present at all. Their unit is
   (not yet) guaranteed.
+
+If you choose to set the scan area, be careful to always keep the `tl`
+coordinates at lower values than the `br` ones. If you don't, you may get an
+error when setting them.
 
 
 ### Scanning
