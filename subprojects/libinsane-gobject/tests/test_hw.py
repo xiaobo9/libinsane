@@ -169,7 +169,9 @@ def main():
             dev = api.get_device(dev_id)
             try:
                 print("Using device {}".format(dev.get_name()))
-                output_file = clean_filename(dev.get_name() + ".jpeg")
+                output_file = clean_filename(
+                    dev.get_name() + "_" + str(t) + ".jpeg"
+                )
                 output_file = os.path.join(output_dir, output_file)
 
                 print("Looking for source flatbed ...")
@@ -178,6 +180,10 @@ def main():
 
                 # set the options
                 set_opt(src, 'resolution', [150, 200, 300])
+                if t == 2:
+                    set_opt(src, 'mode', ['Lineart'])
+                else:
+                    set_opt(src, 'mode', ['Color'])
 
                 print("Scanning ...")
                 scan(src, output_file)
