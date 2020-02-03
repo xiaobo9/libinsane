@@ -767,7 +767,7 @@ static void unpack_1(struct lis_bmp2raw_scan_session *session)
 
 	for (idx = session->parameters_out.width - 1 ; idx >= 0 ; idx--) {
 		b = session->line.content[idx / 8];
-		v = (b >> (idx % 8)) & 1;
+		v = (b >> (7 - (idx % 8))) & 1;
 		p = session->palette + (v * 4);
 
 		session->line.content[(idx * 3) + 2] = p[2];

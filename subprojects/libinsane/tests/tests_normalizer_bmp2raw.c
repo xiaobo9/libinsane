@@ -922,8 +922,8 @@ static void tests_bmp2raw_1(void)
 		0x04, 0x05, 0x06, 0x00
 	};
 	static const uint8_t body[] = {
-		0x15, 0x0, 0x0, 0x0, // 0b10101 + padding
-		0xA, 0x0, 0x0, 0x0, // 0b01010 + padding
+		0xa8, 0x0, 0x0, 0x0, // 0b10101 + padding
+		0x50, 0x0, 0x0, 0x0, // 0b01010 + padding
 	};
 	static const struct lis_dumb_read reads[] = {
 		{ .content = header_a, .nb_bytes = LIS_COUNT_OF(header_a) },
@@ -1055,8 +1055,8 @@ static void tests_bmp2raw_1_no_palette(void)
 		0x00, 0x00, 0x00, 0x00, // important colors
 	};
 	static const uint8_t body[] = {
-		0x15, 0x0, 0x0, 0x0, // 0b10101 + padding
-		0xA, 0x0, 0x0, 0x0, // 0b01010 + padding
+		0xA8, 0x0, 0x0, 0x0, // 0b10101 + padding
+		0x50, 0x0, 0x0, 0x0, // 0b01010 + padding
 	};
 	static const struct lis_dumb_read reads[] = {
 		{ .content = header_a, .nb_bytes = LIS_COUNT_OF(header_a) },
