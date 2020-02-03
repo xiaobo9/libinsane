@@ -38,6 +38,10 @@ However it has some limitations:
   by the bottom of the image. Libinsane returns the top of the image first
   (as Sane does). Since we want applications to be able to display the
   scan as it goes, Libinsane has to rotate the image.
+- We do our best to support as many scanners and drivers as possible. However not
+  all the scanners in the world are supported (nor even supportable). You can have
+  a look at the [Scanner database](https://openpaper.work/scannerdb/) to see the
+  scanners that are known to work and those that are not.
 
 It is the successor of [Pyinsane2](https://gitlab.gnome.org/World/OpenPaperwork/pyinsane) but shares no code with it.
 
@@ -46,5 +50,6 @@ It is released under [LGPL v3+](https://www.gnu.org/licenses/lgpl-3.0.en.html).
 - [Documentation](https://doc.openpaper.work/libinsane/latest/)
 - [Forum](https://forum.openpaper.work/)
 - [Bug tracker](https://gitlab.gnome.org/World/OpenPaperwork/libinsane/issues)
+- [Scanner database](https://openpaper.work/scannerdb/)
 - [Donate](https://www.patreon.com/openpaper) (I also accept hardware donations
   to fix specific issues)
