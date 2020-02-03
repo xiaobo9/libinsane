@@ -41,7 +41,7 @@ However it has some limitations:
 - We do our best to support as many scanners and drivers as possible. However not
   all the scanners in the world are supported (nor even supportable). You can have
   a look at the [Scanner database](https://openpaper.work/scannerdb/) to see the
-  scanners that are known to work and those that are not.
+  scanners that are known to work and those that don't.
 
 It is the successor of [Pyinsane2](https://gitlab.gnome.org/World/OpenPaperwork/pyinsane) but shares no code with it.
 
