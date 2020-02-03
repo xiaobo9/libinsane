@@ -107,7 +107,7 @@ If present, Libinsane will normalize 3 of the possibles values:
 `Color` (24bits RGB), `Gray` (grayscale), `LineArt` (black & white).
 Other values may be available depending on the scanner and its driver.
 
-If you set `mode` to `Lineart`, there may also be an option `depth` that you
+If you set `mode` to `LineArt`, there may also be an option `depth` that you
 must set to 1. This is (not yet) done automatically by Libinsane.
 
 

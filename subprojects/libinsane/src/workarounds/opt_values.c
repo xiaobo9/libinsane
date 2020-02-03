@@ -34,6 +34,9 @@ static const struct opt_value_mapping g_opt_mode_mapping[] = {
 	{ .original = "Gris", .replacement = OPT_VALUE_MODE_GRAYSCALE },
 	{ .original = "Noir et blanc", .replacement = OPT_VALUE_MODE_BW },
 
+	// takes care of weird casing of 'LineArt'
+	{ .original = "lineart", .replacement = OPT_VALUE_MODE_BW },
+
 	{ .original = NULL, .replacement = NULL },
 };
 

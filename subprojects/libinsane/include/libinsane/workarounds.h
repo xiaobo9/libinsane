@@ -51,10 +51,10 @@ extern enum lis_error lis_api_workaround_opt_names(
  *
  * - Brother
  *   - '24bit Color' --> 'Color'
- *   - 'Black & White' --> 'Lineart'
+ *   - 'Black & White' --> 'LineArt'
  *   - 'True Gray' --> 'Gray'
  * - Samsung
- *   - 'Black and White - Line Art' --> 'Lineart'
+ *   - 'Black and White - Line Art' --> 'LineArt'
  *   - 'Grayscale - 256 Levels' --> 'Gray'
  *   - 'Color - 16 Million Colors' --> 'Color'
  *

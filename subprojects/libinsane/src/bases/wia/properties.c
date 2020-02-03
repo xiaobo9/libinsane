@@ -498,7 +498,6 @@ static const struct lis_wia2lis_property g_wia2lis_properties[] = {
 			},
 			{
 				.wia.integer = WIA_DATA_THRESHOLD,
-				// TODO(Jflesch): to check
 				.lis.string = OPT_VALUE_MODE_BW,
 			},
 			{

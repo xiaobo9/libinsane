@@ -231,7 +231,7 @@ def main():
         # set the options
 #! [ExampleOptsToSet]
         set_opt(source, 'resolution', 300)
-        # set_opt(source, 'mode', "Lineart")
+        # set_opt(source, 'mode', "LineArt")
         # set_opt(source, 'depth', 1)
 #! [ExampleOptsToSet]
 
