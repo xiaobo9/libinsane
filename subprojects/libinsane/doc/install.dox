@@ -48,7 +48,7 @@ sudo dnf install sparse clang-tools-extra python3-pyyaml
 ```
 
 
-#### Compilation
+#### GNU/Linux: Compilation
 
 ```
 git clone https://gitlab.gnome.org/World/OpenPaperwork/libinsane.git
@@ -59,7 +59,7 @@ make PREFIX=/usr
 make test PREFIX=/usr  # optional
 ```
 
-#### Installation
+#### GNU/Linux: Installation
 
 ```
 sudo make install PREFIX=/usr  # PREFIX is optional, default is /usr/local
@@ -77,7 +77,7 @@ export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
 export GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
 ```
 
-#### Uninstalling
+#### GNU/Linux: Uninstalling
 
 Depending on your versions of Meson and Ninja, the following may or may not
 work:
@@ -87,7 +87,7 @@ sudo make uninstall
 ```
 
 
-#### Not installing Libinsane
+#### GNU/Linux: Not installing Libinsane
 
 If you do not wish to install Libinsane system-wide, you can use the script
 `activate_test_env.sh`. It will set all the environment variables required
@@ -115,7 +115,7 @@ and up-to-date (`pacman -Syu`), you can install the required dependencies with
 the following commands.
 
 
-#### Build dependencies
+#### Windows: Build dependencies
 
 If you plan on compiling your program as a 32bits executable:
 
@@ -135,13 +135,17 @@ If you plan on compiling your program as a 64bits executable, you just
 have to replace all the `i686` by `x86_64`.
 
 
-#### Compilation
+#### Windows: Compilation
 
 ```
 git clone https://gitlab.gnome.org/World/OpenPaperwork/libinsane.git
 cd libinsane
-make
-make test  # optional
+# make will call meson. The first thing meson will do is to generate the ninja
+# build files. Those files include the value of 'PREFIX'. So even if you don't
+# install Libinsane at this step, you must already specify the PREFIX path.
+# Replace '/mingw32' by '/mingw64' below if you want to build 64 bits binaries.
+make PREFIX=/mingw32
+make test PREFIX=/mingw32 # optional
 ```
 
 
@@ -154,14 +158,15 @@ or a 64bits executable, you will have to install Libinsane in either `/mingw32`
 or `/mingw64`:
 
 ```
-sudo make install PREFIX=/mingw32
+# Replace '/mingw32' by '/mingw64' below if you want to build 64 bits binaries
+make install PREFIX=/mingw32
 ```
 
 
 #### Uninstallation
 
 ```
-sudo make uninstall
+make uninstall
 ```
 
 */
