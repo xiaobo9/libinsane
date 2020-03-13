@@ -1,3 +1,13 @@
+2020/03/13 - 1.0.4:
+- TWAIN + WIA2: Add support for grayscale ("Gray") and black&white ("LineArt")
+  scans.
+- Make sure "LineArt" is always capitalized the same way everywhere.
+- New workaround 'lamp': Make sure the lamp is turned off at the end of scan
+  (Sane + Canon Lide 30).
+- Safe_defaults: Fix value of 'page-height' to ensure we get the biggest scan
+  area possible by default (Sane + Fujitsu scanners).
+- Build has been made reproducible (thanks to Thomas Perret)
+
 2019/12/20 - 1.0.3:
 - Various documentation improvements (many thanks to Vasilii Blazhnov
   questions)
