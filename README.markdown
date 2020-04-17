@@ -53,3 +53,6 @@ It is released under [LGPL v3+](https://www.gnu.org/licenses/lgpl-3.0.en.html).
 - [Scanner database](https://openpaper.work/scannerdb/)
 - [Donate](https://www.patreon.com/openpaper) (I also accept hardware donations
   to fix specific issues)
+
+Related third-party projects:
+- [lisgo](https://github.com/foenixx/lisgo) Go bindings for Libinsane
