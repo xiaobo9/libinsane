@@ -55,4 +55,4 @@ It is released under [LGPL v3+](https://www.gnu.org/licenses/lgpl-3.0.en.html).
   to fix specific issues)
 
 Related third-party projects:
-- [lisgo](https://github.com/foenixx/lisgo) Go bindings for Libinsane
+- [lisgo](https://github.com/foenixx/lisgo): Go bindings for Libinsane
