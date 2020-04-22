@@ -29,6 +29,11 @@ static const struct opt_value_mapping g_opt_mode_mapping[] = {
 	{ .original = "True Gray", .replacement = OPT_VALUE_MODE_GRAYSCALE },
 	{ .original = "24bit Color", .replacement = OPT_VALUE_MODE_COLOR },
 
+	// Sane + Samsung C48x
+	{ .original = "Black and White - Line Art", .replacement = OPT_VALUE_MODE_BW },
+	{ .original = "Grayscale - 256 Levels", .replacement = OPT_VALUE_MODE_GRAYSCALE },
+	{ .original = "Color - 16 Million Colors", .replacement = OPT_VALUE_MODE_COLOR },
+
 	// Sane + OKI MC363: translations ...
 	{ .original = "Couleur", .replacement = OPT_VALUE_MODE_COLOR },
 	{ .original = "Gris", .replacement = OPT_VALUE_MODE_GRAYSCALE },
