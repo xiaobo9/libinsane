@@ -159,19 +159,25 @@ static enum lis_error sane_status_to_lis_error(SANE_Status status)
 		case SANE_STATUS_UNSUPPORTED:
 			return LIS_ERR_UNSUPPORTED;
 		case SANE_STATUS_CANCELLED:
-			assert(status != SANE_STATUS_CANCELLED);
+			lis_log_error(
+				"Unexpected Sane error: SANE_STATUS_CANCELLED"
+			);
 			break;
 		case SANE_STATUS_DEVICE_BUSY:
 			return LIS_ERR_DEVICE_BUSY;
 		case SANE_STATUS_INVAL:
 			return LIS_ERR_INVALID_VALUE;
 		case SANE_STATUS_EOF:
-			assert(status != SANE_STATUS_EOF);
+			lis_log_error(
+				"Unexpected Sane error: SANE_STATUS_EOF"
+			);
 			break;
 		case SANE_STATUS_JAMMED:
 			return LIS_ERR_JAMMED;
 		case SANE_STATUS_NO_DOCS:
-			assert(status != SANE_STATUS_NO_DOCS);
+			lis_log_error(
+				"Unexpected Sane error: SANE_STATUS_NO_DOCS"
+			);
 			break;
 		case SANE_STATUS_COVER_OPEN:
 			return LIS_ERR_COVER_OPEN;
