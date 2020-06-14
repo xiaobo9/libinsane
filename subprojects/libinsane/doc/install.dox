@@ -102,6 +102,8 @@ source ./activate_test_env.sh
 
 ### Windows (Msys2)
 
+2018/10/16: Your user name must not contain any spaces or build will fail.
+
 To compile Libinsane on Windows, you have first to install
 [MSYS2](https://www.msys2.org/). Libinsane is not packaged in MSYS2.
 Therefore you must compile and install it yourself.
@@ -137,6 +139,8 @@ have to replace all the `i686` by `x86_64`.
 
 #### Windows: Compilation
 
+2018/10/16: Your user name must not contain any spaces or build will fail.
+
 ```
 git clone https://gitlab.gnome.org/World/OpenPaperwork/libinsane.git
 cd libinsane
@@ -150,8 +154,6 @@ make test PREFIX=/mingw32 # optional
 
 
 #### Installation
-
-2018/10/16: User name must not contain any spaces or build will fail.
 
 Depending whether you intend to build a 32bits executable for your application
 or a 64bits executable, you will have to install Libinsane in either `/mingw32`
