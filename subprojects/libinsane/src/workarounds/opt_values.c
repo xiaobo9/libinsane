@@ -25,9 +25,16 @@ struct opt_values_mapping {
 static const struct opt_value_mapping g_opt_mode_mapping[] = {
 	// Sane + Brother MFC-7360N:
 	// 'Black & White', 'Gray[Error Diffusion]', 'True Gray', '24bit Color', '24bit Color[Fast]'
+	// Sane + Brother ADS-2100e:
+	// 'LineArt', 'Gray[Error Diffusion]', 'Gray', '24bit Color[Fast]'
+	// Sane + DCP-130c:
+	// 'Black & White', 'Gray[Error Diffusion]', 'True Gray', '24bit Color'
+	// TODO(Jflesch):
+	// If there are both color options, "24bit Color[Fast]" should become "Color[Fast]"
 	{ .original = "Black & White", .replacement = OPT_VALUE_MODE_BW },
 	{ .original = "True Gray", .replacement = OPT_VALUE_MODE_GRAYSCALE },
 	{ .original = "24bit Color", .replacement = OPT_VALUE_MODE_COLOR },
+	{ .original = "24bit Color[Fast]", .replacement = OPT_VALUE_MODE_COLOR },
 
 	// Sane + Samsung C48x
 	{ .original = "Black and White - Line Art", .replacement = OPT_VALUE_MODE_BW },
@@ -38,6 +45,7 @@ static const struct opt_value_mapping g_opt_mode_mapping[] = {
 	{ .original = "Couleur", .replacement = OPT_VALUE_MODE_COLOR },
 	{ .original = "Gris", .replacement = OPT_VALUE_MODE_GRAYSCALE },
 	{ .original = "Noir et blanc", .replacement = OPT_VALUE_MODE_BW },
+
 
 	// takes care of weird casing of 'LineArt'
 	{ .original = "lineart", .replacement = OPT_VALUE_MODE_BW },

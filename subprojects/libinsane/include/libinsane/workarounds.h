@@ -46,11 +46,13 @@ extern enum lis_error lis_api_workaround_opt_names(
  * - Seen on:
  *   - [Brother MFC-7360N](https://openpaper.work/scanner_db/report/20/)
  *   - [Samsung CLX-3300](https://openpaper.work/scanner_db/report/31/)
+ *   - [Brother ADS-2100e](https://openpaper.work/en/scanner_db/report/458/)
  *
  * Override the option 'mode' so it changes the following possible values:
  *
  * - Brother
  *   - '24bit Color' --> 'Color'
+ *   - '24bit Color[Fast]' --> 'Color'
  *   - 'Black & White' --> 'LineArt'
  *   - 'True Gray' --> 'Gray'
  * - Samsung

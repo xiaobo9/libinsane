@@ -25,7 +25,7 @@ static int tests_opt_init(void)
 		{ .string = "Gray[Error Diffusion]", },
 		{ .string = "True Gray", },
 		{ .string = "24bit Color", },
-		{ .string = "24bit Color[Fast]", },
+		{ .string = "24bit Color[SomethingElse]", },
 	};
 	static const struct lis_option_descriptor opt_mode_template = {
 		.name = OPT_NAME_MODE,
@@ -111,7 +111,7 @@ static void tests_opt_values_constraint(void)
 		0
 	);
 	LIS_ASSERT_EQUAL(
-		strcasecmp(opts[0]->constraint.possible.list.values[4].string, "24bit Color[Fast]"),
+		strcasecmp(opts[0]->constraint.possible.list.values[4].string, "24bit Color[SomethingElse]"),
 		0
 	);
 
