@@ -114,6 +114,29 @@ extern enum lis_error lis_api_workaround_check_capabilities(
 );
 
 
+#ifdef OS_LINUX
+/*!
+ * \brief Access scanners through a dedicated process.
+ *
+ * - API: Sane
+ * - Culprit: Brother drivers, old HP drivers
+ *
+ * Sane backends run as part of the application that use them. However some of
+ * them are unstable: some corrupt memory, some cause crashes, etc. Some appear
+ * to work fine when running in simple applications (C + GTK, Python + shell,
+ * etc) but do not anymore in more complex applications (Python + GTK, etc).
+ * Since you probably don't want your application to crash or get its memory
+ * corrupted, the only reliable workaround is to run the code that use Sane
+ * and its backend in a dedicated process.
+ *
+ * WIA2 already has a dedicated process and therefore this workaround is not
+ * required.
+ */
+extern enum lis_error lis_api_workaround_dedicated_process(
+	struct lis_api *to_wrap, struct lis_api **out_impl
+);
+#endif
+
 /*!
  * \brief Thread-safety
  *

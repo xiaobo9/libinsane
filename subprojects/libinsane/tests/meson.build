@@ -6,6 +6,7 @@ if host_machine.system() != build_machine.system() or build_machine.system() == 
 else
     LIBINSANE_TESTS = [
         'sane',
+        'workaround_dedicated_process',
     ]
 endif
 

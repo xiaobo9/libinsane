@@ -536,6 +536,13 @@ static void dumb_cancel(struct lis_scan_session *session)
 }
 
 
+void lis_dumb_reset_counters(struct lis_api *self)
+{
+	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
+	memset(&private->nb, 0, sizeof(private->nb));
+}
+
+
 int lis_dumb_get_nb_get(struct lis_api *self)
 {
 	struct lis_dumb_private *private = LIS_DUMB_PRIVATE(self);
