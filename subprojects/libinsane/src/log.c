@@ -65,6 +65,12 @@ void lis_log_stderr(enum lis_log_level lis_lvl, const char *msg)
 }
 
 
+void lis_log_raw(enum lis_log_level lvl, const char *msg)
+{
+	g_current_callbacks->callbacks[lvl](lvl, msg);
+}
+
+
 void lis_log(
 		enum lis_log_level lvl, const char *file, int line, const char *func,
 		const char *msg, ...
@@ -100,4 +106,10 @@ void lis_log(
 	}
 
 	g_current_callbacks->callbacks[lvl](lvl, g_buffer);
+}
+
+
+void lis_log_reset(void)
+{
+	g_current_callbacks = &g_default_callbacks;
 }

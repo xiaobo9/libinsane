@@ -25,7 +25,7 @@ struct lis_log_callbacks {
 
 /*!
  * \brief register callbacks that will be used to get back messages.
- * Only one set of callback can be registered at one time.
+ * Only one set of callbacks can be registered at one time.
  * Calling this function will unset previously set callbacks.
  * By default, all log messages go to stderr.
  * \param[in] callbacks callback to use. Pointer must remain valid until lis_set_log_callbacks is
@@ -46,6 +46,11 @@ extern void lis_log(enum lis_log_level lvl, const char *file, int line, const ch
 #define lis_log_info(...) lis_log(LIS_LOG_LVL_INFO, __FILE__, __LINE__, __func__, __VA_ARGS__);
 #define lis_log_warning(...) lis_log(LIS_LOG_LVL_WARNING, __FILE__, __LINE__, __func__, __VA_ARGS__);
 #define lis_log_error(...) lis_log(LIS_LOG_LVL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__);
+
+
+extern void lis_log_raw(enum lis_log_level lvl, const char *msg);
+extern void lis_log_reset(void);
+
 
 /*!
  * \brief default log callback provided for convenience.
