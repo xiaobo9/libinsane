@@ -23,7 +23,7 @@ enum lis_error lis_bmp2scan_params(
 
 	assert(sizeof(struct bmp_header) == BMP_HEADER_SIZE);
 
-	lis_hexdump(bmp, BMP_HEADER_SIZE);
+	lis_hexdump("bmp", bmp, BMP_HEADER_SIZE);
 
 	header = bmp;
 	*header_size = le32toh(header->offset_to_data);

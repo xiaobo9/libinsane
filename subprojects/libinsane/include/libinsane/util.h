@@ -78,7 +78,7 @@ int lis_getenv(const char *var, int default_val);
 const char *lis_get_version(void);
 
 
-void lis_hexdump(const void *data, size_t nb_bytes);
+void lis_hexdump(const char *prefix, const void *data, size_t nb_bytes);
 
 #ifdef __cplusplus
 }

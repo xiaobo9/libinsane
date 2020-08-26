@@ -2063,7 +2063,7 @@ static enum lis_error next_page(struct lis_twain_session *private)
 		private->img.handle
 	);
 
-	lis_hexdump(private->img.mem, BMP_HEADER_SIZE);
+	lis_hexdump("twain", private->img.mem, BMP_HEADER_SIZE);
 
 	// Twain DS only return a partial header
 	err = twain_get_scan_parameters(&private->parent, &params);
@@ -2092,7 +2092,7 @@ static enum lis_error next_page(struct lis_twain_session *private)
 		+ (le32toh(private->img.header.nb_colors_in_palette) * 4)
 	);
 
-	lis_hexdump(&private->img.header, BMP_HEADER_SIZE);
+	lis_hexdump("twain", &private->img.header, BMP_HEADER_SIZE);
 
 	// From TWAIN example
 	// If the driver did not fill in the biSizeImage field, then compute it
