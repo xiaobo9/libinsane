@@ -128,6 +128,25 @@ const char *lis_get_version(void)
 }
 
 
+static char get_chr(int v)
+{
+	v &= 0xFF;
+	if (v >= 'a' && v <= 'z') {
+		return v;
+	}
+	if (v >= 'A' && v <= 'Z') {
+		return v;
+	}
+	if (v >= '0' && v <= '9') {
+		return v;
+	}
+	if (v == '-' || v == '_' || v == '#' || v == ':' || v == ';' || v == ' ') {
+		return v;
+	}
+	return '.';
+}
+
+
 void lis_hexdump(const char *prefix, const void *_data, size_t nb_bytes)
 {
 	const uint8_t *data = _data;
@@ -135,7 +154,7 @@ void lis_hexdump(const char *prefix, const void *_data, size_t nb_bytes)
 
 	while(nb_bytes > 0) {
 		lis_log_debug(
-			"[%s] (%4d) 0x || %02X %02X %02X %02X || %02X %02X %02X %02X",
+			"[%s] (%4d) 0x || %02X %02X %02X %02X || %02X %02X %02X %02X || %c%c%c%c %c%c%c%c",
 			prefix,
 			(int)(total - nb_bytes),
 			((int)(data[0])) & 0xFF,
@@ -145,7 +164,15 @@ void lis_hexdump(const char *prefix, const void *_data, size_t nb_bytes)
 			(nb_bytes >= 5 ? (((int)(data[4])) & 0xFF) : 0x00),
 			(nb_bytes >= 6 ? (((int)(data[5])) & 0xFF) : 0x00),
 			(nb_bytes >= 7 ? (((int)(data[6])) & 0xFF) : 0x00),
-			(nb_bytes >= 8 ? (((int)(data[7])) & 0xFF) : 0x00)
+			(nb_bytes >= 8 ? (((int)(data[7])) & 0xFF) : 0x00),
+			get_chr(data[0]),
+			(nb_bytes >= 2 ? get_chr(data[1]) : '.'),
+			(nb_bytes >= 3 ? get_chr(data[2]) : '.'),
+			(nb_bytes >= 4 ? get_chr(data[3]) : '.'),
+			(nb_bytes >= 5 ? get_chr(data[4]) : '.'),
+			(nb_bytes >= 6 ? get_chr(data[5]) : '.'),
+			(nb_bytes >= 7 ? get_chr(data[6]) : '.'),
+			(nb_bytes >= 8 ? get_chr(data[7]) : '.')
 		);
 		data += 8;
 		if (nb_bytes < 8) {
