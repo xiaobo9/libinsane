@@ -163,11 +163,9 @@ static void tests_dedicated_process_opts(void)
 
 	// TODO(Jflesch): Since the dumb implementation is running in another
 	// process, those counters should remain to 0 in this process.
-	/*
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_list_options(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 0);
-	*/
 
 	err = opts[0]->fn.get_value(opts[0], &value);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -175,11 +173,9 @@ static void tests_dedicated_process_opts(void)
 
 	// TODO(Jflesch): Since the dumb implementation is running in another
 	// process, those counters should remain to 0 in this process.
-	/*
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_list_options(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 0);
-	*/
 
 	value.integer = 200;
 	err = opts[0]->fn.set_value(opts[0], value, &set_flags);
@@ -187,11 +183,9 @@ static void tests_dedicated_process_opts(void)
 
 	// TODO(Jflesch): Since the dumb implementation is running in another
 	// process, those counters should remain to 0 in this process.
-	/*
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_list_options(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 0);
-	*/
 
 	err = opts[0]->fn.get_value(opts[0], &value);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
@@ -199,11 +193,9 @@ static void tests_dedicated_process_opts(void)
 
 	// TODO(Jflesch): Since the dumb implementation is running in another
 	// process, those counters should remain to 0 in this process.
-	/*
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_list_options(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_get(g_dumb), 0);
 	LIS_ASSERT_EQUAL(lis_dumb_get_nb_set(g_dumb), 0);
-	*/
 
 	item->close(item);
 

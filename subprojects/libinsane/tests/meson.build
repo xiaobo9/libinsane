@@ -6,7 +6,6 @@ if host_machine.system() != build_machine.system() or build_machine.system() == 
 else
     LIBINSANE_TESTS = [
         'sane',
-        'workaround_dedicated_process',
     ]
 endif
 
@@ -31,6 +30,13 @@ LIBINSANE_VALGRIND_TESTS = [
     'workaround_opt_names',
     'workaround_opt_values',
 ]
+
+if host_machine.system() == build_machine.system() and build_machine.system() != 'windows' and build_machine.system() != 'cygwin'
+    LIBINSANE_VALGRIND_TESTS += [
+        'workaround_dedicated_process',
+        'workaround_dedicated_process_pack',
+    ]
+endif
 
 CUNIT = dependency('cunit', required: false)
 

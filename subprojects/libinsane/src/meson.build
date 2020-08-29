@@ -57,7 +57,10 @@ if host_machine.system() == 'windows'
 else
     libinsane_srcs += [
         'bases/sane.c',
-        'workarounds/dedicated_process.c',
+        'workarounds/dedicated_process/master.c',
+        'workarounds/dedicated_process/pack.c',
+        'workarounds/dedicated_process/protocol.c',
+        'workarounds/dedicated_process/worker.c',
     ]
     deps += [dependency('sane-backends')]
     # Older versions of Meson only allow strings (Debian stretch for instance)

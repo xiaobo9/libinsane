@@ -318,7 +318,7 @@ struct lis_scan_session {
 	 *		\ref lis_scan_session.scan_read() until there is.
 	 * \warning This operation may take many seconds.
 	 */
-	enum lis_error (*scan_read) (
+	enum lis_error (*scan_read)(
 		struct lis_scan_session *session, void *out_buffer,
 		size_t *buffer_size
 	);
@@ -402,7 +402,7 @@ struct lis_item {
 	 * No need to call this method on child items (will do nothing). Call it
 	 * only on the root item.
 	 *
-	 * Will also be done automatically if you call \ref lis_api.cleanup(). (TODO(Jflesch): nornalizer)
+	 * Will also be done automatically if you call \ref lis_api.cleanup(). (TODO(Jflesch): normalizer)
 	 */
 	void (*close)(struct lis_item *self);
 };

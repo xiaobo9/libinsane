@@ -145,11 +145,24 @@ static const struct {
 		.wrap_cb = lis_api_normalizer_all_opts_on_all_sources,
 		.enabled_by_default = 1,
 	},
+#ifdef OS_LINUX
+	{	// dedicated process wrapper ensure thread-safety and therefore
+		// should be loaded last
+		.name = "workaround_dedicated_process",
+		.env = "LIBINSANE_WORKAROUND_DEDICATED_PROCESS",
+		.wrap_cb = lis_api_workaround_dedicated_process,
+		.enabled_by_default = 1,
+	},
+#endif
 	{	// dedicated thread wrapper should be loaded last
 		.name = "workaround_dedicated_thread",
 		.env = "LIBINSANE_WORKAROUND_DEDICATED_THREAD",
 		.wrap_cb = lis_api_workaround_dedicated_thread,
+#ifdef OS_LINUX
+		.enabled_by_default = 0,
+#else
 		.enabled_by_default = 1,
+#endif
 	},
 };
 

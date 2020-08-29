@@ -29,7 +29,9 @@ if __name__ == "__main__":
         if "libinsane-gobject" in filepath:
             # gobject macros raise many warnings --> do not check
             continue
-        cflags += ['-O2', '-Wsparse-all', '-Wsparse-error']
+        cflags += [
+            '-O2', '-Wsparse-all', '-Wsparse-error', '-Wno-non-pointer-null'
+        ]
         # WORKAROUND(Jflesch):
         # TODO(Jflesch): Why do I need to do that ?
         cflags += ['-D_Float32=float']
