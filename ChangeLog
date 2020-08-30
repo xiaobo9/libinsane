@@ -1,3 +1,12 @@
+2020/08/30 - 1.0.5:
+- Sane: Implements new workaround: dedicated_process: run all the scanner
+  operations in a dedicated process. Avoid issues with Sane backends
+  crashing, corrupting the memory or closing file descriptors just for fun.
+- Sane: disable assert when receiving the code SANE_STATUS_CANCELLED
+  unexpectidly.
+- Workaround/opt_values: Add support for Sane + Samsung C48x
+- Workaround/opt_values: Add support for Sane + Brother ADS-2100e
+
 2020/03/13 - 1.0.4:
 - TWAIN + WIA2: Add support for grayscale ("Gray") and black&white ("LineArt")
   scans.
