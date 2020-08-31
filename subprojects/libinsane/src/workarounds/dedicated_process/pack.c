@@ -9,6 +9,21 @@
 
 #include "pack.h"
 
+/* WORKAROUND(Jflesch):
+ * In some cases, we simply want to use va_arg() to ignore some values.
+ * But there is a bug with GCC >= 10: if we call va_arg() without storing
+ * and using the value, GCC optimizes out the va_arg() statements.
+ * So we don't go to the next element on the stack as expected, and the next
+ * call to va_arg() gets the value we wanted to ignore.
+ *
+ * The easiest solution to avoid this optimization is to store the value
+ * in a volatile variable.
+ */
+#define FORCE_VA_ARG(va, type) do { \
+		volatile type _var = va_arg(va, type); \
+		_var = _var; \
+	} while(0)
+
 
 /* depending on the architecture, va_list may be a struct, an array, or a plane.
  * --> just to be safe and avoid ambiguities, we wrap it in a struct.
@@ -91,7 +106,7 @@ static struct {
 
 static size_t compute_size_integer(struct wrapped_va_list *va)
 {
-	va_arg(va->va, int); // NOLINT (clang false positive)
+	FORCE_VA_ARG(va->va, int); // NOLINT (clang false positive)
 	return sizeof(int);
 }
 
@@ -120,7 +135,7 @@ static enum lis_error deserialize_integer(const void **in, struct wrapped_va_lis
 
 static size_t compute_size_double(struct wrapped_va_list *va)
 {
-	va_arg(va->va, double); // NOLINT (clang false positive)
+	FORCE_VA_ARG(va->va, double); // NOLINT (clang false positive)
 	return sizeof(double);
 }
 
@@ -149,7 +164,7 @@ static enum lis_error deserialize_double(const void **in, struct wrapped_va_list
 
 static size_t compute_size_ptr(struct wrapped_va_list *va)
 {
-	va_arg(va->va, intptr_t); // NOLINT (clang false positive)
+	FORCE_VA_ARG(va->va, intptr_t); // NOLINT (clang false positive)
 	return sizeof(intptr_t);
 }
 
