@@ -9,9 +9,18 @@
 
 #include "pack.h"
 
-typedef size_t (compute_size_fn)(va_list *va);
-typedef enum lis_error (serialize_fn)(void **out, va_list *va);
-typedef enum lis_error (deserialize_fn)(const void **in, va_list *va);
+
+/* depending on the architecture, va_list may be a struct, an array, or a plane.
+ * --> just to be safe and avoid ambiguities, we wrap it in a struct.
+ */
+struct wrapped_va_list {
+	va_list va;
+};
+
+
+typedef size_t (compute_size_fn)(struct wrapped_va_list *va);
+typedef enum lis_error (serialize_fn)(void **out, struct wrapped_va_list *va);
+typedef enum lis_error (deserialize_fn)(const void **in, struct wrapped_va_list *va);
 
 
 static compute_size_fn compute_size_integer;
@@ -80,17 +89,17 @@ static struct {
 };
 
 
-static size_t compute_size_integer(va_list *va)
+static size_t compute_size_integer(struct wrapped_va_list *va)
 {
-	va_arg(*va, int); // NOLINT (clang false positive)
+	va_arg(va->va, int); // NOLINT (clang false positive)
 	return sizeof(int);
 }
 
 
-static enum lis_error serialize_integer(void **out, va_list *va)
+static enum lis_error serialize_integer(void **out, struct wrapped_va_list *va)
 {
 	int *ptr = *out;
-	int val = va_arg(*va, int); // NOLINT (clang false positive)
+	int val = va_arg(va->va, int); // NOLINT (clang false positive)
 
 	*ptr = val;
 	*out = ptr + 1;
@@ -98,9 +107,9 @@ static enum lis_error serialize_integer(void **out, va_list *va)
 }
 
 
-static enum lis_error deserialize_integer(const void **in, va_list *va)
+static enum lis_error deserialize_integer(const void **in, struct wrapped_va_list *va)
 {
-	int *out = va_arg(*va, int *); // NOLINT (clang false positive)
+	int *out = va_arg(va->va, int *); // NOLINT (clang false positive)
 	const int *ptr = *in;
 
 	*out = *ptr;
@@ -109,17 +118,17 @@ static enum lis_error deserialize_integer(const void **in, va_list *va)
 }
 
 
-static size_t compute_size_double(va_list *va)
+static size_t compute_size_double(struct wrapped_va_list *va)
 {
-	va_arg(*va, double); // NOLINT (clang false positive)
+	va_arg(va->va, double); // NOLINT (clang false positive)
 	return sizeof(double);
 }
 
 
-static enum lis_error serialize_double(void **out, va_list *va)
+static enum lis_error serialize_double(void **out, struct wrapped_va_list *va)
 {
 	double *ptr = *out;
-	double val = va_arg(*va, double); // NOLINT (clang false positive)
+	double val = va_arg(va->va, double); // NOLINT (clang false positive)
 
 	*ptr = val;
 	*out = ptr + 1;
@@ -127,9 +136,9 @@ static enum lis_error serialize_double(void **out, va_list *va)
 }
 
 
-static enum lis_error deserialize_double(const void **in, va_list *va)
+static enum lis_error deserialize_double(const void **in, struct wrapped_va_list *va)
 {
-	double *out = va_arg(*va, double *); // NOLINT (clang false positive)
+	double *out = va_arg(va->va, double *); // NOLINT (clang false positive)
 	const double *ptr = *in;
 
 	*out = *ptr;
@@ -138,17 +147,17 @@ static enum lis_error deserialize_double(const void **in, va_list *va)
 }
 
 
-static size_t compute_size_ptr(va_list *va)
+static size_t compute_size_ptr(struct wrapped_va_list *va)
 {
-	va_arg(*va, intptr_t); // NOLINT (clang false positive)
+	va_arg(va->va, intptr_t); // NOLINT (clang false positive)
 	return sizeof(intptr_t);
 }
 
 
-static enum lis_error serialize_ptr(void **out, va_list *va)
+static enum lis_error serialize_ptr(void **out, struct wrapped_va_list *va)
 {
 	intptr_t *ptr = *out;
-	intptr_t val = va_arg(*va, intptr_t); // NOLINT (clang false positive)
+	intptr_t val = va_arg(va->va, intptr_t); // NOLINT (clang false positive)
 
 	*ptr = val;
 	*out = ptr + 1;
@@ -156,9 +165,9 @@ static enum lis_error serialize_ptr(void **out, va_list *va)
 }
 
 
-static enum lis_error deserialize_ptr(const void **in, va_list *va)
+static enum lis_error deserialize_ptr(const void **in, struct wrapped_va_list *va)
 {
-	intptr_t *out = va_arg(*va, intptr_t *); // NOLINT (clang false positive)
+	intptr_t *out = va_arg(va->va, intptr_t *); // NOLINT (clang false positive)
 	const intptr_t *ptr = *in;
 
 	*out = *ptr;
@@ -167,9 +176,9 @@ static enum lis_error deserialize_ptr(const void **in, va_list *va)
 }
 
 
-static size_t compute_size_string(va_list *va)
+static size_t compute_size_string(struct wrapped_va_list *va)
 {
-	const char *str = va_arg(*va, const char *); // NOLINT (clang false positive)
+	const char *str = va_arg(va->va, const char *); // NOLINT (clang false positive)
 	if (str == NULL) {
 		return 1;
 	}
@@ -177,9 +186,9 @@ static size_t compute_size_string(va_list *va)
 }
 
 
-static enum lis_error serialize_string(void **out, va_list *va)
+static enum lis_error serialize_string(void **out, struct wrapped_va_list *va)
 {
-	const char *str = va_arg(*va, const char *); // NOLINT (clang false positive)
+	const char *str = va_arg(va->va, const char *); // NOLINT (clang false positive)
 	size_t l;
 
 	if (str == NULL) {
@@ -196,9 +205,9 @@ static enum lis_error serialize_string(void **out, va_list *va)
 }
 
 
-static enum lis_error deserialize_string(const void **in, va_list *va)
+static enum lis_error deserialize_string(const void **in, struct wrapped_va_list *va)
 {
-	const char **out = va_arg(*va, const char **); // NOLINT (clang false positive)
+	const char **out = va_arg(va->va, const char **); // NOLINT (clang false positive)
 	const char *str = *in;
 	size_t l = strlen(str);
 
@@ -208,10 +217,10 @@ static enum lis_error deserialize_string(const void **in, va_list *va)
 }
 
 
-static size_t compute_size_value(va_list *va)
+static size_t compute_size_value(struct wrapped_va_list *va)
 {
-	enum lis_value_type vtype = va_arg(*va, enum lis_value_type); // NOLINT
-	union lis_value value = va_arg(*va, union lis_value);
+	enum lis_value_type vtype = va_arg(va->va, enum lis_value_type); // NOLINT
+	union lis_value value = va_arg(va->va, union lis_value);
 
 	switch(vtype) {
 		case LIS_TYPE_BOOL:
@@ -230,10 +239,10 @@ static size_t compute_size_value(va_list *va)
 }
 
 
-static enum lis_error serialize_value(void **out, va_list *va)
+static enum lis_error serialize_value(void **out, struct wrapped_va_list *va)
 {
-	enum lis_value_type vtype = va_arg(*va, enum lis_value_type); // NOLINT
-	union lis_value value = va_arg(*va, union lis_value);
+	enum lis_value_type vtype = va_arg(va->va, enum lis_value_type); // NOLINT
+	union lis_value value = va_arg(va->va, union lis_value);
 	size_t l;
 
 	switch(vtype) {
@@ -260,10 +269,10 @@ static enum lis_error serialize_value(void **out, va_list *va)
 }
 
 
-static enum lis_error deserialize_value(const void **in, va_list *va)
+static enum lis_error deserialize_value(const void **in, struct wrapped_va_list *va)
 {
-	enum lis_value_type vtype = va_arg(*va, enum lis_value_type); // NOLINT
-	union lis_value *value = va_arg(*va, union lis_value *);
+	enum lis_value_type vtype = va_arg(va->va, enum lis_value_type); // NOLINT
+	union lis_value *value = va_arg(va->va, union lis_value *);
 	size_t l;
 
 	switch(vtype) {
@@ -294,10 +303,10 @@ static enum lis_error deserialize_value(const void **in, va_list *va)
 size_t lis_compute_packed_size(const char *format, ...)
 {
 	size_t s = 0;
-	va_list va;
+	struct wrapped_va_list va;
 	unsigned int t;
 
-	va_start(va, format);
+	va_start(va.va, format);
 
 	for (; format[0] != '\0' ; format++) {
 		for (t = 0 ; t < LIS_COUNT_OF(g_data_types) ; t++) {
@@ -315,17 +324,17 @@ size_t lis_compute_packed_size(const char *format, ...)
 		}
 	}
 
-	va_end(va);
+	va_end(va.va);
 	return s;
 }
 
 
 void lis_pack(void **out, const char *format, ...)
 {
-	va_list va;
+	struct wrapped_va_list va;
 	unsigned int t;
 
-	va_start(va, format);
+	va_start(va.va, format);
 
 	for (; format[0] != '\0' ; format++) {
 		for (t = 0 ; t < LIS_COUNT_OF(g_data_types) ; t++) {
@@ -344,16 +353,16 @@ void lis_pack(void **out, const char *format, ...)
 		}
 	}
 
-	va_end(va);
+	va_end(va.va);
 }
 
 
 void lis_unpack(const void **in, const char *format, ...)
 {
-	va_list va;
+	struct wrapped_va_list va;
 	unsigned int t;
 
-	va_start(va, format);
+	va_start(va.va, format);
 
 	for (; format[0] != '\0' ; format++) {
 		for (t = 0 ; t < LIS_COUNT_OF(g_data_types) ; t++) {
@@ -372,5 +381,5 @@ void lis_unpack(const void **in, const char *format, ...)
 		}
 	}
 
-	va_end(va);
+	va_end(va.va);
 }
