@@ -213,7 +213,7 @@ static enum lis_error serialize_string(void **out, struct wrapped_va_list *va)
 	}
 
 	l = strlen(str);
-	strncpy(*out, str, l + 1);
+	strcpy(*out, str); // NOLINT
 	*out += l + 1;
 
 	return LIS_OK;
@@ -273,7 +273,7 @@ static enum lis_error serialize_value(void **out, struct wrapped_va_list *va)
 			return LIS_OK;
 		case LIS_TYPE_STRING:
 			l = strlen(value.string);
-			strncpy(*out, value.string, l + 1);
+			strcpy(*out, value.string); // NOLINT
 			*out += l + 1;
 			return LIS_OK;
 	}
