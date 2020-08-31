@@ -1,5 +1,5 @@
 project('libinsane-gobject', 'c',
-    version: '1.0.5',
+    version: '1.0.6',
     license: 'LGPLv3+',
     meson_version: '>=0.37.1')
 

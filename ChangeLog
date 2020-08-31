@@ -1,3 +1,6 @@
+2020/08/31 - 1.0.6:
+- workaround 'dedicated_process': work around a GCC >=10 bug
+
 2020/08/30 - 1.0.5:
 - Sane: Implements new workaround: dedicated_process: run all the scanner
   operations in a dedicated process. Avoid issues with Sane backends
