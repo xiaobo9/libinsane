@@ -14,33 +14,47 @@
 
 // #define PROTOCOL_DEBUG
 
-#ifndef PROTOCOL_DEBUG
-
-#define lis_read(a, b, c) read((a), (b), (c))
-#define lis_write(a, b, c) write((a), (b), (c))
-
-#else
 
 static ssize_t lis_read(int fd, void *buf, size_t count)
 {
 	ssize_t r;
+	size_t total = 0;
 
-	r = read(fd, buf, count);
+	do {
+		r = read(fd, buf, count - total);
+		if (r <= 0) {
+			return r;
+		}
+		buf += r;
+		total += r;
+	} while(total < count);
+
+#ifdef PROTOCOL_DEBUG
 	lis_hexdump("read", buf, r);
-	return r;
+#endif
+	return total;
 }
 
 
 static ssize_t lis_write(int fd, const void *buf, size_t count)
 {
 	ssize_t w;
+	size_t total = 0;
 
-	w = write(fd, buf, count);
+	do {
+		w = write(fd, buf, count - total);
+		if (w <= 0) {
+			return w;
+		}
+		buf += w;
+		total += w;
+	} while(total < count);
+
+#ifdef PROTOCOL_DEBUG
 	lis_hexdump("write", buf, w);
+#endif
 	return w;
 }
-
-#endif
 
 
 enum lis_error lis_protocol_msg_read(int fd, struct lis_msg *msg)
@@ -97,8 +111,8 @@ enum lis_error lis_protocol_msg_write(int fd, const struct lis_msg *msg)
 	r = lis_write(fd, &msg->header, sizeof(msg->header));
 	if (r != sizeof(msg->header)) {
 		lis_log_error(
-			"write() failed: fd=%d, r=%zd ; %d, %s",
-			fd, r, errno, strerror(errno)
+			"write() failed: fd=%d, r=%zd, size=%zd ; %d, %s",
+			fd, r, sizeof(msg->header), errno, strerror(errno)
 		);
 		return LIS_ERR_IO_ERROR;
 	}
@@ -109,14 +123,20 @@ enum lis_error lis_protocol_msg_write(int fd, const struct lis_msg *msg)
 
 	r = lis_write(fd, &msg->raw.iov_len, sizeof(msg->raw.iov_len));
 	if (r != sizeof(msg->header)) {
-		lis_log_error("write() failed (2): r=%zd ; %d, %s", r, errno, strerror(errno));
+		lis_log_error(
+			"write() failed (2): r=%zd, size=%zd ; %d, %s",
+			r, sizeof(msg->raw.iov_len), errno, strerror(errno)
+		);
 		return LIS_ERR_IO_ERROR;
 	}
 
 	if (msg->raw.iov_len > 0) {
 		r = lis_write(fd, msg->raw.iov_base, msg->raw.iov_len);
 		if (r != (ssize_t)msg->raw.iov_len) {
-			lis_log_error("write() failed (3): r=%zd ; %d, %s", r, errno, strerror(errno));
+			lis_log_error(
+				"write() failed (3): r=%zd, size=%zu; %d, %s",
+				r, msg->raw.iov_len, errno, strerror(errno)
+			);
 			return LIS_ERR_IO_ERROR;
 		}
 	}
@@ -174,7 +194,7 @@ static enum lis_error read_log(struct lis_pipes *pipes, enum lis_log_level *lvl,
 		return LIS_ERR_IO_ERROR;
 	}
 
-	r = read(pipes->sorted.logs[0], lvl, sizeof(*lvl));
+	r = lis_read(pipes->sorted.logs[0], lvl, sizeof(*lvl));
 	if (r != sizeof(*lvl)) {
 		lis_log_error(
 			"read() failed: fd=%d, r=%zd ; %d, %s",
@@ -183,7 +203,7 @@ static enum lis_error read_log(struct lis_pipes *pipes, enum lis_log_level *lvl,
 		return LIS_ERR_IO_ERROR;
 	}
 
-	r = read(pipes->sorted.logs[0], &len, sizeof(len));
+	r = lis_read(pipes->sorted.logs[0], &len, sizeof(len));
 	if (r != sizeof(len)) {
 		lis_log_error(
 			"read() failed: r=%zd ; %d, %s",
@@ -192,7 +212,7 @@ static enum lis_error read_log(struct lis_pipes *pipes, enum lis_log_level *lvl,
 		return LIS_ERR_IO_ERROR;
 	}
 
-	r = read(pipes->sorted.logs[0], pipes->log_buf, len);
+	r = lis_read(pipes->sorted.logs[0], pipes->log_buf, len);
 	if (r != (ssize_t)len) {
 		lis_log_error(
 			"read() failed: r=%zd ; %d, %s",
