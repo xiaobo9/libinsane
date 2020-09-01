@@ -122,7 +122,7 @@ enum lis_error lis_protocol_msg_write(int fd, const struct lis_msg *msg)
 	}
 
 	r = lis_write(fd, &msg->raw.iov_len, sizeof(msg->raw.iov_len));
-	if (r != sizeof(msg->header)) {
+	if (r != sizeof(msg->raw.iov_len)) {
 		lis_log_error(
 			"write() failed (2): r=%zd, size=%zd ; %d, %s",
 			r, sizeof(msg->raw.iov_len), errno, strerror(errno)
