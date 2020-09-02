@@ -630,9 +630,11 @@ static enum lis_error execute_session_scan_read(struct lis_msg *msg_in, struct l
 {
 	const void *ptr_in;
 	struct lis_scan_session *session;
+	int buffer_size;
 
 	ptr_in = msg_in->raw.iov_base;
-	lis_unpack(&ptr_in, "pd", &session, &msg_out->raw.iov_len);
+	lis_unpack(&ptr_in, "pd", &session, &buffer_size);
+	msg_out->raw.iov_len = buffer_size;
 
 	msg_out->raw.iov_base = malloc(msg_out->raw.iov_len);
 	if (msg_out->raw.iov_base == NULL) {
