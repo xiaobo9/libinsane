@@ -165,11 +165,16 @@ static void crash_handler(int sig) {
 		);
 	}
 
+	fprintf(stderr, "======== START OF BACKTRACE ========\n");
+
 	// get void*'s for all entries on the stack
 	size = backtrace(stack, LIS_COUNT_OF(stack));
 
 	// print out all the frames to stderr
 	backtrace_symbols_fd(stack, size, STDERR_FILENO);
+
+	fsync(STDERR_FILENO);
+	fprintf(stderr, "======== END OF BACKTRACE ========\n");
 
 	if (kill(mypid, sig) < 0) {
 		fprintf(stderr, "KILL FAILED\n");

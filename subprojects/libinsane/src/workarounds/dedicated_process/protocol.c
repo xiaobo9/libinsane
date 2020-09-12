@@ -203,24 +203,45 @@ static enum lis_error read_log(struct lis_pipes *pipes, enum lis_log_level *lvl,
 
 static enum lis_error read_stderr(struct lis_pipes *pipes, enum lis_log_level *lvl, const char **msg)
 {
-	ssize_t r;
+	*lvl = LIS_LOG_LVL_WARNING;
 
 	if (pipes->sorted.stderr[0] < 0) {
 		// pipe has been closed on purpose
 		return LIS_ERR_IO_ERROR;
 	}
 
-	*lvl = LIS_LOG_LVL_WARNING;
+	if (pipes->stderr.total <= 0) {
+		pipes->stderr.current = 0;
+		memset(pipes->stderr.buf, 0, sizeof(pipes->stderr.buf));
+		pipes->stderr.total = read(pipes->sorted.stderr[0], pipes->stderr.buf, sizeof(pipes->stderr.buf) - 1);
+		if (pipes->stderr.total < 0) {
+			lis_log_error("read() failed: %d, %s", errno, strerror(errno));
+			return LIS_ERR_IO_ERROR;
+		}
+		if (pipes->stderr.total == 0) {
+			*msg = NULL;
+			return LIS_OK;
+		}
+	}
 
-	r = getline(&pipes->stderr_buf, &pipes->stderr_buf_size, pipes->stderr);
-	if (r < 0) {
-		lis_log_error("read() failed: %d, %s", errno, strerror(errno));
-		return LIS_ERR_IO_ERROR;
+	*msg = pipes->stderr.buf + pipes->stderr.current;
+
+	for ( ; pipes->stderr.current < pipes->stderr.total ; pipes->stderr.current++) {
+		if (pipes->stderr.buf[pipes->stderr.current] == '\n') {
+			pipes->stderr.buf[pipes->stderr.current] = '\0';
+			pipes->stderr.current += 1;
+			return LIS_OK;
+		} else if (pipes->stderr.buf[pipes->stderr.current] == '\0') {
+			break;
+		}
 	}
-	if (r > 0 && pipes->stderr_buf[r - 1] == '\n') {
-		pipes->stderr_buf[r - 1] = '\0';
+	pipes->stderr.current = 0;
+	pipes->stderr.total = 0;
+
+	if ((*msg)[0] == '\0') {
+		*msg = NULL;
 	}
-	*msg = pipes->stderr_buf;
+
 	return LIS_OK;
 }
 
@@ -240,8 +261,27 @@ enum lis_error lis_protocol_log_read(struct lis_pipes *pipes, enum lis_log_level
 			.revents = 0,
 		},
 	};
+	struct pollfd *fds_ptr;
+	nfds_t count;
 
-	if (poll(fds, LIS_COUNT_OF(fds), -1 /* no timeout */) < 0) {
+	*msg = NULL;
+
+	if (pipes->stderr.total > 0) {
+		return read_stderr(pipes, lvl, msg);
+	}
+
+	if (fds[0].fd < 0) {
+		fds_ptr = fds + 1;
+		count = 1;
+	} else if (fds[1].fd < 0) {
+		fds_ptr = fds;
+		count = 1;
+	} else {
+		fds_ptr = fds;
+		count = 2;
+	}
+
+	if (poll(fds_ptr, count, -1 /* no timeout */) < 0) {
 		lis_log_error(
 			"poll() failed: %d, %s", errno, strerror(errno)
 		);
@@ -267,7 +307,18 @@ enum lis_error lis_protocol_log_read(struct lis_pipes *pipes, enum lis_log_level
 				"poll() failed on fd %u-%d: 0x%X",
 				i, fds[i].fd, fds[i].revents
 			);
-			return LIS_ERR_IO_ERROR;
+			if (fds[i].fd == pipes->sorted.logs[0]) {
+				close(pipes->sorted.logs[0]);
+				pipes->sorted.logs[0] = -1;
+			}
+			if (fds[i].fd == pipes->sorted.stderr[0]) {
+				close(pipes->sorted.stderr[0]);
+				pipes->sorted.stderr[0] = -1;
+			}
+			if (pipes->sorted.logs[0] < 0 && pipes->sorted.stderr[0] < 0) {
+				return LIS_ERR_IO_ERROR;
+			}
+			return LIS_OK;
 		}
 	}
 

@@ -186,13 +186,10 @@ static void *log_thread(void *_pipes)
 		pipes->sorted.stderr[0], pipes->sorted.stderr[1]
 	);
 
-	pipes->stderr = fdopen(pipes->sorted.stderr[0], "r");
-	assert(pipes->stderr != NULL);
-
 	lis_log_info("Log thread started");
 	do {
 		err = lis_protocol_log_read(pipes, &lvl, &msg);
-		if (LIS_IS_OK(err)) {
+		if (LIS_IS_OK(err) && msg != NULL) {
 			lis_log_raw(lvl, msg);
 		}
 	} while(LIS_IS_OK(err));
@@ -200,8 +197,6 @@ static void *log_thread(void *_pipes)
 	lis_log_info(
 		"Stopping log thread because: 0x%X, %s", err, lis_strerror(err)
 	);
-	fclose(pipes->stderr);
-
 	return NULL;
 }
 
@@ -1147,6 +1142,7 @@ enum lis_error lis_api_workaround_dedicated_process(
 		);
 		configure_pipe(private->pipes.all[i]);
 	}
+
 	lis_log_info("Forking ...");
 	private->worker = fork();
 	if (private->worker < 0) {

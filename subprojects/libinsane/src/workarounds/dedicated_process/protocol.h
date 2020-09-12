@@ -66,12 +66,13 @@ struct lis_pipes
 		int all[4][2];
 	};
 
-	FILE *stderr;
-
 	char log_buf[1024]; // to avoid a malloc on each log line
 
-	char *stderr_buf; // to avoid a malloc() on each stderr line
-	size_t stderr_buf_size;
+	struct {
+		char buf[1024]; // to avoid a malloc() on each stderr line
+		ssize_t current;
+		ssize_t total;
+	} stderr;
 };
 
 
