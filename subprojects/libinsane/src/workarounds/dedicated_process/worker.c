@@ -380,9 +380,11 @@ static void serialize_option(const struct lis_option_descriptor *desc, void **bu
 {
 	if (buf_size != NULL) {
 		*buf_size += lis_compute_packed_size(
-			"psdddd",
+			"psssdddd",
 			desc,
 			desc->name,
+			desc->title,
+			desc->desc,
 			desc->capabilities,
 			desc->value.type,
 			desc->value.unit,
@@ -391,14 +393,16 @@ static void serialize_option(const struct lis_option_descriptor *desc, void **bu
 	}
 	if (buf != NULL) {
 		lis_log_info(
-			"Serializing option [%s] --> %p",
-			desc->name, *buf
+			"Serializing option [%s] [%s] [%s] --> %p",
+			desc->name, desc->title, desc->desc, *buf
 		);
 		lis_pack(
 			buf,
-			"psdddd",
+			"psssdddd",
 			desc,
 			desc->name,
+			desc->title,
+			desc->desc,
 			desc->capabilities,
 			desc->value.type,
 			desc->value.unit,

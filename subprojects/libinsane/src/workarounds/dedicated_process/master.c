@@ -626,9 +626,11 @@ static enum lis_error deserialize_option(
 
 	lis_unpack(
 		serialized,
-		"psdddd",
+		"psssdddd",
 		&opt->remote,
 		&opt->parent.name,
+		&opt->parent.title,
+		&opt->parent.desc,
 		&opt->parent.capabilities,
 		&opt->parent.value.type,
 		&opt->parent.value.unit,
