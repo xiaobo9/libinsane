@@ -236,9 +236,9 @@ static enum lis_error opts_source_get_options(
 	struct lis_option_descriptor **dev_opts;
 	struct lis_option_descriptor **source_opts;
 	int dev_opt_idx, source_opt_idx;
-	int nb_opts;
+	int nb_opts, nb_source_opts, nb_root_opts;
 
-	/* we need to figure out how manu option description pointers
+	/* we need to figure out how many option descriptor pointers
 	 * we must allocate.
 	 */
 
@@ -251,6 +251,7 @@ static enum lis_error opts_source_get_options(
 
 	for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) { }
 	nb_opts = source_opt_idx;
+	nb_source_opts = source_opt_idx;
 
 	err = private->dev->wrapped->get_options(private->dev->wrapped, &dev_opts);
 	if (LIS_IS_ERROR(err)) {
@@ -259,7 +260,7 @@ static enum lis_error opts_source_get_options(
 		return err;
 	}
 
-	for (dev_opt_idx = 0 ; dev_opts[dev_opt_idx] != NULL ; dev_opt_idx++) {
+	for (dev_opt_idx = 0, nb_root_opts = 0 ; dev_opts[dev_opt_idx] != NULL ; dev_opt_idx++, nb_root_opts++) {
 		for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) {
 			if (strcasecmp(dev_opts[dev_opt_idx]->name,
 					source_opts[source_opt_idx]->name) == 0) {
@@ -281,36 +282,44 @@ static enum lis_error opts_source_get_options(
 		return LIS_OK;
 	}
 
+	lis_log_info(
+		"Number of options, on root item: %d, on source item: %d",
+		nb_root_opts, nb_source_opts
+	);
+
+	/* now we can actually copy the options.
+	*/
 	private->opts = calloc(nb_opts + 1, sizeof(struct lis_option_descriptor *));
 	if (private->opts == NULL) {
 		lis_log_error("Out of memory");
 		return LIS_ERR_NO_MEM;
 	}
 
-	/* now we can actually copy the options.
-	 *
-	 * Keep in mind that in some cases, calling get_options() may
-	 * free the previous results of get_options
-	 */
-
-	err = private->wrapped->get_options(private->wrapped, &source_opts);
-	if (LIS_IS_ERROR(err)) {
-		lis_log_error("Failed to get options from child item [%s]: 0x%X, %s",
-			self->name, err, lis_strerror(err));
-		return err;
-	}
-
 	nb_opts = 0;
-	for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) {
-		private->opts[nb_opts] = source_opts[source_opt_idx];
-		nb_opts++;
-	}
+	if (nb_source_opts > 0) {
+		/* WORKAROUND(Jflesch):
+		 * Theorically, it's not possible to call get_options() on
+		 * both the root item and the child item and expect both
+		 * results to remain valid at the same time (the second call
+		 * to get_options() may invalidate the result.
+		 *
+		 * This is an API problem.
+		 *
+		 * However, we know that internally:
+		 * - Sane / Twain: maintain an option list only for the root item.
+		 *   normalizer/source_nodes always return an empty list of
+		 *   options, always valid.
+		 * - WIA: the WIA implementation maintains both child and root
+		 *   options separately
+		 *
+		 * So this should be safe. Of course, it relies on internal
+		 * details of implementation, so it's baaaaddddd.
+		 */
 
-	err = private->dev->wrapped->get_options(private->dev->wrapped, &dev_opts);
-	if (LIS_IS_ERROR(err)) {
-		lis_log_error("Failed to get options from root item: 0x%X, %s",
-			err, lis_strerror(err));
-		return err;
+		for (source_opt_idx = 0 ; source_opts[source_opt_idx] != NULL ; source_opt_idx++) {
+			private->opts[nb_opts] = source_opts[source_opt_idx];
+			nb_opts++;
+		}
 	}
 
 	for (dev_opt_idx = 0 ; dev_opts[dev_opt_idx] != NULL ; dev_opt_idx++) {
