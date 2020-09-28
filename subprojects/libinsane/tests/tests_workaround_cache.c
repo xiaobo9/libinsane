@@ -131,7 +131,7 @@ static void test_cache_list_options(void)
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
 	LIS_ASSERT_NOT_EQUAL(device, NULL);
 
-    LIS_ASSERT_EQUAL(device->type, LIS_ITEM_ADF);
+	LIS_ASSERT_EQUAL(device->type, LIS_ITEM_ADF);
 
 	err = device->get_children(device, &sources);
 	LIS_ASSERT_TRUE(LIS_IS_OK(err));
