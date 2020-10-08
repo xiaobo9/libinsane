@@ -139,11 +139,14 @@ static enum lis_error child_get_children(struct lis_item *self, struct lis_item 
 
 
 static enum lis_error item_get_options(
-		struct lis_item *self, struct lis_option_descriptor ***descs
+		struct lis_item *self, struct lis_option_descriptor ***out_descs
 	)
 {
-	struct mos_child *private = LIS_MOS_CHILD(self);
-	return private->wrapped->get_options(private->wrapped, descs);
+	static const struct lis_option_descriptor *descs[] = { NULL };
+
+	LIS_UNUSED(self);
+	*out_descs = (struct lis_option_descriptor **)descs;
+	return LIS_OK;
 }
 
 

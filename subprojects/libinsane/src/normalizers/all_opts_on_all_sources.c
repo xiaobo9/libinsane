@@ -301,7 +301,7 @@ static enum lis_error opts_source_get_options(
 		 * Theorically, it's not possible to call get_options() on
 		 * both the root item and the child item and expect both
 		 * results to remain valid at the same time (the second call
-		 * to get_options() may invalidate the result.
+		 * to get_options() may invalidate the result).
 		 *
 		 * This is an API problem.
 		 *

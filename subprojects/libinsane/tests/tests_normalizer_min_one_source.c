@@ -95,6 +95,10 @@ static void tests_src_default_source(void)
 
 	err = children[0]->get_options(children[0], &opts);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
+	LIS_ASSERT_EQUAL(opts[0], NULL);
+
+	err = root->get_options(root, &opts);
+	LIS_ASSERT_EQUAL(err, LIS_OK);
 	LIS_ASSERT_NOT_EQUAL(opts[0], NULL);
 	LIS_ASSERT_EQUAL(opts[1], NULL);
 

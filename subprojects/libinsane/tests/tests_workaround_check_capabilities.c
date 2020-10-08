@@ -17,6 +17,7 @@
 
 static struct lis_api *g_dumb = NULL;
 static struct lis_api *g_src = NULL;
+static struct lis_api *g_opts = NULL;
 static struct lis_api *g_check = NULL;
 
 
@@ -92,6 +93,7 @@ static int tests_init(void)
 	g_check = NULL;
 	g_dumb = NULL;
 	g_src = NULL;
+	g_opts = NULL;
 
 	err = lis_api_dumb(&g_dumb, "dummy0");
 	if (LIS_IS_ERROR(err)) {
@@ -116,13 +118,23 @@ static int tests_init(void)
 	if (LIS_IS_ERROR(err)) {
 		return -1;
 	}
+	err = lis_api_normalizer_all_opts_on_all_sources(g_src, &g_opts);
+	if (LIS_IS_ERROR(err)) {
+		return -1;
+	}
 	return 0;
 }
 
 
 static int tests_cleanup(void)
 {
-	struct lis_api *api = (g_check ? g_check : (g_src ? g_src : g_dumb));
+	struct lis_api *api = (
+		g_check ? g_check : (
+			g_opts ? g_opts : (
+				g_src ? g_src : g_dumb
+			)
+		)
+	);
 	api->cleanup(api);
 	return 0;
 }
@@ -139,7 +151,7 @@ static void tests_inactive(void)
 
 	LIS_ASSERT_EQUAL(tests_init(), 0);
 
-	err = lis_api_workaround_check_capabilities(g_src, &g_check);
+	err = lis_api_workaround_check_capabilities(g_opts, &g_check);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	err = g_check->get_device(g_check, LIS_DUMB_DEV_ID_FIRST, &item);
@@ -179,7 +191,7 @@ static void tests_read_only(void)
 
 	LIS_ASSERT_EQUAL(tests_init(), 0);
 
-	err = lis_api_workaround_check_capabilities(g_src, &g_check);
+	err = lis_api_workaround_check_capabilities(g_opts, &g_check);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	err = g_check->get_device(g_check, LIS_DUMB_DEV_ID_FIRST, &item);
@@ -211,7 +223,7 @@ static void tests_single_value(void)
 
 	LIS_ASSERT_EQUAL(tests_init(), 0);
 
-	err = lis_api_workaround_check_capabilities(g_src, &g_check);
+	err = lis_api_workaround_check_capabilities(g_opts, &g_check);
 	LIS_ASSERT_EQUAL(err, LIS_OK);
 
 	err = g_check->get_device(g_check, LIS_DUMB_DEV_ID_FIRST, &item);
