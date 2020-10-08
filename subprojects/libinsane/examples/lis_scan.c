@@ -208,20 +208,20 @@ static void lets_scan(struct bmp *out, const char *dev_id)
 	memset(img_buffer, 0, sizeof(img_buffer));
 
 	while (!scan_session->end_of_feed(scan_session)) {
-		while (!scan_session->end_of_page(scan_session)) {
-			// scan parameters must be obtained *after* the scan session has been
-			// started and before getting the content of a new page.
-			// DO NOT assume that 2 pages in the same feed will have the same size.
-			CHECK_ERR(scan_session->get_scan_parameters(
-				scan_session, &parameters
-			));
-			printf(
-				"Scan will be: %d px x %d px (%ld bytes)\n",
-				parameters.width, parameters.height,
-				(long)parameters.image_size
-			);
-			write_header(out, &parameters);
+		// scan parameters must be obtained *after* the scan session has been
+		// started and before getting the content of a new page.
+		// DO NOT assume that 2 pages in the same feed will have the same size.
+		CHECK_ERR(scan_session->get_scan_parameters(
+			scan_session, &parameters
+		));
+		printf(
+			"Scan will be: %d px x %d px (%ld bytes)\n",
+			parameters.width, parameters.height,
+			(long)parameters.image_size
+		);
+		write_header(out, &parameters);
 
+		while (!scan_session->end_of_page(scan_session)) {
 			bufsize = sizeof(img_buffer);
 			err = scan_session->scan_read(
 				scan_session, img_buffer, &bufsize
