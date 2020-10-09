@@ -1,3 +1,12 @@
+2020/10/09 - 1.0.8:
+- workaround 'dedicated_process': Fix crash on s390x architectures (thanks to
+  Elliott Sales de Andrade)
+- Sane + normalizer 'min_one_source' + normalizer 'all_opts_on_all_sources':
+  Fix crash with scanner have no option 'source':
+  'min_one_source' creates a fake item, and this fake item must not return
+  any option when `get_options()` is called. Otherwise
+  'all_opts_on_all_sources' crashes.
+
 2020/09/01 - 1.0.7:
 - workaround 'dedicated_process': fix crash on 32bits systems.
 
