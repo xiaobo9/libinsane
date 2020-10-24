@@ -203,7 +203,7 @@ static enum lis_error read_log(struct lis_pipes *pipes, enum lis_log_level *lvl,
 
 static enum lis_error read_stderr(struct lis_pipes *pipes, enum lis_log_level *lvl, const char **msg)
 {
-	*lvl = LIS_LOG_LVL_WARNING;
+	*lvl = LIS_LOG_LVL_INFO;
 
 	if (pipes->sorted.stderr[0] < 0) {
 		// pipe has been closed on purpose
