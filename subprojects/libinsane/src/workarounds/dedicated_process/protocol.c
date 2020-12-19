@@ -140,7 +140,8 @@ enum lis_error lis_protocol_log_write(struct lis_pipes *pipes, enum lis_log_leve
 
 	r = write(pipes->sorted.logs[1], &lvl, sizeof(lvl));
 	if (r != sizeof(lvl)) {
-		lis_log_error(
+		fprintf(
+			stderr,
 			"write() failed: r=%zd ; %d, %s",
 			r, errno, strerror(errno)
 		);
@@ -149,7 +150,8 @@ enum lis_error lis_protocol_log_write(struct lis_pipes *pipes, enum lis_log_leve
 
 	r = write(pipes->sorted.logs[1], &len, sizeof(len));
 	if (r != sizeof(len)) {
-		lis_log_error(
+		fprintf(
+			stderr,
 			"write() failed (2): r=%zd ; %d, %s",
 			r, errno, strerror(errno)
 		);
@@ -158,7 +160,8 @@ enum lis_error lis_protocol_log_write(struct lis_pipes *pipes, enum lis_log_leve
 
 	r = write(pipes->sorted.logs[1], msg, len);
 	if (r != (ssize_t)len) {
-		lis_log_error(
+		fprintf(
+			stderr,
 			"write() failed (3): r=%zd ; %d, %s",
 			r, errno, strerror(errno)
 		);
