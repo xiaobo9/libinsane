@@ -1,3 +1,9 @@
+2021/01/01 - 1.0.9:
+- Fix: dedicated_process: Don't hang when shutting down
+  (ea2e964392c9aa5d09465d71fc059d8689c311cb)
+- dedicated_process: Reduce the trace level from the child process's stderr
+  from warning to info
+
 2020/10/09 - 1.0.8:
 - workaround 'dedicated_process': Fix crash on s390x architectures (thanks to
   Elliott Sales de Andrade)
