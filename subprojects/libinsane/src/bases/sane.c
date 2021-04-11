@@ -1141,7 +1141,7 @@ static enum lis_error lis_sane_scan_start(struct lis_item *self,
 		"Sane: scan_start(): %d -> %d, %s",
 		sane_err, err, lis_strerror(err)
 	);
-	return sane_status_to_lis_error(sane_err);
+	return err;
 }
 
 
