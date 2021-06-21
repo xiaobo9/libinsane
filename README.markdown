@@ -47,7 +47,7 @@ It is the successor of [Pyinsane2](https://gitlab.gnome.org/World/OpenPaperwork/
 
 It is released under [LGPL v3+](https://www.gnu.org/licenses/lgpl-3.0.en.html).
 
-- [Documentation](https://doc.openpaper.work/libinsane/latest/)
+- [Documentation](https://doc.openpaper.work/libinsane/latest/index.html)
 - [Forum](https://forum.openpaper.work/)
 - [Bug tracker](https://gitlab.gnome.org/World/OpenPaperwork/libinsane/issues)
 - [Scanner database](https://openpaper.work/scannerdb/)
