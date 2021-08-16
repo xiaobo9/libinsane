@@ -25,7 +25,7 @@ static enum lis_error lis_read(int fd, void *buf, size_t count)
 		if (r <= 0) {
 			lis_log_error(
 				"read() failed: fd=%d, r=%zd, got=%zd, expected=%zd; %d, %s",
-				fd, r, count, total, errno, strerror(errno)
+				fd, r, total, count, errno, strerror(errno)
 			);
 			return LIS_ERR_IO_ERROR;
 		}
