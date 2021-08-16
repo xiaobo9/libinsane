@@ -1,4 +1,4 @@
-image: debian:stable-slim
+image: debian:buster-slim
 
 stages:
   - build
@@ -52,8 +52,6 @@ check:
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
-  # We use buster so we have clang-tidy-7 available
-  image: debian:buster-slim
   tags:
     - linux
     - volatile
@@ -67,8 +65,6 @@ test:
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
-  # WORKAROUND: valgrind from Debian stable doesn't work on armhf.
-  image: debian:buster-slim
   tags:
     - linux
     - volatile
@@ -82,7 +78,6 @@ doc:
   only:
     - branches@World/OpenPaperwork/libinsane
     - tags@World/OpenPaperwork/libinsane
-  image: debian:buster-slim
   tags:
     - linux
     - volatile
