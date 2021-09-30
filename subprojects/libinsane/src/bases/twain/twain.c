@@ -2059,15 +2059,18 @@ static enum lis_error next_page(struct lis_twain_session *private)
 		return err;
 	}
 
-	private->img.mem = private->item->impl->entry_points.DSM_MemLock(
-		private->img.handle
-	);
-
-	lis_hexdump("twain", private->img.mem, BMP_HEADER_SIZE);
-
 	// Twain DS only return a partial header
 	err = twain_get_scan_parameters(&private->parent, &params);
 	assert(LIS_IS_OK(err));
+
+	private->img.mem = private->item->impl->entry_points.DSM_MemLock(
+		private->img.handle
+	);
+	if (private->img.mem == NULL) {
+		lis_log_error("Failed to lock image memory area");
+		return LIS_ERR_INTERNAL_UNKNOWN_ERROR;
+	}
+	lis_hexdump("twain", private->img.mem, BMP_HEADER_SIZE);
 
 	lis_scan_params2bmp(
 		&params, &private->img.header, private->img.infos.BitsPerPixel
