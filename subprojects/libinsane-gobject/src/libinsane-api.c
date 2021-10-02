@@ -186,7 +186,7 @@ GList *libinsane_api_list_devices(
 	if (priv->closed) {
 		err = LIS_ERR_CANCELLED;
 		SET_LIBINSANE_GOBJECT_ERROR(error, err,
-			"Libinsane get devices error: 0x%X, %s",
+			"Libinsane list devices error: 0x%X, %s",
 			err, lis_strerror(err));
 		lis_log_error(
 			"API->list_devices() called on closed implementation"
@@ -206,7 +206,7 @@ GList *libinsane_api_list_devices(
 	err = priv->impl->list_devices(priv->impl, lis_locations, &dev_infos);
 	if (LIS_IS_ERROR(err)) {
 		SET_LIBINSANE_GOBJECT_ERROR(error, err,
-			"Libinsane get devices error: 0x%X, %s",
+			"Libinsane list devices error: 0x%X, %s",
 			err, lis_strerror(err));
 		lis_log_error("error");
 		return NULL;
@@ -240,7 +240,7 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 	if (priv->closed) {
 		lis_err = LIS_ERR_CANCELLED;
 		SET_LIBINSANE_GOBJECT_ERROR(error, lis_err,
-			"Libinsane get devices error: 0x%X, %s",
+			"Libinsane get device error: 0x%X, %s",
 			lis_err, lis_strerror(lis_err));
 		lis_log_error(
 			"API->get_device() called on closed implementation"
@@ -251,7 +251,7 @@ LibinsaneItem *libinsane_api_get_device(LibinsaneApi *self, const char *dev_id, 
 	lis_err = priv->impl->get_device(priv->impl, dev_id, &lis_item);
 	if (LIS_IS_ERROR(lis_err)) {
 		SET_LIBINSANE_GOBJECT_ERROR(error, lis_err,
-			"Libinsane get devices error: 0x%X, %s",
+			"Libinsane get device error: 0x%X, %s",
 			lis_err, lis_strerror(lis_err));
 		lis_log_debug("error");
 		return NULL;
