@@ -23,7 +23,10 @@ static enum lis_error lis_read(int fd, void *buf, size_t count)
 	do {
 		r = read(fd, buf, count - total);
 		if (r <= 0) {
-			lis_log_error(
+			// do not use lis_log_*() here : socket is probably
+			// dead
+			fprintf(
+				stderr,
 				"read() failed: fd=%d, r=%zd, got=%zd, expected=%zd; %d, %s",
 				fd, r, total, count, errno, strerror(errno)
 			);
@@ -48,7 +51,10 @@ static enum lis_error lis_write(int fd, const void *buf, size_t count)
 	do {
 		w = write(fd, buf, count - total);
 		if (w <= 0) {
-			lis_log_error(
+			// do not use lis_log_*() here : socket is probably
+			// dead
+			fprintf(
+				stderr,
 				"write() failed: fd=%d, w=%zd, written=%zd, expected=%zd; %d, %s",
 				fd, w, count, total, errno, strerror(errno)
 			);
